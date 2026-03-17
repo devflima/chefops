@@ -1,0 +1,149 @@
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const cartItemSchema = z.object({
+  menu_item_id: z.string().uuid(),
+  name: z.string(),
+  price: z.number().min(0),
+  quantity: z.number().int().positive(),
+  notes: z.string().optional(),
+  extras: z
+    .array(
+      z.object({
+        name: z.string(),
+        price: z.number().min(0),
+      })
+    )
+    .optional(),
+})
+
+const createOrderSchema = z.object({
+  tenant_id: z.string().uuid(),
+  customer_name: z.string().optional(),
+  customer_phone: z.string().optional(),
+  table_number: z.string().optional(),
+  payment_method: z.enum(['online', 'table', 'counter']),
+  notes: z.string().optional(),
+  items: z.array(cartItemSchema).min(1, 'Pedido deve ter ao menos um item'),
+})
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+
+    const status = searchParams.get('status') || ''
+    const from = searchParams.get('from') || ''
+    const to = searchParams.get('to') || ''
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+    const rangeFrom = (page - 1) * pageSize
+    const rangeTo = rangeFrom + pageSize - 1
+
+    let query = supabase
+      .from('orders')
+      .select('*, items:order_items(*, extras:order_item_extras(*))', {
+        count: 'exact',
+      })
+      .order('created_at', { ascending: false })
+      .range(rangeFrom, rangeTo)
+
+    if (status) query = query.eq('status', status)
+    if (from) query = query.gte('created_at', from)
+    if (to) query = query.lte('created_at', to)
+
+    const { data, error, count } = await query
+
+    if (error) throw error
+
+    return NextResponse.json({ data, count, page, pageSize })
+  } catch (error) {
+    console.error('[orders:get]', error)
+    return NextResponse.json(
+      { error: 'Erro ao buscar pedidos.' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const parsed = createOrderSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    const { tenant_id, items, ...orderData } = parsed.data
+
+    // Calcula totais
+    const subtotal = items.reduce((sum, item) => {
+      const extrasTotal = item.extras?.reduce((s, e) => s + e.price, 0) ?? 0
+      return sum + (item.price + extrasTotal) * item.quantity
+    }, 0)
+
+    // Admin client para inserção anônima (cliente sem login)
+    const admin = createAdminClient()
+
+    const { data: order, error: orderError } = await admin
+      .from('orders')
+      .insert({
+        ...orderData,
+        tenant_id,
+        subtotal,
+        total: subtotal,
+      })
+      .select()
+      .single()
+
+    if (orderError) throw orderError
+
+    // Insere itens
+    const orderItems = items.map((item) => ({
+      order_id: order.id,
+      menu_item_id: item.menu_item_id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      notes: item.notes ?? null,
+    }))
+
+    const { data: insertedItems, error: itemsError } = await admin
+      .from('order_items')
+      .insert(orderItems)
+      .select()
+
+    if (itemsError) throw itemsError
+
+    // Insere extras de cada item
+    const extras = insertedItems.flatMap((insertedItem, idx) =>
+      (items[idx].extras ?? []).map((extra) => ({
+        order_item_id: insertedItem.id,
+        name: extra.name,
+        price: extra.price,
+      }))
+    )
+
+    if (extras.length > 0) {
+      const { error: extrasError } = await admin
+        .from('order_item_extras')
+        .insert(extras)
+
+      if (extrasError) throw extrasError
+    }
+
+    return NextResponse.json({ data: order }, { status: 201 })
+  } catch (error) {
+    console.error('[orders:post]', error)
+    return NextResponse.json(
+      { error: 'Erro ao criar pedido.' },
+      { status: 500 }
+    )
+  }
+}
