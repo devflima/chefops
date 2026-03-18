@@ -32,6 +32,10 @@ export function useUser() {
         return
       }
 
+      const tenants = Array.isArray(profile.tenants)
+        ? profile.tenants[0]
+        : profile.tenants
+
       setUser({
         id: authUser.id,
         email: authUser.email!,
@@ -39,7 +43,7 @@ export function useUser() {
           full_name: profile.full_name,
           role: profile.role as AuthUser['profile']['role'],
           tenant_id: profile.tenant_id,
-          tenant: profile.tenants as AuthUser['profile']['tenant'],
+          tenant: tenants as AuthUser['profile']['tenant'],
         },
       })
       setLoading(false)

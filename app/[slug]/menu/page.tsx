@@ -41,7 +41,10 @@ export default async function MenuPage({
       .single()
 
     if (qrcode?.table) {
-      tableInfo = qrcode.table as { id: string; number: string }
+      const table = Array.isArray(qrcode.table)
+        ? qrcode.table[0]
+        : qrcode.table
+      tableInfo = table as { id: string; number: string }
     }
   }
 

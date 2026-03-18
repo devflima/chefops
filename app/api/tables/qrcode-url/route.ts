@@ -27,9 +27,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const table = data.table as { number: string; tenants: { slug: string } }
+    const rawTable = Array.isArray(data.table) ? data.table[0] : data.table
+    const table = rawTable as { number: string; tenants: { slug: string } | { slug: string }[] }
+    const tenants = Array.isArray(table.tenants) ? table.tenants[0] : table.tenants
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-    const url = `${baseUrl}/${table.tenants.slug}/menu?table=${data.token}`
+    const url = `${baseUrl}/${tenants.slug}/menu?table=${data.token}`
 
     return NextResponse.json({ url })
   } catch (error) {

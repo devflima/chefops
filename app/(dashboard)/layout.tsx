@@ -3,6 +3,12 @@ import { redirect } from 'next/navigation'
 import Sidebar from '@/features/auth/components/Sidebar'
 import InstallBanner from '@/features/pwa/components/InstallBanner'
 
+type Profile = {
+  full_name: string | null
+  role: string
+  tenants: { name: string; slug: string } | null
+}
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -13,11 +19,21 @@ export default async function DashboardLayout({
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const { data } = await supabase
     .from('profiles')
     .select('full_name, role, tenant_id, tenants(name, slug)')
     .eq('id', user.id)
     .single()
+
+  const profile: Profile | null = data
+    ? {
+        full_name: data.full_name,
+        role: data.role,
+        tenants: Array.isArray(data.tenants)
+          ? (data.tenants[0] ?? null)
+          : (data.tenants ?? null),
+      }
+    : null
 
   return (
     <div className="flex min-h-screen bg-slate-50">

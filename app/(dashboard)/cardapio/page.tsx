@@ -7,7 +7,7 @@ import {
 } from '@/features/orders/hooks/useOrders'
 import { useCategories } from '@/features/products/hooks/useProducts'
 import { useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -40,9 +40,9 @@ import type { MenuItem } from '@/features/orders/types'
 const menuItemSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
   description: z.string().optional(),
-  price: z.number({ coerce: true }).min(0, 'Preço obrigatório'),
+  price: z.coerce.number().min(0, 'Preço obrigatório'),
   category_id: z.string().optional(),
-  display_order: z.number({ coerce: true }).int().default(0),
+  display_order: z.coerce.number().int().default(0),
 })
 
 type MenuItemForm = z.infer<typeof menuItemSchema>
@@ -57,8 +57,8 @@ export default function CardapioPage() {
   const createMenuItem = useCreateMenuItem()
   const queryClient = useQueryClient()
 
-  const form = useForm<MenuItemForm>({
-    resolver: zodResolver(menuItemSchema),
+  const form = useForm<MenuItemForm, unknown, MenuItemForm>({
+    resolver: zodResolver(menuItemSchema) as Resolver<MenuItemForm>,
     defaultValues: { name: '', description: '', price: 0, display_order: 0 },
   })
 

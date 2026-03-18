@@ -26,9 +26,12 @@ export async function GET() {
             .eq('id', item.menu_item_id)
             .single()
 
-          const goesToKitchen =
-            (menuItem?.category as { goes_to_kitchen: boolean } | null)
-              ?.goes_to_kitchen ?? true
+          const category = Array.isArray(menuItem?.category)
+            ? menuItem.category[0]
+            : menuItem?.category
+
+          const goesToKitchen = (category as { goes_to_kitchen: boolean } | null)
+            ?.goes_to_kitchen ?? true
 
           if (goesToKitchen) kitchenItems.push(item)
         }

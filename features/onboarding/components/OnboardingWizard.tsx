@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useOnboarding, useCompleteStep } from '../hooks/useOnboarding'
 import { useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -49,16 +49,33 @@ const menuItemSchema = z.object({
 })
 const tableSchema = z.object({ number: z.string().min(1, 'Número obrigatório') })
 
+type CategoryForm = z.infer<typeof categorySchema>
+type ProductForm = z.infer<typeof productSchema>
+type MenuItemForm = z.infer<typeof menuItemSchema>
+type TableForm = z.infer<typeof tableSchema>
+
 export default function OnboardingWizard() {
   const { data: onboarding, isLoading } = useOnboarding()
   const completeStep = useCompleteStep()
   const queryClient = useQueryClient()
   const [currentStep, setCurrentStep] = useState(0)
 
-  const categoryForm = useForm({ resolver: zodResolver(categorySchema), defaultValues: { name: '' } })
-  const productForm = useForm({ resolver: zodResolver(productSchema), defaultValues: { name: '', unit: 'un' as const } })
-  const menuItemForm = useForm({ resolver: zodResolver(menuItemSchema), defaultValues: { name: '', price: 0 } })
-  const tableForm = useForm({ resolver: zodResolver(tableSchema), defaultValues: { number: '' } })
+  const categoryForm = useForm<CategoryForm, unknown, CategoryForm>({
+    resolver: zodResolver(categorySchema) as Resolver<CategoryForm>,
+    defaultValues: { name: '' },
+  })
+  const productForm = useForm<ProductForm, unknown, ProductForm>({
+    resolver: zodResolver(productSchema) as Resolver<ProductForm>,
+    defaultValues: { name: '', unit: 'un' },
+  })
+  const menuItemForm = useForm<MenuItemForm, unknown, MenuItemForm>({
+    resolver: zodResolver(menuItemSchema) as Resolver<MenuItemForm>,
+    defaultValues: { name: '', price: 0 },
+  })
+  const tableForm = useForm<TableForm, unknown, TableForm>({
+    resolver: zodResolver(tableSchema) as Resolver<TableForm>,
+    defaultValues: { number: '' },
+  })
 
   if (isLoading || !onboarding || onboarding.completed_at) return null
 
@@ -106,6 +123,7 @@ export default function OnboardingWizard() {
   }
 
   async function handleTableSubmit(values: { number: string }) {
+    if (!onboarding) return
     try {
       await fetch('/api/tables', {
         method: 'POST',
@@ -238,7 +256,7 @@ export default function OnboardingWizard() {
                         <FormField control={menuItemForm.control} name="price" render={({ field }) => (
                           <FormItem className="w-28">
                             <FormControl>
-                              <Input type="number" step="0.01" min="0" placeholder="R$ 0,00" {...field} />
+                              <Input type="number" step="0.01" min="0" placeholder="R$ 0,00" {...field} value={field.value as number} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

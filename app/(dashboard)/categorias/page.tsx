@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useCategories } from '@/features/products/hooks/useProducts'
 import { useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ import type { Category } from '@/features/products/types'
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
-  display_order: z.number({ coerce: true }).int().default(0),
+  display_order: z.coerce.number().int().default(0),
   goes_to_kitchen: z.boolean().default(true),
 })
 
@@ -41,8 +41,8 @@ export default function CategoriasPage() {
   const { data: categories, isLoading } = useCategories()
   const queryClient = useQueryClient()
 
-  const form = useForm<CategoryForm>({
-    resolver: zodResolver(categorySchema),
+  const form = useForm<CategoryForm, unknown, CategoryForm>({
+    resolver: zodResolver(categorySchema) as Resolver<CategoryForm>,
     defaultValues: { name: '', display_order: 0, goes_to_kitchen: true },
   })
 

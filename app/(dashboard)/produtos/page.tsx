@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useProducts, useCategories, useCreateProduct, useUpdateProduct } from '@/features/products/hooks/useProducts'
-import { useForm } from 'react-hook-form'
+import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -40,8 +40,8 @@ export default function ProdutosPage() {
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
 
-  const form = useForm<ProductForm>({
-    resolver: zodResolver(productSchema),
+  const form = useForm<ProductForm, unknown, ProductForm>({
+    resolver: zodResolver(productSchema) as Resolver<ProductForm>,
     defaultValues: { name: '', sku: '', unit: 'un', cost_price: 0, min_stock: 0 },
   })
 

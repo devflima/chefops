@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useStockBalance, useStockMovements, useCreateMovement, useCloseDay } from '@/features/stock/hooks/useStock'
 import { useProducts } from '@/features/products/hooks/useProducts'
-import { useForm } from 'react-hook-form'
+import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -45,8 +45,8 @@ export default function EstoquePage() {
 
   const lowStock = balance?.filter((b: StockBalance) => b.is_low_stock) ?? []
 
-  const form = useForm<MovementForm>({
-    resolver: zodResolver(movementSchema),
+  const form = useForm<MovementForm, unknown, MovementForm>({
+    resolver: zodResolver(movementSchema) as Resolver<MovementForm>,
     defaultValues: { type: 'entry', quantity: 0, reason: '' },
   })
 

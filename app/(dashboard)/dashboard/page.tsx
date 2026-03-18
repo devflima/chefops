@@ -38,7 +38,7 @@ export default async function DashboardPage() {
         <p className="text-slate-500 mt-1">
           Bem-vindo ao painel do{' '}
           <span className="font-medium text-slate-700">
-            {(profile?.tenants as { name: string } | null)?.name}
+            {(profile?.tenants as unknown as { name: string } | null)?.name}
           </span>
         </p>
       </div>

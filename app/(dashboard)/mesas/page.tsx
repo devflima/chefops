@@ -7,7 +7,7 @@ import {
   useOpenSession,
   useCloseSession,
 } from '@/features/tables/hooks/useTables'
-import { useForm } from 'react-hook-form'
+import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -32,11 +32,11 @@ import FeatureGate from '@/features/plans/components/FeatureGate'
 
 const tableSchema = z.object({
   number: z.string().min(1, 'Número obrigatório'),
-  capacity: z.number({ coerce: true }).int().min(1, 'Capacidade mínima 1'),
+  capacity: z.coerce.number().int().min(1, 'Capacidade mínima 1'),
 })
 
 const sessionSchema = z.object({
-  customer_count: z.number({ coerce: true }).int().min(1),
+  customer_count: z.coerce.number().int().min(1),
 })
 
 type TableForm = z.infer<typeof tableSchema>
@@ -83,13 +83,13 @@ export default function MesasPage() {
   const openSession = useOpenSession()
   const closeSession = useCloseSession()
 
-  const tableForm = useForm<TableForm>({
-    resolver: zodResolver(tableSchema),
+  const tableForm = useForm<TableForm, unknown, TableForm>({
+    resolver: zodResolver(tableSchema) as Resolver<TableForm>,
     defaultValues: { number: '', capacity: 4 },
   })
 
-  const sessionForm = useForm<SessionForm>({
-    resolver: zodResolver(sessionSchema),
+  const sessionForm = useForm<SessionForm, unknown, SessionForm>({
+    resolver: zodResolver(sessionSchema) as Resolver<SessionForm>,
     defaultValues: { customer_count: 1 },
   })
 
