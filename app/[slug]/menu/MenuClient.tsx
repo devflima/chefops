@@ -329,6 +329,16 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
     await handlePlaceOrder(address)
   }
 
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+
+  const categories = Object.values(grouped).map(({ category }) => category)
+
+  const filteredGroups = activeCategory
+    ? Object.values(grouped).filter(
+        ({ category }) => (category?.id ?? 'outros') === activeCategory
+      )
+    : Object.values(grouped)
+  
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -343,6 +353,34 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
               {tableInfo && (
                 <p className="text-xs text-slate-400">Mesa {tableInfo.number}</p>
               )}
+              {/* Filtro por categoria */}
+                {categories.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+                    <button
+                      onClick={() => setActiveCategory(null)}
+                      className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                        !activeCategory
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat?.id ?? 'outros'}
+                        onClick={() => setActiveCategory(cat?.id ?? 'outros')}
+                        className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                          activeCategory === (cat?.id ?? 'outros')
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {cat?.name ?? 'Outros'}
+                      </button>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
           <button
@@ -374,7 +412,7 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
             <p>Cardápio em breve.</p>
           </div>
         ) : (
-          Object.values(grouped).map(({ category, items: groupItems }) => (
+          filteredGroups.map(({ category, items: groupItems }) => (
             <div key={category?.id ?? 'outros'} className="mb-8">
               <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
                 {category?.name ?? 'Outros'}
@@ -384,7 +422,7 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
                   const qty = getQty(item.id)
                   const borders = getBorders(item)
                   const selectedBorder = selectedBorders[item.id]
-                  const hasFlavors = groupItems.length > 1
+                  const hasFlavors = !!item.category_id && groupItems.length > 1
 
                   return (
                     <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4">
@@ -528,8 +566,32 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
                   <>
                     <div className="flex-1 p-4 space-y-3">
                       {cart.map((item, idx) => (
-                        <div key={idx} className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
+                        <div key={idx} className="flex items-start gap-3">
+                          {/* Controles de quantidade */}
+                          <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                            <button
+                              onClick={() => removeFromCart(idx)}
+                              className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-sm font-semibold w-4 text-center">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => {
+                                setCart((prev) =>
+                                  prev.map((i, ii) =>
+                                    ii === idx ? { ...i, quantity: i.quantity + 1 } : i
+                                  )
+                                )
+                              }}
+                              className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center hover:bg-slate-700 transition-colors"
+                            >
+                              <Plus className="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-slate-800">{item.name}</p>
                             {item.extras?.map((e) => (
                               <p key={e.name} className="text-xs text-slate-400">
@@ -537,12 +599,12 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
                               </p>
                             ))}
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="text-sm font-medium text-slate-900">
                               R$ {((item.price + (item.extras?.reduce((s, e) => s + e.price, 0) ?? 0)) * item.quantity).toFixed(2)}
                             </span>
                             <button
-                              onClick={() => removeFromCart(idx)}
+                              onClick={() => setCart((prev) => prev.filter((_, i) => i !== idx))}
                               className="text-slate-300 hover:text-red-500 transition-colors"
                             >
                               <X className="w-4 h-4" />

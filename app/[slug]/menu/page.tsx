@@ -29,11 +29,11 @@ export default async function MenuPage({
 
   if (!tenant) notFound()
 
-  const { data: items } = await publicSupabase
+  const { data: rawItems } = await publicSupabase
     .from('menu_items')
     .select(`
       *,
-      category:categories(id, name),
+      category:categories!menu_items_category_id_fkey(id, name),
       extras:menu_item_extras(
         extra:extras(id, name, price, category)
       )
@@ -42,7 +42,17 @@ export default async function MenuPage({
     .eq('available', true)
     .order('display_order', { ascending: true })
     .order('name', { ascending: true })
-    .returns<MenuItem[]>()
+
+  // Normaliza category de array para objeto
+  const items = (rawItems ?? []).map((item) => ({
+    ...item,
+    category: Array.isArray(item.category)
+      ? (item.category[0] ?? null)
+      : item.category,
+    extras: (item.extras ?? []).map((e: { extra: unknown }) => ({
+      extra: Array.isArray(e.extra) ? e.extra[0] : e.extra,
+    })),
+  })) as MenuItem[]
 
   let tableInfo: { id: string; number: string } | null = null
 

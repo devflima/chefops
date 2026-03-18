@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useMenuItems, useCreateMenuItem } from '@/features/orders/hooks/useOrders'
 import { useCategories } from '@/features/products/hooks/useProducts'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -49,13 +49,24 @@ export default function CardapioPage() {
     defaultValues: { name: '', description: '', price: 0, display_order: 0 },
   })
 
+  const { data: allExtras } = useQuery({
+    queryKey: ['extras'],
+    queryFn: async () => {
+      const res = await fetch('/api/extras')
+      const json = await res.json()
+      return json.data as { id: string; name: string; price: number; category: string }[]
+    },
+  })
+
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([])
+
   function openCreate() {
     setEditing(null)
     form.reset({ name: '', description: '', price: 0, display_order: 0 })
     setOpen(true)
   }
 
-  function openEdit(item: MenuItem) {
+  async function openEdit(item: MenuItem) {
     setEditing(item)
     form.reset({
       name: item.name,
@@ -64,6 +75,10 @@ export default function CardapioPage() {
       category_id: item.category_id ?? '',
       display_order: item.display_order,
     })
+
+    const res = await fetch(`/api/menu-items/${item.id}/extras`)
+    const json = await res.json()
+    setSelectedExtras(json.data?.map((e: { id: string }) => e.id) ?? [])
     setOpen(true)
   }
 
@@ -80,6 +95,14 @@ export default function CardapioPage() {
         queryClient.invalidateQueries({ queryKey: ['menu-items'] })
       } else {
         await createMenuItem.mutateAsync(values)
+      }
+            // Salva extras vinculados
+      if (editing) {
+        await fetch(`/api/menu-items/${editing.id}/extras`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ extra_ids: selectedExtras }),
+        })
       }
       setOpen(false)
       form.reset()
@@ -278,6 +301,36 @@ export default function CardapioPage() {
                   <FormMessage />
                 </FormItem>
               )} />
+
+              {allExtras && allExtras.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-slate-700 block mb-2">
+                    Adicionais disponíveis
+                  </label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-3">
+                    {allExtras.map((extra) => (
+                      <label key={extra.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedExtras.includes(extra.id)}
+                          onChange={(e) => {
+                            setSelectedExtras((prev) =>
+                              e.target.checked
+                                ? [...prev, extra.id]
+                                : prev.filter((id) => id !== extra.id)
+                            )
+                          }}
+                          className="rounded"
+                        />
+                        <span className="text-sm text-slate-700">{extra.name}</span>
+                        <span className="text-xs text-slate-400 ml-auto">
+                          {extra.price > 0 ? `+R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {form.formState.errors.root && (
                 <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>

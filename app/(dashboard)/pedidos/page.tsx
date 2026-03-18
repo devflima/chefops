@@ -141,13 +141,31 @@ export default function PedidosPage() {
                       </span>
                     </div>
                     {order.customer_name && (
-                      <p className="mb-1 text-sm text-slate-600">
-                        Cliente:{' '}
-                        <span className="font-medium">
-                          {order.customer_name}
-                        </span>
-                        {order.table_number && ` — Mesa ${order.table_number}`}
-                      </p>
+                      <div className="text-sm text-slate-600 mb-1 space-y-0.5">
+                        <p>
+                          Cliente: <span className="font-medium">{order.customer_name}</span>
+                          {order.table_number && ` — Mesa ${order.table_number}`}
+                        </p>
+                        {order.customer_phone && (
+                          <p className="text-slate-500">
+                            📞 {order.customer_phone}
+                          </p>
+                        )}
+                        {order.delivery_address && (
+                          <div className="mt-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-800">
+                            <p className="font-medium mb-0.5">📍 Endereço de entrega</p>
+                            <p>
+                              {(order.delivery_address as { street: string; number: string; complement?: string; neighborhood?: string; city: string; state: string }).street},{' '}
+                              {(order.delivery_address as { street: string; number: string; complement?: string; neighborhood?: string; city: string; state: string }).number}
+                              {(order.delivery_address as { complement?: string }).complement && ` — ${(order.delivery_address as { complement?: string }).complement}`}
+                            </p>
+                            <p>
+                              {(order.delivery_address as { neighborhood?: string }).neighborhood && `${(order.delivery_address as { neighborhood?: string }).neighborhood}, `}
+                              {(order.delivery_address as { city: string; state: string }).city} — {(order.delivery_address as { city: string; state: string }).state}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
                     {/* Itens */}
                     <div className="mt-2 space-y-0.5">
