@@ -9,6 +9,7 @@ import {
   XCircle,
   Clock,
 } from 'lucide-react'
+import FeatureGate from '@/features/plans/components/FeatureGate'
 
 export default function VendasPage() {
   const [period, setPeriod] = useState<'today' | 'month'>('today')
@@ -62,55 +63,57 @@ export default function VendasPage() {
     : []
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Vendas</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Atualiza a cada 30 segundos
-          </p>
+    <FeatureGate feature='tables'>
+      <div>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">Vendas</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Atualiza a cada 30 segundos
+            </p>
+          </div>
+          <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+            {(['today', 'month'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                  period === p
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {p === 'today' ? 'Hoje' : 'Este mês'}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
-          {(['today', 'month'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                period === p
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {p === 'today' ? 'Hoje' : 'Este mês'}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      {isLoading ? (
-        <div className="py-12 text-center text-slate-400">
-          Carregando métricas...
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-4">
-          {cards.map(({ label, value, icon: Icon, color, bg }) => (
-            <div
-              key={label}
-              className="rounded-xl border border-slate-200 bg-white p-6"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm text-slate-500">{label}</p>
-                <div
-                  className={`h-8 w-8 ${bg} flex items-center justify-center rounded-lg`}
-                >
-                  <Icon className={`h-4 w-4 ${color}`} />
+        {isLoading ? (
+          <div className="py-12 text-center text-slate-400">
+            Carregando métricas...
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {cards.map(({ label, value, icon: Icon, color, bg }) => (
+              <div
+                key={label}
+                className="rounded-xl border border-slate-200 bg-white p-6"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm text-slate-500">{label}</p>
+                  <div
+                    className={`h-8 w-8 ${bg} flex items-center justify-center rounded-lg`}
+                  >
+                    <Icon className={`h-4 w-4 ${color}`} />
+                  </div>
                 </div>
+                <p className="text-2xl font-semibold text-slate-900">{value}</p>
               </div>
-              <p className="text-2xl font-semibold text-slate-900">{value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </FeatureGate>
   )
 }

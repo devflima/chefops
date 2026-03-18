@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/features/auth/components/Sidebar'
+import InstallBanner from '@/features/pwa/components/InstallBanner'
 
 export default async function DashboardLayout({
   children,
@@ -24,6 +25,7 @@ export default async function DashboardLayout({
       <main className="flex-1 ml-64 p-8">
         {children}
       </main>
+      <InstallBanner />
     </div>
   )
 }

@@ -1,0 +1,41 @@
+{
+  "name": "ChefOps",
+  "short_name": "ChefOps",
+  "description": "Gestão para estabelecimentos gastronômicos",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pedidos",
+      "url": "/pedidos",
+      "description": "Ver pedidos em aberto"
+    },
+    {
+      "name": "Cozinha",
+      "url": "/kds",
+      "description": "Tela da cozinha"
+    },
+    {
+      "name": "Mesas",
+      "url": "/mesas",
+      "description": "Mapa de mesas"
+    }
+  ]
+}

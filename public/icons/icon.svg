@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <g transform="translate(128, 112)">
+    <!-- Toque de chef -->
+    <path d="M128 32 C80 32 48 64 48 104 C48 132 62 156 84 170 L84 220 L172 220 L172 170 C194 156 208 132 208 104 C208 64 176 32 128 32Z" fill="none" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="84" y1="260" x2="172" y2="260" stroke="white" stroke-width="20" stroke-linecap="round"/>
+    <line x1="84" y1="290" x2="172" y2="290" stroke="white" stroke-width="20" stroke-linecap="round"/>
+  </g>
+</svg>
