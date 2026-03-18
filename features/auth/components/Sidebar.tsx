@@ -13,14 +13,20 @@ import {
   UtensilsCrossed,
   ClipboardList,
   BarChart2,
+  LayoutGrid,
+  MonitorCheck,
+  Tag,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Início', icon: LayoutDashboard },
+  { href: '/categorias', label: 'Categorias', icon: Tag },
   { href: '/produtos', label: 'Produtos', icon: Package },
   { href: '/estoque', label: 'Estoque', icon: ArrowLeftRight },
   { href: '/cardapio', label: 'Cardápio', icon: UtensilsCrossed },
   { href: '/pedidos', label: 'Pedidos', icon: ClipboardList },
+  { href: '/mesas', label: 'Mesas', icon: LayoutGrid },
+  { href: '/kds', label: 'Cozinha', icon: MonitorCheck },
   { href: '/vendas', label: 'Vendas', icon: BarChart2 },
 ]
 

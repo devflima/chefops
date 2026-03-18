@@ -4,10 +4,13 @@ import MenuClient from './MenuCliente'
 
 export default async function MenuPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ table?: string }>
 }) {
   const { slug } = await params
+  const { table: tableToken } = await searchParams
   const supabase = await createClient()
 
   const { data: tenant } = await supabase
@@ -27,5 +30,22 @@ export default async function MenuPage({
     .order('display_order', { ascending: true })
     .order('name', { ascending: true })
 
-  return <MenuClient tenant={tenant} items={items ?? []} />
+  // Resolve mesa pelo token do QR Code
+  let tableInfo: { id: string; number: string } | null = null
+
+  if (tableToken) {
+    const { data: qrcode } = await supabase
+      .from('table_qrcodes')
+      .select('table_id, table:tables(id, number)')
+      .eq('token', tableToken)
+      .single()
+
+    if (qrcode?.table) {
+      tableInfo = qrcode.table as { id: string; number: string }
+    }
+  }
+
+  return (
+    <MenuClient tenant={tenant} items={items ?? []} tableInfo={tableInfo} />
+  )
 }

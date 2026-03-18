@@ -114,3 +114,16 @@ export function useSalesMetrics(period: 'today' | 'month') {
     refetchInterval: 30000,
   })
 }
+
+export function useKDSOrders() {
+  return useQuery({
+    queryKey: ['kds-orders'],
+    queryFn: async () => {
+      const res = await fetch('/api/orders/kds')
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      return json.data
+    },
+    refetchInterval: 10000,
+  })
+}

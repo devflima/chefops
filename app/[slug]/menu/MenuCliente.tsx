@@ -3,15 +3,14 @@
 import { useState } from 'react'
 import { useCreateOrder } from '@/features/orders/hooks/useOrders'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ShoppingCart, Plus, Minus, X, ChefHat } from 'lucide-react'
-import type { MenuItem } from '@/features/orders/types'
-import type { CartItem } from '@/features/orders/types'
+import type { MenuItem, CartItem } from '@/features/orders/types'
 
 type Props = {
   tenant: { id: string; name: string; slug: string }
   items: MenuItem[]
+  tableInfo: { id: string; number: string } | null
 }
 
 const paymentLabels = {
@@ -20,24 +19,49 @@ const paymentLabels = {
   counter: 'Pagar no caixa',
 }
 
-export default function MenuClient({ tenant, items }: Props) {
+function formatCPF(value: string) {
+  return value
+    .replace(/\D/g, '')
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+
+function validateCPF(cpf: string) {
+  const digits = cpf.replace(/\D/g, '')
+  if (digits.length !== 11) return false
+  if (/^(\d)\1+$/.test(digits)) return false
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i)
+  let check = 11 - (sum % 11)
+  if (check >= 10) check = 0
+  if (check !== parseInt(digits[9])) return false
+  sum = 0
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i)
+  check = 11 - (sum % 11)
+  if (check >= 10) check = 0
+  return check === parseInt(digits[10])
+}
+
+export default function MenuClient({ tenant, items, tableInfo }: Props) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'info' | 'done'>(
     'cart'
   )
   const [customerName, setCustomerName] = useState('')
+  const [customerCpf, setCustomerCpf] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
-  const [tableNumber, setTableNumber] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<
     'online' | 'table' | 'counter'
-  >('counter')
+  >(tableInfo ? 'table' : 'counter')
   const [notes, setNotes] = useState('')
   const [orderNumber, setOrderNumber] = useState<number | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const createOrder = useCreateOrder()
 
-  // Agrupa por categoria
   const grouped = items.reduce(
     (
       acc: Record<
@@ -95,13 +119,37 @@ export default function MenuClient({ tenant, items }: Props) {
     return cart.find((i) => i.menu_item_id === menu_item_id)?.quantity ?? 0
   }
 
+  function validateInfo() {
+    const errs: Record<string, string> = {}
+
+    if (!customerName.trim() || customerName.trim().length < 2) {
+      errs.name = 'Nome obrigatório (mínimo 2 caracteres)'
+    }
+
+    // CPF obrigatório apenas quando vier de mesa via QR Code
+    if (tableInfo) {
+      if (!customerCpf.trim()) {
+        errs.cpf = 'CPF obrigatório para pedidos na mesa'
+      } else if (!validateCPF(customerCpf)) {
+        errs.cpf = 'CPF inválido'
+      }
+    }
+
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
   async function handlePlaceOrder() {
+    if (!validateInfo()) return
+
     try {
       const order = await createOrder.mutateAsync({
         tenant_id: tenant.id,
-        customer_name: customerName || undefined,
+        customer_name: customerName,
+        customer_cpf: customerCpf || undefined,
         customer_phone: customerPhone || undefined,
-        table_number: tableNumber || undefined,
+        table_number: tableInfo?.number,
+        table_id: tableInfo?.id,
         payment_method: paymentMethod,
         notes: notes || undefined,
         items: cart,
@@ -123,7 +171,14 @@ export default function MenuClient({ tenant, items }: Props) {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900">
               <ChefHat className="h-4 w-4 text-white" />
             </div>
-            <h1 className="font-semibold text-slate-900">{tenant.name}</h1>
+            <div>
+              <h1 className="font-semibold text-slate-900">{tenant.name}</h1>
+              {tableInfo && (
+                <p className="text-xs text-slate-400">
+                  Mesa {tableInfo.number}
+                </p>
+              )}
+            </div>
           </div>
           <button
             onClick={() => {
@@ -145,6 +200,13 @@ export default function MenuClient({ tenant, items }: Props) {
 
       {/* Cardápio */}
       <main className="mx-auto max-w-2xl px-4 py-6">
+        {tableInfo && (
+          <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+            Você está na <strong>Mesa {tableInfo.number}</strong> — seu pedido
+            será lançado automaticamente na comanda.
+          </div>
+        )}
+
         {items.length === 0 ? (
           <div className="py-16 text-center text-slate-400">
             <ChefHat className="mx-auto mb-3 h-10 w-10 opacity-30" />
@@ -178,7 +240,7 @@ export default function MenuClient({ tenant, items }: Props) {
                         </p>
                       </div>
                       <div className="flex flex-shrink-0 items-center gap-2">
-                        {qty > 0 ? (
+                        {qty > 0 && (
                           <>
                             <button
                               onClick={() => removeFromCart(item.id)}
@@ -190,7 +252,7 @@ export default function MenuClient({ tenant, items }: Props) {
                               {qty}
                             </span>
                           </>
-                        ) : null}
+                        )}
                         <button
                           onClick={() => addToCart(item)}
                           className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 transition-colors hover:bg-slate-700"
@@ -207,7 +269,7 @@ export default function MenuClient({ tenant, items }: Props) {
         )}
       </main>
 
-      {/* Carrinho / Checkout overlay */}
+      {/* Carrinho / Checkout */}
       {cartOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div
@@ -243,32 +305,28 @@ export default function MenuClient({ tenant, items }: Props) {
                           key={item.menu_item_id}
                           className="flex items-center justify-between gap-3"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() =>
-                                  removeFromCart(item.menu_item_id)
-                                }
-                                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="w-4 text-center text-sm font-semibold">
-                                {item.quantity}
-                              </span>
-                              <button
-                                onClick={() =>
-                                  addToCart({
-                                    id: item.menu_item_id,
-                                    name: item.name,
-                                    price: item.price,
-                                  } as MenuItem)
-                                }
-                                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900"
-                              >
-                                <Plus className="h-3 w-3 text-white" />
-                              </button>
-                            </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => removeFromCart(item.menu_item_id)}
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-4 text-center text-sm font-semibold">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                addToCart({
+                                  id: item.menu_item_id,
+                                  name: item.name,
+                                  price: item.price,
+                                } as MenuItem)
+                              }
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900"
+                            >
+                              <Plus className="h-3 w-3 text-white" />
+                            </button>
                             <span className="text-sm text-slate-700">
                               {item.name}
                             </span>
@@ -298,23 +356,63 @@ export default function MenuClient({ tenant, items }: Props) {
               </div>
             )}
 
-            {/* Step: dados do cliente */}
+            {/* Step: dados */}
             {checkoutStep === 'info' && (
               <div className="flex flex-1 flex-col">
                 <div className="flex-1 space-y-4 p-4">
+                  {tableInfo && (
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-700">
+                      Pedido será lançado na comanda da{' '}
+                      <strong>Mesa {tableInfo.number}</strong>
+                    </div>
+                  )}
+
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700">
-                      Seu nome (opcional)
+                      Nome completo <span className="text-red-500">*</span>
                     </label>
                     <Input
-                      placeholder="Ex: João"
+                      placeholder="Ex: João Silva"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                     />
+                    {errors.name && (
+                      <p className="mt-1 text-xs text-red-500">{errors.name}</p>
+                    )}
                   </div>
+
+                  {/* CPF obrigatório só na mesa */}
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700">
-                      Telefone (opcional)
+                      CPF{' '}
+                      {tableInfo ? (
+                        <span className="text-red-500">*</span>
+                      ) : (
+                        <span className="text-slate-400">(opcional)</span>
+                      )}
+                    </label>
+                    <Input
+                      placeholder="000.000.000-00"
+                      value={customerCpf}
+                      onChange={(e) =>
+                        setCustomerCpf(formatCPF(e.target.value))
+                      }
+                      maxLength={14}
+                    />
+                    {errors.cpf && (
+                      <p className="mt-1 text-xs text-red-500">{errors.cpf}</p>
+                    )}
+                    {tableInfo && (
+                      <p className="mt-1 text-xs text-slate-400">
+                        Necessário para garantir o pagamento da comanda.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                      Telefone{' '}
+                      <span className="text-slate-400">(opcional)</span>
                     </label>
                     <Input
                       placeholder="(11) 99999-9999"
@@ -322,44 +420,40 @@ export default function MenuClient({ tenant, items }: Props) {
                       onChange={(e) => setCustomerPhone(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">
-                      Número da mesa (opcional)
-                    </label>
-                    <Input
-                      placeholder="Ex: 12"
-                      value={tableNumber}
-                      onChange={(e) => setTableNumber(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Forma de pagamento
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(
-                        Object.entries(paymentLabels) as [
-                          typeof paymentMethod,
-                          string,
-                        ][]
-                      ).map(([val, label]) => (
-                        <button
-                          key={val}
-                          onClick={() => setPaymentMethod(val)}
-                          className={`rounded-lg border p-2 text-center text-xs transition-colors ${
-                            paymentMethod === val
-                              ? 'border-slate-900 bg-slate-900 text-white'
-                              : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
+
+                  {/* Forma de pagamento — fixada em "na mesa" se vier de QR */}
+                  {!tableInfo && (
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
+                        Forma de pagamento
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(
+                          Object.entries(paymentLabels) as [
+                            typeof paymentMethod,
+                            string,
+                          ][]
+                        ).map(([val, label]) => (
+                          <button
+                            key={val}
+                            onClick={() => setPaymentMethod(val)}
+                            className={`rounded-lg border p-2 text-center text-xs transition-colors ${
+                              paymentMethod === val
+                                ? 'border-slate-900 bg-slate-900 text-white'
+                                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700">
-                      Observações (opcional)
+                      Observações{' '}
+                      <span className="text-slate-400">(opcional)</span>
                     </label>
                     <Input
                       placeholder="Ex: sem cebola"
@@ -368,6 +462,7 @@ export default function MenuClient({ tenant, items }: Props) {
                     />
                   </div>
                 </div>
+
                 <div className="space-y-2 border-t border-slate-200 p-4">
                   <div className="mb-2 flex justify-between text-sm">
                     <span className="text-slate-500">Total</span>
@@ -405,12 +500,15 @@ export default function MenuClient({ tenant, items }: Props) {
                 <p className="mb-1 text-sm text-slate-500">
                   Seu número de pedido é
                 </p>
-                <p className="mb-6 text-4xl font-bold text-slate-900">
+                <p className="mb-4 text-4xl font-bold text-slate-900">
                   #{orderNumber}
                 </p>
-                <p className="text-sm text-slate-400">
-                  Acompanhe com o atendente ou aguarde ser chamado.
-                </p>
+                {tableInfo && (
+                  <p className="text-sm text-slate-500">
+                    Lançado na comanda da{' '}
+                    <strong>Mesa {tableInfo.number}</strong>
+                  </p>
+                )}
                 <Button
                   className="mt-8 w-full"
                   onClick={() => setCartOpen(false)}

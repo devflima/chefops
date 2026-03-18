@@ -4,6 +4,7 @@ export type Category = {
   name: string
   display_order: number
   created_at: string
+  goes_to_kitchen: boolean
 }
 
 export type Product = {

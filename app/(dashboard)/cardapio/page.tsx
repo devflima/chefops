@@ -6,6 +6,7 @@ import {
   useCreateMenuItem,
 } from '@/features/orders/hooks/useOrders'
 import { useCategories } from '@/features/products/hooks/useProducts'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -33,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, UtensilsCrossed } from 'lucide-react'
+import { Plus, UtensilsCrossed, Pencil, Trash2 } from 'lucide-react'
 import type { MenuItem } from '@/features/orders/types'
 
 const menuItemSchema = z.object({
@@ -48,24 +49,71 @@ type MenuItemForm = z.infer<typeof menuItemSchema>
 
 export default function CardapioPage() {
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<MenuItem | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
   const { data: items, isLoading } = useMenuItems()
   const { data: categories } = useCategories()
   const createMenuItem = useCreateMenuItem()
+  const queryClient = useQueryClient()
 
   const form = useForm<MenuItemForm>({
     resolver: zodResolver(menuItemSchema),
     defaultValues: { name: '', description: '', price: 0, display_order: 0 },
   })
 
+  function openCreate() {
+    setEditing(null)
+    form.reset({ name: '', description: '', price: 0, display_order: 0 })
+    setOpen(true)
+  }
+
+  function openEdit(item: MenuItem) {
+    setEditing(item)
+    form.reset({
+      name: item.name,
+      description: item.description ?? '',
+      price: item.price,
+      category_id: item.category_id ?? '',
+      display_order: item.display_order,
+    })
+    setOpen(true)
+  }
+
   async function onSubmit(values: MenuItemForm) {
     try {
-      await createMenuItem.mutateAsync(values)
+      if (editing) {
+        const res = await fetch(`/api/menu-items/${editing.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error)
+        queryClient.invalidateQueries({ queryKey: ['menu-items'] })
+      } else {
+        await createMenuItem.mutateAsync(values)
+      }
       setOpen(false)
       form.reset()
     } catch (e: unknown) {
       form.setError('root', {
         message: e instanceof Error ? e.message : 'Erro ao salvar item.',
       })
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Deseja desativar este item do cardápio?')) return
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/menu-items/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] })
+    } catch {
+      alert('Erro ao remover item.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -78,7 +126,7 @@ export default function CardapioPage() {
             {items?.length ?? 0} itens cadastrados
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" /> Novo item
         </Button>
       </div>
@@ -94,7 +142,7 @@ export default function CardapioPage() {
               variant="outline"
               size="sm"
               className="mt-4"
-              onClick={() => setOpen(true)}
+              onClick={openCreate}
             >
               Adicionar primeiro item
             </Button>
@@ -103,7 +151,7 @@ export default function CardapioPage() {
           <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
-                {['Item', 'Categoria', 'Preço', 'Status'].map((h) => (
+                {['Item', 'Categoria', 'Preço', 'Status', ''].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-xs font-medium tracking-wide text-slate-500 uppercase"
@@ -138,6 +186,26 @@ export default function CardapioPage() {
                       {item.available ? 'Disponível' : 'Indisponível'}
                     </Badge>
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(item)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -148,7 +216,9 @@ export default function CardapioPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Novo item do cardápio</DialogTitle>
+            <DialogTitle>
+              {editing ? 'Editar item' : 'Novo item do cardápio'}
+            </DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -197,7 +267,6 @@ export default function CardapioPage() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="display_order"
@@ -219,10 +288,7 @@ export default function CardapioPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria (opcional)</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecionar categoria" />

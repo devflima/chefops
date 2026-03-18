@@ -73,8 +73,10 @@ export type CartItem = {
 export type CreateOrderPayload = {
   tenant_id: string
   customer_name?: string
+  customer_cpf?: string
   customer_phone?: string
   table_number?: string
+  table_id?: string
   payment_method: PaymentMethod
   notes?: string
   items: CartItem[]

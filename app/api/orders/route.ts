@@ -22,12 +22,47 @@ const cartItemSchema = z.object({
 const createOrderSchema = z.object({
   tenant_id: z.string().uuid(),
   customer_name: z.string().optional(),
+  customer_cpf: z.string().optional(),
   customer_phone: z.string().optional(),
   table_number: z.string().optional(),
+  table_id: z.string().uuid().optional(),
   payment_method: z.enum(['online', 'table', 'counter']),
   notes: z.string().optional(),
   items: z.array(cartItemSchema).min(1, 'Pedido deve ter ao menos um item'),
 })
+
+async function resolveSessionId(
+  admin: ReturnType<typeof import('@/lib/supabase/admin').createAdminClient>,
+  tableId: string,
+  tenantId: string
+): Promise<string | null> {
+  // Busca sessão aberta
+  const { data: existing } = await admin
+    .from('table_sessions')
+    .select('id')
+    .eq('table_id', tableId)
+    .eq('status', 'open')
+    .single()
+
+  if (existing) return existing.id
+
+  // Abre sessão automaticamente se não existir
+  const { data: session } = await admin
+    .from('table_sessions')
+    .insert({
+      tenant_id: tenantId,
+      table_id: tableId,
+      customer_count: 1,
+    })
+    .select()
+    .single()
+
+  if (session) {
+    await admin.from('tables').update({ status: 'occupied' }).eq('id', tableId)
+  }
+
+  return session?.id ?? null
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,11 +126,29 @@ export async function POST(request: NextRequest) {
     // Admin client para inserção anônima (cliente sem login)
     const admin = createAdminClient()
 
+    const {
+      customer_name,
+      customer_cpf,
+      customer_phone,
+      table_number,
+      table_id,
+      payment_method,
+      notes,
+    } = orderData
+
     const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
-        ...orderData,
         tenant_id,
+        customer_name,
+        customer_cpf,
+        customer_phone,
+        table_number,
+        table_session_id: table_id
+          ? await resolveSessionId(admin, table_id, tenant_id)
+          : null,
+        payment_method,
+        notes,
         subtotal,
         total: subtotal,
       })
