@@ -9,14 +9,14 @@ const cartItemSchema = z.object({
   price: z.number().min(0),
   quantity: z.number().int().positive(),
   notes: z.string().optional(),
-  extras: z
-    .array(
-      z.object({
-        name: z.string(),
-        price: z.number().min(0),
-      })
-    )
-    .optional(),
+  extras: z.array(z.object({
+    name: z.string(),
+    price: z.number().min(0),
+  })).optional(),
+  half_flavor: z.object({
+    menu_item_id: z.string(),
+    name: z.string(),
+  }).optional(),
 })
 
 const createOrderSchema = z.object({
@@ -24,19 +24,30 @@ const createOrderSchema = z.object({
   customer_name: z.string().optional(),
   customer_cpf: z.string().optional(),
   customer_phone: z.string().optional(),
+  customer_id: z.string().uuid().optional(),
   table_number: z.string().optional(),
   table_id: z.string().uuid().optional(),
-  payment_method: z.enum(['online', 'table', 'counter']),
+  payment_method: z.enum(['online', 'table', 'counter', 'delivery']),
   notes: z.string().optional(),
+  delivery_address: z.object({
+    zip_code: z.string(),
+    street: z.string(),
+    number: z.string(),
+    complement: z.string().optional(),
+    neighborhood: z.string().optional(),
+    city: z.string(),
+    state: z.string(),
+    label: z.string().optional(),
+    is_default: z.boolean().optional(),
+  }).optional(),
   items: z.array(cartItemSchema).min(1, 'Pedido deve ter ao menos um item'),
 })
 
 async function resolveSessionId(
-  admin: ReturnType<typeof import('@/lib/supabase/admin').createAdminClient>,
+  admin: ReturnType<typeof createAdminClient>,
   tableId: string,
   tenantId: string
 ): Promise<string | null> {
-  // Busca sessão aberta
   const { data: existing } = await admin
     .from('table_sessions')
     .select('id')
@@ -46,7 +57,6 @@ async function resolveSessionId(
 
   if (existing) return existing.id
 
-  // Abre sessão automaticamente se não existir
   const { data: session } = await admin
     .from('table_sessions')
     .insert({
@@ -58,7 +68,10 @@ async function resolveSessionId(
     .single()
 
   if (session) {
-    await admin.from('tables').update({ status: 'occupied' }).eq('id', tableId)
+    await admin
+      .from('tables')
+      .update({ status: 'occupied' })
+      .eq('id', tableId)
   }
 
   return session?.id ?? null
@@ -79,9 +92,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('orders')
-      .select('*, items:order_items(*, extras:order_item_extras(*))', {
-        count: 'exact',
-      })
+      .select('*, items:order_items(*, extras:order_item_extras(*))', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(rangeFrom, rangeTo)
 
@@ -115,7 +126,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { tenant_id, items, ...orderData } = parsed.data
+    const { tenant_id, items, delivery_address, ...orderData } = parsed.data
+    const admin = createAdminClient()
+
+    // Verifica limite do plano free
+    const { data: tenantData } = await admin
+      .from('tenants')
+      .select('plan')
+      .eq('id', tenant_id)
+      .single()
+
+    if (tenantData?.plan === 'free') {
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
+
+      const { count } = await admin
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenant_id)
+        .gte('created_at', startOfMonth.toISOString())
+
+      if ((count ?? 0) >= 50) {
+        return NextResponse.json(
+          { error: 'Limite de 50 pedidos mensais atingido. Faça upgrade do plano.' },
+          { status: 429 }
+        )
+      }
+    }
 
     // Calcula totais
     const subtotal = items.reduce((sum, item) => {
@@ -123,34 +161,17 @@ export async function POST(request: NextRequest) {
       return sum + (item.price + extrasTotal) * item.quantity
     }, 0)
 
-    // Admin client para inserção anônima (cliente sem login)
-    const admin = createAdminClient()
-
-    const {
-      customer_name,
-      customer_cpf,
-      customer_phone,
-      table_number,
-      table_id,
-      payment_method,
-      notes,
-    } = orderData
-
     const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
+        ...orderData,
         tenant_id,
-        customer_name,
-        customer_cpf,
-        customer_phone,
-        table_number,
-        table_session_id: table_id
-          ? await resolveSessionId(admin, table_id, tenant_id)
-          : null,
-        payment_method,
-        notes,
         subtotal,
         total: subtotal,
+        table_session_id: orderData.table_id
+          ? await resolveSessionId(admin, orderData.table_id, tenant_id)
+          : null,
+        delivery_address: delivery_address ?? null,
       })
       .select()
       .single()
@@ -174,7 +195,7 @@ export async function POST(request: NextRequest) {
 
     if (itemsError) throw itemsError
 
-    // Insere extras de cada item
+    // Insere extras
     const extras = insertedItems.flatMap((insertedItem, idx) =>
       (items[idx].extras ?? []).map((extra) => ({
         order_item_id: insertedItem.id,

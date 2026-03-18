@@ -1,3 +1,10 @@
+export type Extra = {
+  id: string
+  name: string
+  price: number
+  category: 'border' | 'flavor' | 'other'
+}
+
 export type MenuItem = {
   id: string
   tenant_id: string
@@ -11,6 +18,48 @@ export type MenuItem = {
   display_order: number
   created_at: string
   category?: { id: string; name: string }
+  extras?: { extra: Extra }[]
+}
+
+export type CartExtra = {
+  id: string
+  name: string
+  price: number
+}
+
+export type CartItem = {
+  menu_item_id: string
+  name: string
+  price: number
+  quantity: number
+  notes?: string
+  extras?: { name: string; price: number }[]
+  half_flavor?: {
+    menu_item_id: string
+    name: string
+  }
+}
+
+export type CustomerAddress = {
+  id?: string
+  label: string
+  zip_code: string
+  street: string
+  number: string
+  complement?: string
+  neighborhood?: string
+  city: string
+  state: string
+  is_default: boolean
+}
+
+export type Customer = {
+  id: string
+  tenant_id: string
+  name: string
+  phone: string
+  cpf?: string
+  addresses?: CustomerAddress[]
 }
 
 export type OrderStatus =
@@ -21,7 +70,7 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled'
 
-export type PaymentMethod = 'online' | 'table' | 'counter'
+export type PaymentMethod = 'online' | 'table' | 'counter' | 'delivery'
 export type PaymentStatus = 'pending' | 'paid' | 'refunded'
 
 export type OrderItemExtra = {
@@ -48,6 +97,8 @@ export type Order = {
   order_number: number
   customer_name: string | null
   customer_phone: string | null
+  customer_cpf: string | null
+  customer_id: string | null
   table_number: string | null
   status: OrderStatus
   payment_method: PaymentMethod
@@ -56,18 +107,10 @@ export type Order = {
   total: number
   notes: string | null
   cancelled_reason: string | null
+  delivery_address: CustomerAddress | null
   created_at: string
   updated_at: string
   items?: OrderItem[]
-}
-
-export type CartItem = {
-  menu_item_id: string
-  name: string
-  price: number
-  quantity: number
-  notes?: string
-  extras?: { name: string; price: number }[]
 }
 
 export type CreateOrderPayload = {
@@ -75,9 +118,11 @@ export type CreateOrderPayload = {
   customer_name?: string
   customer_cpf?: string
   customer_phone?: string
+  customer_id?: string
   table_number?: string
   table_id?: string
   payment_method: PaymentMethod
   notes?: string
+  delivery_address?: CustomerAddress
   items: CartItem[]
 }

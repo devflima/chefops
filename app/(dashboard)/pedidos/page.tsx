@@ -47,6 +47,7 @@ const paymentLabels = {
   online: 'Online',
   table: 'Na mesa',
   counter: 'No caixa',
+  delivery: 'Na entrega',
 }
 
 export default function PedidosPage() {

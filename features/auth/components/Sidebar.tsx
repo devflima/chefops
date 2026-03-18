@@ -7,7 +7,8 @@ import { usePlan } from '@/features/plans/hooks/usePlan'
 import {
   LayoutDashboard, Package, ArrowLeftRight,
   UtensilsCrossed, ClipboardList, BarChart2,
-  LayoutGrid, MonitorCheck, Tag, LogOut, ChefHat, CreditCard
+  LayoutGrid, MonitorCheck, Tag, LogOut, ChefHat,
+  CreditCard, Settings
 } from 'lucide-react'
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { href: '/produtos',    label: 'Produtos',    icon: Package },
   { href: '/estoque',     label: 'Estoque',     icon: ArrowLeftRight },
   { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed },
+  { href: '/extras',      label: 'Adicionais',  icon: Settings },
   { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList },
   { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid },
   { href: '/kds',         label: 'Cozinha',     icon: MonitorCheck },

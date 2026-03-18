@@ -1,11 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
-import MenuClient from './MenuCliente'
+import MenuClient from './MenuClient'
 import type { MenuItem } from '@/features/orders/types'
 
 export const dynamic = 'force-dynamic'
 
-// Cliente público sem autenticação — sem cookies, sem RLS de usuário
 const publicSupabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -23,7 +22,7 @@ export default async function MenuPage({
 
   const { data: tenant } = await publicSupabase
     .from('tenants')
-    .select('id, name, slug, status')
+    .select('id, name, slug, status, plan')
     .eq('slug', slug)
     .eq('status', 'active')
     .single()
@@ -32,7 +31,13 @@ export default async function MenuPage({
 
   const { data: items } = await publicSupabase
     .from('menu_items')
-    .select('*, category:categories(id, name)')
+    .select(`
+      *,
+      category:categories(id, name),
+      extras:menu_item_extras(
+        extra:extras(id, name, price, category)
+      )
+    `)
     .eq('tenant_id', tenant.id)
     .eq('available', true)
     .order('display_order', { ascending: true })
@@ -49,9 +54,7 @@ export default async function MenuPage({
       .single()
 
     if (qrcode?.table) {
-      const table = Array.isArray(qrcode.table)
-        ? qrcode.table[0]
-        : qrcode.table
+      const table = Array.isArray(qrcode.table) ? qrcode.table[0] : qrcode.table
       tableInfo = table as { id: string; number: string }
     }
   }
