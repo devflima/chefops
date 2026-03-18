@@ -17,9 +17,25 @@ export async function GET() {
   try {
     const supabase = await createClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
+    }
+
     const { data, error } = await supabase
       .from('menu_items')
       .select('*, category:categories(id, name)')
+      .eq('tenant_id', profile.tenant_id)
       .order('display_order', { ascending: true })
       .order('name', { ascending: true })
 
