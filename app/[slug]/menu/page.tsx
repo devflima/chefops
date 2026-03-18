@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import MenuClient from './MenuCliente'
+import type { MenuItem } from '@/features/orders/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,14 +25,14 @@ export default async function MenuPage({
 
   if (!tenant) notFound()
 
-  const { data: items } = await supabase
-    .from('menu_items')
-    .select('*, category:categories(id, name)')
-    .eq('tenant_id', tenant.id)
-    .eq('available', true)
-    .order('display_order', { ascending: true })
-    .order('name', { ascending: true })
-    .returns<typeof items>()
+const { data: items } = await supabase
+  .from('menu_items')
+  .select('*, category:categories(id, name)')
+  .eq('tenant_id', tenant.id)
+  .eq('available', true)
+  .order('display_order', { ascending: true })
+  .order('name', { ascending: true })
+  .returns<MenuItem[]>()
 
   // Resolve mesa pelo token do QR Code
   let tableInfo: { id: string; number: string } | null = null
