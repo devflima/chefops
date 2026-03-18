@@ -1,9 +1,15 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import MenuClient from './MenuCliente'
 import type { MenuItem } from '@/features/orders/types'
 
 export const dynamic = 'force-dynamic'
+
+// Cliente público sem autenticação — sem cookies, sem RLS de usuário
+const publicSupabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default async function MenuPage({
   params,
@@ -14,9 +20,8 @@ export default async function MenuPage({
 }) {
   const { slug } = await params
   const { table: tableToken } = await searchParams
-  const supabase = await createClient()
 
-  const { data: tenant } = await supabase
+  const { data: tenant } = await publicSupabase
     .from('tenants')
     .select('id, name, slug, status')
     .eq('slug', slug)
@@ -25,20 +30,19 @@ export default async function MenuPage({
 
   if (!tenant) notFound()
 
-const { data: items } = await supabase
-  .from('menu_items')
-  .select('*, category:categories(id, name)')
-  .eq('tenant_id', tenant.id)
-  .eq('available', true)
-  .order('display_order', { ascending: true })
-  .order('name', { ascending: true })
-  .returns<MenuItem[]>()
+  const { data: items } = await publicSupabase
+    .from('menu_items')
+    .select('*, category:categories(id, name)')
+    .eq('tenant_id', tenant.id)
+    .eq('available', true)
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true })
+    .returns<MenuItem[]>()
 
-  // Resolve mesa pelo token do QR Code
   let tableInfo: { id: string; number: string } | null = null
 
   if (tableToken) {
-    const { data: qrcode } = await supabase
+    const { data: qrcode } = await publicSupabase
       .from('table_qrcodes')
       .select('table_id, table:tables(id, number)')
       .eq('token', tableToken)
@@ -53,6 +57,10 @@ const { data: items } = await supabase
   }
 
   return (
-    <MenuClient tenant={tenant} items={items ?? []} tableInfo={tableInfo} />
+    <MenuClient
+      tenant={tenant}
+      items={items ?? []}
+      tableInfo={tableInfo}
+    />
   )
 }
