@@ -1,45 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import OnboardingWizard from '@/features/onboarding/components/OnboardingWizard'
-import { unstable_cache } from 'next/cache'
-
-export const revalidate = 60 // revalida a cada 60 segundos
-
-async function getDashboardMetrics(tenantId: string) {
-  const getCached = unstable_cache(
-    async () => {
-      const supabase = await createClient()
-
-      const [
-        { count: totalProducts },
-        { data: balances },
-        { count: movementsToday },
-      ] = await Promise.all([
-        supabase
-          .from('products')
-          .select('*', { count: 'exact', head: true })
-          .eq('active', true),
-        supabase
-          .from('stock_balance')
-          .select('current_stock, min_stock')
-          .eq('active', true),
-        supabase
-          .from('stock_movements')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', new Date().toISOString().split('T')[0]),
-      ])
-
-      return {
-        totalProducts: totalProducts ?? 0,
-        lowStockCount: balances?.filter((b) => b.current_stock <= b.min_stock).length ?? 0,
-        movementsToday: movementsToday ?? 0,
-      }
-    },
-    [`dashboard-metrics-${tenantId}`],
-    { revalidate: 60 }
-  )
-
-  return getCached()
-}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -51,13 +11,34 @@ export default async function DashboardPage() {
     .eq('id', user!.id)
     .single()
 
-  const tenantId = profile?.tenant_id ?? ''
-  const metrics = await getDashboardMetrics(tenantId)
+  // Queries paralelas sem cache — mais simples e correto
+  const [
+    { count: totalProducts },
+    { data: balances },
+    { count: movementsToday },
+  ] = await Promise.all([
+    supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('active', true),
+    supabase
+      .from('stock_balance')
+      .select('current_stock, min_stock')
+      .eq('active', true),
+    supabase
+      .from('stock_movements')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', new Date().toISOString().split('T')[0]),
+  ])
+
+  const lowStockCount = balances?.filter(
+    (b) => b.current_stock <= b.min_stock
+  ).length ?? 0
 
   const cards = [
-    { label: 'Produtos ativos',         value: metrics.totalProducts },
-    { label: 'Itens com estoque baixo', value: metrics.lowStockCount },
-    { label: 'Movimentações hoje',      value: metrics.movementsToday },
+    { label: 'Produtos ativos',         value: totalProducts ?? 0 },
+    { label: 'Itens com estoque baixo', value: lowStockCount },
+    { label: 'Movimentações hoje',      value: movementsToday ?? 0 },
   ]
 
   return (
