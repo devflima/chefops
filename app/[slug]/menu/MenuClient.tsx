@@ -110,12 +110,16 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
     ? paymentOptionsByContext.table
     : paymentOptionsByContext.online
 
-  // Agrupa por categoria
   const grouped = items.reduce(
     (acc: Record<string, { category: { id: string; name: string } | null; items: MenuItem[] }>, item) => {
-      const key = item.category_id ?? 'outros'
-      if (!acc[key]) acc[key] = { category: item.category ?? null, items: [] }
-      acc[key].items.push(item)
+      const cat = Array.isArray(item.category)
+        ? (item.category[0] ?? null)
+        : item.category
+
+      const key = cat?.id ?? 'outros'
+
+      if (!acc[key]) acc[key] = { category: cat, items: [] }
+      acc[key].items.push({ ...item, category: cat })
       return acc
     },
     {}
@@ -353,9 +357,11 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
               {tableInfo && (
                 <p className="text-xs text-slate-400">Mesa {tableInfo.number}</p>
               )}
+            </div>
+            <div>
               {/* Filtro por categoria */}
                 {categories.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+                  <div className="flex gap-2 overflow-x-auto p-2 scrollbar-hide">
                     <button
                       onClick={() => setActiveCategory(null)}
                       className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors ${
@@ -422,7 +428,12 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
                   const qty = getQty(item.id)
                   const borders = getBorders(item)
                   const selectedBorder = selectedBorders[item.id]
-                  const hasFlavors = !!item.category_id && groupItems.length > 1
+                  const hasFlavors = (() => {
+                    const cat = Array.isArray(item.category)
+                      ? (item.category[0] ?? null)
+                      : item.category
+                    return !!cat?.id && groupItems.length > 1
+                  })()
 
                   return (
                     <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4">
