@@ -40,9 +40,9 @@ import type { MenuItem } from '@/features/orders/types'
 const menuItemSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
   description: z.string().optional(),
-  price: z.coerce.number().min(0, 'Preço obrigatório'),
+  price: z.number({ coerce: true }).min(0, 'Preço obrigatório'),
   category_id: z.string().optional(),
-  display_order: z.coerce.number().int().default(0),
+  display_order: z.number({ coerce: true }).int().default(0),
 })
 
 type MenuItemForm = z.infer<typeof menuItemSchema>

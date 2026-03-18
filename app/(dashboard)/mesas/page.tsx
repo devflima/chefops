@@ -32,11 +32,11 @@ import FeatureGate from '@/features/plans/components/FeatureGate'
 
 const tableSchema = z.object({
   number: z.string().min(1, 'Número obrigatório'),
-  capacity: z.coerce.number().int().min(1, 'Capacidade mínima 1'),
+  capacity: z.number({ coerce: true }).int().min(1, 'Capacidade mínima 1'),
 })
 
 const sessionSchema = z.object({
-  customer_count: z.coerce.number().int().min(1),
+  customer_count: z.number({ coerce: true }).int().min(1),
 })
 
 type TableForm = z.infer<typeof tableSchema>

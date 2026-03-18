@@ -27,7 +27,7 @@ import type { Category } from '@/features/products/types'
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
-  display_order: z.coerce.number().int().default(0),
+  display_order: z.number({ coerce: true }).int().default(0),
   goes_to_kitchen: z.boolean().default(true),
 })
 
