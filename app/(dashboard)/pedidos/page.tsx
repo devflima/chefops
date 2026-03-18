@@ -5,6 +5,7 @@ import {
   useOrders,
   useUpdateOrderStatus,
 } from '@/features/orders/hooks/useOrders'
+import { useQueryClient } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ClipboardList } from 'lucide-react'
@@ -49,6 +50,7 @@ const paymentLabels = {
 }
 
 export default function PedidosPage() {
+  const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
   const { data, isLoading } = useOrders({ status: statusFilter })
   const updateStatus = useUpdateOrderStatus()
@@ -186,30 +188,24 @@ export default function PedidosPage() {
                           {config.nextLabel}
                         </Button>
                       )}
-                      {order.status === 'delivered' &&
-                        order.payment_status === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-green-200 text-green-700 hover:bg-green-50"
-                            onClick={async () => {
-                              await updateStatus.mutateAsync({
-                                id: order.id,
-                                status: order.status,
-                                cancelled_reason: undefined,
-                              })
-                              await fetch(`/api/orders/${order.id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  payment_status: 'paid',
-                                }),
-                              })
-                            }}
-                          >
-                            Confirmar pagamento
-                          </Button>
-                        )}
+                      {order.status === 'delivered' && order.payment_status === 'pending' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-green-200 text-green-700 hover:bg-green-50"
+                          disabled={updateStatus.isPending}
+                          onClick={async () => {
+                            await fetch(`/api/orders/${order.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ payment_status: 'paid' }),
+                            })
+                            queryClient.invalidateQueries({ queryKey: ['orders'] })
+                          }}
+                        >
+                          Confirmar pagamento
+                        </Button>
+                      )}
                       {!['delivered', 'cancelled'].includes(order.status) && (
                         <Button
                           size="sm"

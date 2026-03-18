@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import MenuClient from './MenuCliente'
 
+export const dynamic = 'force-dynamic'
+
 export default async function MenuPage({
   params,
   searchParams,
@@ -29,6 +31,7 @@ export default async function MenuPage({
     .eq('available', true)
     .order('display_order', { ascending: true })
     .order('name', { ascending: true })
+    .returns<typeof items>()
 
   // Resolve mesa pelo token do QR Code
   let tableInfo: { id: string; number: string } | null = null
