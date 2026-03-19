@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createCheckoutPreference } from '@/lib/mercadopago'
+import { getTenantMercadoPagoAccessToken } from '@/lib/tenant-mercadopago'
 import { NextResponse } from 'next/server'
 
 export async function POST(
@@ -45,8 +46,18 @@ export async function POST(
       )
     }
 
+    const tenantAccessToken = await getTenantMercadoPagoAccessToken(order.tenant_id)
+
+    if (!tenantAccessToken) {
+      return NextResponse.json(
+        { error: 'Mercado Pago não conectado para este estabelecimento.' },
+        { status: 409 }
+      )
+    }
+
     const preference = await createCheckoutPreference({
       external_reference: `order:${order.id}:tenant:${order.tenant_id}`,
+      accessToken: tenantAccessToken,
       payer: {
         name: order.customer_name ?? undefined,
       },

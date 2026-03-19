@@ -7,6 +7,7 @@ import {
   mapMercadoPagoStatusToOrderPaymentStatus,
   verifyMercadoPagoWebhookSignature,
 } from '@/lib/mercadopago'
+import { getMercadoPagoAccessTokenBySellerUserId } from '@/lib/tenant-mercadopago'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -29,7 +30,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 })
     }
 
-    const payment = await getPaymentById(dataId)
+    const sellerAccessToken = await getMercadoPagoAccessTokenBySellerUserId(body?.user_id)
+    const payment = await getPaymentById(dataId, sellerAccessToken)
     const orderId =
       payment.metadata?.order_id || getOrderIdFromExternalReference(payment.external_reference)
     const checkoutSessionId =

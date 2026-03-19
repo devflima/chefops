@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createCheckoutPreference, getMercadoPagoWebhookUrl } from '@/lib/mercadopago'
+import { getTenantMercadoPagoAccessToken } from '@/lib/tenant-mercadopago'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -58,6 +59,14 @@ export async function POST(request: NextRequest) {
 
     const payload = parsed.data
     const admin = createAdminClient()
+    const tenantAccessToken = await getTenantMercadoPagoAccessToken(payload.tenant_id)
+
+    if (!tenantAccessToken) {
+      return NextResponse.json(
+        { error: 'Pagamento online indisponível para este estabelecimento no momento.' },
+        { status: 409 }
+      )
+    }
 
     const amount = payload.items.reduce((sum, item) => {
       const extras = item.extras?.reduce((inner, extra) => inner + extra.price, 0) ?? 0
@@ -82,6 +91,7 @@ export async function POST(request: NextRequest) {
 
     const preference = await createCheckoutPreference({
       external_reference: `checkout:${session.id}:tenant:${payload.tenant_id}`,
+      accessToken: tenantAccessToken,
       notificationUrl: getMercadoPagoWebhookUrl(),
       backUrls: {
         success: `${returnUrl}&checkout_result=success${tableQuery}`,

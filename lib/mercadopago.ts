@@ -28,10 +28,10 @@ export function getMercadoPagoWebhookUrl() {
 
 async function mercadoPagoRequest<T>(
   path: string,
-  init: RequestInit & { idempotencyKey?: string } = {}
+  init: RequestInit & { idempotencyKey?: string; accessToken?: string } = {}
 ): Promise<T> {
   const headers = new Headers(init.headers)
-  headers.set('Authorization', `Bearer ${getMercadoPagoAccessToken()}`)
+  headers.set('Authorization', `Bearer ${init.accessToken ?? getMercadoPagoAccessToken()}`)
   headers.set('Content-Type', 'application/json')
 
   if (init.idempotencyKey) {
@@ -64,6 +64,7 @@ type PreferenceItem = {
 type CreatePreferencePayload = {
   external_reference: string
   items: PreferenceItem[]
+  accessToken?: string
   payer?: {
     name?: string
     email?: string
@@ -99,10 +100,11 @@ export async function createCheckoutPreference(payload: CreatePreferencePayload)
         failure: `${process.env.NEXT_PUBLIC_APP_URL}/pedidos`,
       },
     }),
+    accessToken: payload.accessToken,
   })
 }
 
-export async function getPaymentById(paymentId: string) {
+export async function getPaymentById(paymentId: string, accessToken?: string | null) {
   return mercadoPagoRequest<{
     id: number
     status: string
@@ -112,6 +114,7 @@ export async function getPaymentById(paymentId: string) {
     date_last_updated?: string | null
   }>(`/v1/payments/${paymentId}`, {
     method: 'GET',
+    accessToken: accessToken ?? undefined,
   })
 }
 
