@@ -9,10 +9,11 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import PaginationControls from '@/components/shared/PaginationControls'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { AlertTriangle, ArrowDown, ArrowUp, Search, Calendar } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, Calendar } from 'lucide-react'
 import type { StockBalance } from '@/features/stock/types'
 import FeatureGate from '@/features/plans/components/FeatureGate'
 
@@ -33,17 +34,49 @@ const typeLabels: Record<string, { label: string; color: string }> = {
 }
 
 export default function EstoquePage() {
-  const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'balance' | 'movements'>('balance')
+  const [balancePage, setBalancePage] = useState(1)
+  const [movementsPage, setMovementsPage] = useState(1)
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [balanceStatusFilter, setBalanceStatusFilter] = useState<'all' | 'low' | 'ok'>('all')
+  const [movementTypeFilter, setMovementTypeFilter] = useState('all')
+  const pageSize = 10
 
-  const { data: balance, isLoading } = useStockBalance({ search })
+  const { data: balance, isLoading } = useStockBalance({
+    only_active: true,
+  })
   const { data: movements } = useStockMovements()
-  const { data: products } = useProducts({ active: true })
+  const { data: products } = useProducts({ active: true, page: 1, pageSize: 100 })
+  const categories = Array.from(
+    new Map(
+      (balance ?? [])
+        .filter((item: StockBalance) => item.category_name)
+        .map((item: StockBalance) => [item.category_name, item.category_name])
+    ).values()
+  )
   const createMovement = useCreateMovement()
   const closeDay = useCloseDay()
 
   const lowStock = balance?.filter((b: StockBalance) => b.is_low_stock) ?? []
+  const filteredBalance = (balance ?? []).filter((item: StockBalance) => {
+    if (categoryFilter !== 'all' && item.category_name !== categoryFilter) return false
+    if (balanceStatusFilter === 'low') return item.is_low_stock
+    if (balanceStatusFilter === 'ok') return !item.is_low_stock
+    return true
+  })
+  const paginatedBalance = filteredBalance.slice(
+    (balancePage - 1) * pageSize,
+    balancePage * pageSize
+  )
+  const allMovements = movements?.data ?? []
+  const filteredMovements = allMovements.filter((movement: { type: string }) =>
+    movementTypeFilter === 'all' ? true : movement.type === movementTypeFilter
+  )
+  const paginatedMovements = filteredMovements.slice(
+    (movementsPage - 1) * pageSize,
+    movementsPage * pageSize
+  )
 
   const form = useForm<MovementForm, unknown, MovementForm>({
     resolver: zodResolver(movementSchema) as Resolver<MovementForm>,
@@ -131,14 +164,35 @@ export default function EstoquePage() {
 
         {tab === 'balance' && (
           <>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Buscar produto..."
-                className="pl-9"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            <div className="mb-4 flex flex-wrap gap-3">
+              <select
+                value={categoryFilter}
+                onChange={(event) => {
+                  setCategoryFilter(event.target.value)
+                  setBalancePage(1)
+                }}
+                className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="all">Todas as categorias</option>
+                {categories.map((categoryName) => (
+                  <option key={categoryName} value={categoryName}>
+                    {categoryName}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={balanceStatusFilter}
+                onChange={(event) => {
+                  setBalanceStatusFilter(event.target.value as typeof balanceStatusFilter)
+                  setBalancePage(1)
+                }}
+                className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="all">Todos os status</option>
+                <option value="low">Somente estoque baixo</option>
+                <option value="ok">Somente estoque OK</option>
+              </select>
             </div>
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {isLoading ? (
@@ -153,7 +207,7 @@ export default function EstoquePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {balance?.map((item: StockBalance) => (
+                    {paginatedBalance.map((item: StockBalance) => (
                       <tr key={item.product_id} className={`hover:bg-slate-50 transition-colors ${item.is_low_stock ? 'bg-amber-50/50' : ''}`}>
                         <td className="px-4 py-3 font-medium text-slate-900">{item.product_name}</td>
                         <td className="px-4 py-3 text-slate-500">{item.category_name ?? '—'}</td>
@@ -176,10 +230,33 @@ export default function EstoquePage() {
                 </table>
               )}
             </div>
+            <PaginationControls
+              page={balancePage}
+              totalPages={Math.max(1, Math.ceil(filteredBalance.length / pageSize))}
+              onPageChange={setBalancePage}
+            />
           </>
         )}
 
         {tab === 'movements' && (
+          <>
+          <div className="mb-4 flex flex-wrap gap-3">
+            <select
+              value={movementTypeFilter}
+              onChange={(event) => {
+                setMovementTypeFilter(event.target.value)
+                setMovementsPage(1)
+              }}
+              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              <option value="all">Todos os tipos</option>
+              {Object.entries(typeLabels).map(([value, config]) => (
+                <option key={value} value={value}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -190,7 +267,7 @@ export default function EstoquePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {movements?.map((m: { id: string; created_at: string; product: { name: string; unit: string }; type: string; quantity: number; reason: string | null }) => (
+                {paginatedMovements.map((m: { id: string; created_at: string; product: { name: string; unit: string }; type: string; quantity: number; reason: string | null }) => (
                   <tr key={m.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-slate-500">
                       {new Date(m.created_at).toLocaleDateString('pt-BR', {
@@ -217,6 +294,12 @@ export default function EstoquePage() {
               </tbody>
             </table>
           </div>
+          <PaginationControls
+            page={movementsPage}
+            totalPages={Math.max(1, Math.ceil(filteredMovements.length / pageSize))}
+            onPageChange={setMovementsPage}
+          />
+          </>
         )}
 
         {/* Dialog movimentação */}

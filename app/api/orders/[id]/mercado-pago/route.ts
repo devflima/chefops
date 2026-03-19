@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { createCheckoutPreference } from '@/lib/mercadopago'
 import { getTenantMercadoPagoAccessToken } from '@/lib/tenant-mercadopago'
 import { NextResponse } from 'next/server'
@@ -6,23 +6,18 @@ import { NextResponse } from 'next/server'
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+  ) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager', 'cashier'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const { id } = await params
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
 
     const { data: order, error } = await supabase
       .from('orders')
       .select('id, tenant_id, order_number, customer_name, customer_phone, payment_status, items:order_items(name, quantity, price)')
       .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
       .single()
 
     if (error || !order) {

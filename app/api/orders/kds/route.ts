@@ -1,13 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager', 'kitchen'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
 
     const { data, error } = await supabase
       .from('kds_orders')
       .select('*, items:order_items(*, extras:order_item_extras(*))')
+      .eq('tenant_id', profile.tenant_id)
       .order('created_at', { ascending: true })
 
     if (error) throw error

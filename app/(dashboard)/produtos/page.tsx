@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Search, Package } from 'lucide-react'
+import PaginationControls from '@/components/shared/PaginationControls'
+import { Plus, Package } from 'lucide-react'
 import type { Product } from '@/features/products/types'
 
 const productSchema = z.object({
@@ -31,11 +32,19 @@ const unitLabels: Record<string, string> = {
 }
 
 export default function ProdutosPage() {
-  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active')
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
+  const pageSize = 10
 
-  const { data, isLoading } = useProducts({ search })
+  const { data, isLoading } = useProducts({
+    page,
+    pageSize,
+    category_id: categoryFilter === 'all' ? undefined : categoryFilter,
+    active: statusFilter === 'all' ? undefined : statusFilter === 'active',
+  })
   const { data: categories } = useCategories()
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
@@ -93,15 +102,35 @@ export default function ProdutosPage() {
         </Button>
       </div>
 
-      {/* Busca */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Buscar produto..."
-          className="pl-9"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="mb-6 flex flex-wrap gap-3">
+        <select
+          value={categoryFilter}
+          onChange={(event) => {
+            setCategoryFilter(event.target.value)
+            setPage(1)
+          }}
+          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        >
+          <option value="all">Todas as categorias</option>
+          {categories?.map((category: { id: string; name: string }) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(event) => {
+            setStatusFilter(event.target.value as typeof statusFilter)
+            setPage(1)
+          }}
+          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        >
+          <option value="all">Todos os status</option>
+          <option value="active">Somente ativos</option>
+          <option value="inactive">Somente inativos</option>
+        </select>
       </div>
 
       {/* Tabela */}
@@ -164,6 +193,12 @@ export default function ProdutosPage() {
           </table>
         )}
       </div>
+
+      <PaginationControls
+        page={page}
+        totalPages={Math.max(1, Math.ceil((data?.count ?? 0) / pageSize))}
+        onPageChange={setPage}
+      />
 
       {/* Dialog cadastro/edição */}
       <Dialog open={open} onOpenChange={setOpen}>

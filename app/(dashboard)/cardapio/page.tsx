@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import PaginationControls from '@/components/shared/PaginationControls'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -31,18 +32,25 @@ export default function CardapioPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<MenuItem | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [showInactive, setShowInactive] = useState(false)
+  const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'inactive'>('available')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const pageSize = 10
 
   const { data: allItems, isLoading } = useMenuItems()
   const { data: categories } = useCategories()
   const createMenuItem = useCreateMenuItem()
   const queryClient = useQueryClient()
 
-  const items = showInactive
-    ? allItems
-    : allItems?.filter((i: MenuItem) => i.available)
+  const items = (allItems ?? []).filter((item: MenuItem) => {
+    if (statusFilter === 'available' && !item.available) return false
+    if (statusFilter === 'inactive' && item.available) return false
+    if (categoryFilter !== 'all' && item.category_id !== categoryFilter) return false
+    return true
+  })
 
   const inactiveCount = allItems?.filter((i: MenuItem) => !i.available).length ?? 0
+  const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize)
 
   const form = useForm<MenuItemForm, unknown, MenuItemForm>({
     resolver: zodResolver(menuItemSchema) as Resolver<MenuItemForm>,
@@ -143,35 +151,54 @@ export default function CardapioPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {inactiveCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowInactive(!showInactive)}
-            >
-              {showInactive ? 'Ocultar inativos' : `Ver inativos (${inactiveCount})`}
-            </Button>
-          )}
           <Button onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" /> Novo item
           </Button>
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-3">
+        <select
+          value={categoryFilter}
+          onChange={(event) => {
+            setCategoryFilter(event.target.value)
+            setPage(1)
+          }}
+          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        >
+          <option value="all">Todas as categorias</option>
+          {categories?.map((category: { id: string; name: string }) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(event) => {
+            setStatusFilter(event.target.value as typeof statusFilter)
+            setPage(1)
+          }}
+          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        >
+          <option value="all">Todos os status</option>
+          <option value="available">Somente disponíveis</option>
+          <option value="inactive">Somente inativos</option>
+        </select>
+      </div>
+
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center text-slate-400">Carregando...</div>
-        ) : items?.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="p-12 text-center">
             <UtensilsCrossed className="w-8 h-8 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">
-              {showInactive ? 'Nenhum item inativo.' : 'Nenhum item no cardápio.'}
+              Nenhum item encontrado para os filtros atuais.
             </p>
-            {!showInactive && (
-              <Button variant="outline" size="sm" className="mt-4" onClick={openCreate}>
-                Adicionar primeiro item
-              </Button>
-            )}
+            <Button variant="outline" size="sm" className="mt-4" onClick={openCreate}>
+              Adicionar primeiro item
+            </Button>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -183,7 +210,7 @@ export default function CardapioPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {items?.map((item: MenuItem) => (
+              {paginatedItems.map((item: MenuItem) => (
                 <tr
                   key={item.id}
                   className={`hover:bg-slate-50 transition-colors ${!item.available ? 'opacity-60' : ''}`}
@@ -240,6 +267,11 @@ export default function CardapioPage() {
           </table>
         )}
       </div>
+      <PaginationControls
+        page={page}
+        totalPages={Math.max(1, Math.ceil(items.length / pageSize))}
+        onPageChange={setPage}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -8,31 +8,16 @@ const createTabSchema = z.object({
 })
 
 async function resolveProfile() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { supabase, user: null, profile: null }
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  return { supabase, user, profile }
+  const auth = await requireTenantRoles(['owner', 'manager', 'cashier'])
+  if (!auth.ok) return auth
+  return auth
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const { supabase, profile } = await resolveProfile()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
-    }
+    const auth = await resolveProfile()
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
 
     const status = request.nextUrl.searchParams.get('status') ?? 'open'
 
@@ -57,7 +42,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, user, profile } = await resolveProfile()
+    const auth = await resolveProfile()
+    if (!auth.ok) return auth.response
+    const { supabase, user, profile } = auth
     const body = await request.json()
     const parsed = createTabSchema.safeParse(body)
 
@@ -66,14 +53,6 @@ export async function POST(request: NextRequest) {
         { error: parsed.error.issues[0].message },
         { status: 400 }
       )
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
     }
 
     const normalizedLabel = parsed.data.label.trim()

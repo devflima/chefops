@@ -7,6 +7,7 @@ import {
 } from '@/features/orders/hooks/useOrders'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
+import PaginationControls from '@/components/shared/PaginationControls'
 import { ClipboardList, Plus } from 'lucide-react'
 import type { Order, OrderStatus } from '@/features/orders/types'
 import ManualOrderDialog from '@/features/orders/components/ManualOrderDialog'
@@ -81,9 +82,11 @@ function normalizeDeliveryAddress(value: unknown): DeliveryAddress | null {
 export default function PedidosPage() {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
   const [manualOrderOpen, setManualOrderOpen] = useState(false)
   const [chargingOrderId, setChargingOrderId] = useState<string | null>(null)
-  const { data, isLoading } = useOrders({ status: statusFilter })
+  const { data, isLoading } = useOrders({ status: statusFilter, page, pageSize })
   const updateStatus = useUpdateOrderStatus()
 
   async function handleAdvance(order: Order) {
@@ -158,7 +161,10 @@ export default function PedidosPage() {
         {filters.map((f) => (
           <button
             key={f.value}
-            onClick={() => setStatusFilter(f.value)}
+            onClick={() => {
+              setStatusFilter(f.value)
+              setPage(1)
+            }}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
               statusFilter === f.value
                 ? 'bg-slate-900 text-white'
@@ -335,6 +341,14 @@ export default function PedidosPage() {
           })}
         </div>
       )}
+
+      <div className="mt-4">
+        <PaginationControls
+          page={page}
+          totalPages={Math.max(1, Math.ceil((data?.count ?? 0) / pageSize))}
+          onPageChange={setPage}
+        />
+      </div>
 
       <ManualOrderDialog
         open={manualOrderOpen}

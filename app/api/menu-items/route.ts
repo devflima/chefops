@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -15,22 +15,9 @@ const menuItemSchema = z.object({
 
 export async function GET() {
   try {
-    const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
-    }
+    const auth = await requireTenantRoles(['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
 
     const { data, error } = await supabase
       .from('menu_items')
@@ -53,7 +40,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const body = await request.json()
     const parsed = menuItemSchema.safeParse(body)
 
@@ -61,26 +50,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
         { status: 400 }
-      )
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json(
-        { error: 'Perfil não encontrado.' },
-        { status: 404 }
       )
     }
 

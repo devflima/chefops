@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
 
     const category_id = searchParams.get('category_id') || ''
-    const search = searchParams.get('search') || ''
     const only_active = searchParams.get('only_active') !== 'false'
 
     let query = supabase
@@ -16,7 +15,7 @@ export async function GET(request: NextRequest) {
       .order('product_name', { ascending: true })
 
     if (only_active) query = query.eq('active', true)
-    if (search) query = query.ilike('product_name', `%${search}%`)
+    if (category_id) query = query.eq('category_id', category_id)
 
     const { data, error } = await query
 

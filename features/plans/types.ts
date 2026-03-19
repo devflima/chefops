@@ -1,3 +1,5 @@
+import type { EstablishmentRole, RoleLimits } from '@/lib/rbac'
+
 export type PlanFeature =
   | 'orders'
   | 'menu'
@@ -16,6 +18,8 @@ export type TenantPlan = {
   max_tables: number
   max_products: number
   features: PlanFeature[]
+  role_limits?: RoleLimits
+  available_roles?: EstablishmentRole[]
   trial_ends_at: string | null
   plan_ends_at: string | null
 }
@@ -34,13 +38,13 @@ export const PLAN_PRICES: Record<Plan, number> = {
 
 export const PLAN_FEATURES: Record<Plan, string[]> = {
   free: [
-    '1 usuário',
+    '1 owner + 1 usuário adicional',
     'Até 20 produtos',
     'Cardápio digital público',
     'Pedidos online ilimitados',
   ],
   basic: [
-    'Até 3 usuários',
+    '1 owner, 1 manager, 1 cashier e 1 kitchen',
     'Produtos ilimitados',
     'Até 10 mesas e comandas',
     'KDS — tela da cozinha',
@@ -49,7 +53,8 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
     'Suporte por email',
   ],
   pro: [
-    'Usuários ilimitados',
+    'Até 27 usuários por operação',
+    '2 owners, 5 managers, 10 cashiers e 10 kitchen',
     'Mesas ilimitadas',
     'Tudo do Basic',
     'Relatórios avançados',

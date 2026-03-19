@@ -7,6 +7,7 @@ import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
+import PaginationControls from '@/components/shared/PaginationControls'
 import { Input } from '@/components/ui/input'
 import {
   Dialog,
@@ -37,8 +38,19 @@ export default function CategoriasPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [destinationFilter, setDestinationFilter] = useState<'all' | 'kitchen' | 'counter'>('all')
+  const [nameFilter, setNameFilter] = useState('')
+  const pageSize = 10
 
   const { data: categories, isLoading } = useCategories()
+  const filteredCategories = (categories ?? []).filter((category: Category) => {
+    if (destinationFilter === 'kitchen' && !category.goes_to_kitchen) return false
+    if (destinationFilter === 'counter' && category.goes_to_kitchen) return false
+    if (nameFilter && !category.name.toLowerCase().includes(nameFilter.toLowerCase())) return false
+    return true
+  })
+  const paginatedCategories = filteredCategories.slice((page - 1) * pageSize, page * pageSize)
   const queryClient = useQueryClient()
 
   const form = useForm<CategoryForm, unknown, CategoryForm>({
@@ -127,9 +139,32 @@ export default function CategoriasPage() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex flex-wrap gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <Input
+            placeholder="Filtrar por nome..."
+            value={nameFilter}
+            onChange={(event) => {
+              setNameFilter(event.target.value)
+              setPage(1)
+            }}
+            className="max-w-sm"
+          />
+          <select
+            value={destinationFilter}
+            onChange={(event) => {
+              setDestinationFilter(event.target.value as typeof destinationFilter)
+              setPage(1)
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+          >
+            <option value="all">Todos os destinos</option>
+            <option value="kitchen">Cozinha</option>
+            <option value="counter">Balcão</option>
+          </select>
+        </div>
         {isLoading ? (
           <div className="p-12 text-center text-slate-400">Carregando...</div>
-        ) : categories?.length === 0 ? (
+        ) : filteredCategories.length === 0 ? (
           <div className="p-12 text-center">
             <Tag className="mx-auto mb-3 h-8 w-8 text-slate-300" />
             <p className="text-sm text-slate-500">
@@ -159,7 +194,7 @@ export default function CategoriasPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {categories?.map((cat: Category) => (
+              {paginatedCategories.map((cat: Category) => (
                 <tr
                   key={cat.id}
                   className="transition-colors hover:bg-slate-50"
@@ -215,6 +250,11 @@ export default function CategoriasPage() {
           </table>
         )}
       </div>
+      <PaginationControls
+        page={page}
+        totalPages={Math.max(1, Math.ceil(filteredCategories.length / pageSize))}
+        onPageChange={setPage}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

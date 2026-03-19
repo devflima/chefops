@@ -7,11 +7,15 @@ export function useOrders(params?: {
   status?: string
   from?: string
   to?: string
+  page?: number
+  pageSize?: number
 }) {
   const query = new URLSearchParams()
   if (params?.status) query.set('status', params.status)
   if (params?.from) query.set('from', params.from)
   if (params?.to) query.set('to', params.to)
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize))
 
   return useQuery({
     queryKey: ['orders', params],

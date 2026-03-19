@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import PaginationControls from '@/components/shared/PaginationControls'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -45,6 +46,10 @@ const categoryColors = {
 export default function ExtrasPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Extra | null>(null)
+  const [page, setPage] = useState(1)
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'border' | 'flavor' | 'other'>('all')
+  const [nameFilter, setNameFilter] = useState('')
+  const pageSize = 10
   const queryClient = useQueryClient()
 
   const { data: extras, isLoading } = useQuery({
@@ -60,6 +65,12 @@ export default function ExtrasPage() {
     resolver: zodResolver(extraSchema) as Resolver<ExtraForm>,
     defaultValues: { name: '', price: 0, category: 'other' },
   })
+  const filteredExtras = (extras ?? []).filter((extra) => {
+    if (categoryFilter !== 'all' && extra.category !== categoryFilter) return false
+    if (nameFilter && !extra.name.toLowerCase().includes(nameFilter.toLowerCase())) return false
+    return true
+  })
+  const paginatedExtras = filteredExtras.slice((page - 1) * pageSize, page * pageSize)
 
   function openCreate() {
     setEditing(null)
@@ -119,9 +130,33 @@ export default function ExtrasPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex flex-wrap gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <Input
+            placeholder="Filtrar por nome..."
+            value={nameFilter}
+            onChange={(event) => {
+              setNameFilter(event.target.value)
+              setPage(1)
+            }}
+            className="max-w-sm"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(event) => {
+              setCategoryFilter(event.target.value as typeof categoryFilter)
+              setPage(1)
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+          >
+            <option value="all">Todos os tipos</option>
+            <option value="border">Borda</option>
+            <option value="flavor">Sabor extra</option>
+            <option value="other">Outro</option>
+          </select>
+        </div>
         {isLoading ? (
           <div className="p-12 text-center text-slate-400">Carregando...</div>
-        ) : extras?.length === 0 ? (
+        ) : filteredExtras.length === 0 ? (
           <div className="p-12 text-center">
             <Settings className="w-8 h-8 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">Nenhum adicional cadastrado.</p>
@@ -142,7 +177,7 @@ export default function ExtrasPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {extras?.map((extra) => (
+              {paginatedExtras.map((extra) => (
                 <tr key={extra.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-slate-900">{extra.name}</td>
                   <td className="px-4 py-3">
@@ -174,6 +209,11 @@ export default function ExtrasPage() {
           </table>
         )}
       </div>
+      <PaginationControls
+        page={page}
+        totalPages={Math.max(1, Math.ceil(filteredExtras.length / pageSize))}
+        onPageChange={setPage}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

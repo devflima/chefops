@@ -8,23 +8,24 @@ import {
   LayoutDashboard, Package, ArrowLeftRight,
   UtensilsCrossed, ClipboardList, BarChart2,
   LayoutGrid, MonitorCheck, Tag, LogOut, ChefHat,
-  CreditCard, Settings, ReceiptText, PlugZap
+  CreditCard, Settings, ReceiptText, PlugZap, Users
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard',   label: 'Início',      icon: LayoutDashboard },
-  { href: '/categorias',  label: 'Categorias',  icon: Tag },
-  { href: '/produtos',    label: 'Produtos',    icon: Package },
-  { href: '/estoque',     label: 'Estoque',     icon: ArrowLeftRight },
-  { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed },
-  { href: '/extras',      label: 'Adicionais',  icon: Settings },
-  { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList },
-  { href: '/comandas',    label: 'Comandas',    icon: ReceiptText },
-  { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid },
-  { href: '/kds',         label: 'Cozinha',     icon: MonitorCheck },
-  { href: '/vendas',      label: 'Vendas',      icon: BarChart2 },
-  { href: '/integracoes', label: 'Integrações', icon: PlugZap },
-  { href: '/planos',      label: 'Planos',      icon: CreditCard },
+  { href: '/dashboard',   label: 'Início',      icon: LayoutDashboard, roles: ['owner', 'manager', 'cashier'] },
+  { href: '/categorias',  label: 'Categorias',  icon: Tag,             roles: ['owner', 'manager'] },
+  { href: '/produtos',    label: 'Produtos',    icon: Package,         roles: ['owner', 'manager'] },
+  { href: '/estoque',     label: 'Estoque',     icon: ArrowLeftRight,  roles: ['owner', 'manager'] },
+  { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed, roles: ['owner', 'manager'] },
+  { href: '/extras',      label: 'Adicionais',  icon: Settings,        roles: ['owner', 'manager'] },
+  { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList,   roles: ['owner', 'manager', 'cashier', 'kitchen'] },
+  { href: '/comandas',    label: 'Comandas',    icon: ReceiptText,     roles: ['owner', 'manager', 'cashier'] },
+  { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid,      roles: ['owner', 'manager', 'cashier'] },
+  { href: '/kds',         label: 'Cozinha',     icon: MonitorCheck,    roles: ['owner', 'manager', 'kitchen'] },
+  { href: '/vendas',      label: 'Vendas',      icon: BarChart2,       roles: ['owner', 'manager'] },
+  { href: '/integracoes', label: 'Integrações', icon: PlugZap,         roles: ['owner'] },
+  { href: '/usuarios',    label: 'Usuários',    icon: Users,           roles: ['owner'] },
+  { href: '/planos',      label: 'Planos',      icon: CreditCard,      roles: ['owner'] },
 ]
 
 const planColors = {
@@ -44,6 +45,9 @@ type Props = {
 export default function Sidebar({ profile }: Props) {
   const pathname = usePathname()
   const { data: plan } = usePlan()
+  const allowedNavItems = navItems.filter((item) =>
+    profile?.role ? item.roles.includes(profile.role) : false
+  )
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 flex flex-col">
@@ -69,7 +73,7 @@ export default function Sidebar({ profile }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {allowedNavItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href
           return (
             <Link

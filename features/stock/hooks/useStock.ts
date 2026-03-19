@@ -3,9 +3,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CreateMovementPayload } from '../types'
 
-export function useStockBalance(params?: { search?: string }) {
+export function useStockBalance(params?: {
+  category_id?: string
+  only_active?: boolean
+}) {
   const query = new URLSearchParams()
-  if (params?.search) query.set('search', params.search)
+  if (params?.category_id) query.set('category_id', params.category_id)
+  if (params?.only_active !== undefined) query.set('only_active', String(params.only_active))
 
   return useQuery({
     queryKey: ['stock-balance', params],
@@ -40,7 +44,7 @@ export function useStockMovements(params?: { product_id?: string }) {
       const res = await fetch(`/api/stock/movements?${query}`)
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
-      return json.data
+      return json
     },
   })
 }

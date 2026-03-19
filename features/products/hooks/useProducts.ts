@@ -4,14 +4,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CreateProductPayload, UpdateProductPayload } from '../types'
 
 export function useProducts(params?: {
-  search?: string
   category_id?: string
   active?: boolean
+  page?: number
+  pageSize?: number
 }) {
   const query = new URLSearchParams()
-  if (params?.search) query.set('search', params.search)
   if (params?.category_id) query.set('category_id', params.category_id)
   if (params?.active !== undefined) query.set('active', String(params.active))
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize))
 
   return useQuery({
     queryKey: ['products', params],

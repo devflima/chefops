@@ -1,9 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const { searchParams } = new URL(request.url)
 
     const period = searchParams.get('period') || 'today'
@@ -34,6 +36,7 @@ export async function GET(request: NextRequest) {
     const { data: orders, error } = await supabase
       .from('orders')
       .select('id, status, total, payment_status, created_at')
+      .eq('tenant_id', profile.tenant_id)
       .gte('created_at', from)
       .lte('created_at', to)
 

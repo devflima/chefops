@@ -1,27 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.tenant_id) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
-    }
+    const auth = await requireTenantRoles(['owner'])
+    if (!auth.ok) return auth.response
+    const { profile } = auth
 
     const admin = createAdminClient()
     const { data, error } = await admin
@@ -45,24 +30,9 @@ export async function GET() {
 
 export async function DELETE() {
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.tenant_id) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
-    }
+    const auth = await requireTenantRoles(['owner'])
+    if (!auth.ok) return auth.response
+    const { profile } = auth
 
     const admin = createAdminClient()
     const { error } = await admin

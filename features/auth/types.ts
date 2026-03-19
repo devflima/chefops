@@ -1,3 +1,5 @@
+import type { EstablishmentRole } from '@/lib/rbac'
+
 export type RegisterPayload = {
   full_name: string
   email: string
@@ -16,7 +18,7 @@ export type AuthUser = {
   email: string
   profile: {
     full_name: string | null
-    role: 'owner' | 'manager' | 'staff'
+    role: EstablishmentRole
     tenant_id: string
     tenant: {
       id: string

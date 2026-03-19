@@ -1,4 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import {
+  getAvailableRolesForPlan,
+  PLAN_MAX_USERS,
+  PLAN_ROLE_LIMITS,
+} from '@/lib/rbac'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -28,7 +33,14 @@ export async function GET() {
 
     if (error || !tenant) throw error
 
-    return NextResponse.json({ data: tenant })
+    return NextResponse.json({
+      data: {
+        ...tenant,
+        max_users: PLAN_MAX_USERS[tenant.plan],
+        role_limits: PLAN_ROLE_LIMITS[tenant.plan],
+        available_roles: getAvailableRolesForPlan(tenant.plan),
+      },
+    })
   } catch (error) {
     console.error('[plan:get]', error)
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/features/auth/components/Sidebar'
+import DashboardAccessGuard from '@/features/auth/components/DashboardAccessGuard'
 import InstallBanner from '@/features/pwa/components/InstallBanner'
 
 type Profile = {
@@ -39,7 +40,7 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar profile={profile} />
       <main className="flex-1 ml-64 p-8">
-        {children}
+        <DashboardAccessGuard>{children}</DashboardAccessGuard>
       </main>
       <InstallBanner />
     </div>

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refundOrderIfNeeded } from '@/lib/order-refunds'
 import { NextRequest, NextResponse } from 'next/server'
@@ -24,13 +24,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager', 'cashier', 'kitchen'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const { id } = await params
 
     const { data, error } = await supabase
       .from('orders')
       .select('*, items:order_items(*, extras:order_item_extras(*))')
       .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
       .single()
 
     if (error || !data) {
@@ -55,7 +58,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager', 'cashier', 'kitchen'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const admin = createAdminClient()
     const { id } = await params
     const body = await request.json()
@@ -70,8 +75,9 @@ export async function PATCH(
 
     const { data: existingOrder, error: existingOrderError } = await supabase
       .from('orders')
-      .select('id, status, payment_status')
+      .select('id, tenant_id, status, payment_status')
       .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
       .single()
 
     if (existingOrderError || !existingOrder) {

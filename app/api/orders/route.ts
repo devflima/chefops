@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -97,7 +97,9 @@ async function resolveTabId(
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager', 'cashier', 'kitchen'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const { searchParams } = new URL(request.url)
 
     const status = searchParams.get('status') || ''
@@ -111,6 +113,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('orders')
       .select('*, tab:tabs(id, label, status), items:order_items(*, extras:order_item_extras(*))', { count: 'exact' })
+      .eq('tenant_id', profile.tenant_id)
       .order('created_at', { ascending: false })
       .range(rangeFrom, rangeTo)
 
@@ -134,6 +137,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireTenantRoles(['owner', 'manager', 'cashier'])
+    if (!auth.ok) return auth.response
+    const { profile } = auth
     const body = await request.json()
     const parsed = createOrderSchema.safeParse(body)
 
@@ -153,6 +159,13 @@ export async function POST(request: NextRequest) {
       ...orderData
     } = parsed.data
     const admin = createAdminClient()
+
+    if (tenant_id !== profile.tenant_id) {
+      return NextResponse.json(
+        { error: 'Sem permissão para criar pedidos neste estabelecimento.' },
+        { status: 403 }
+      )
+    }
 
     if (table_id && tab_id) {
       return NextResponse.json(
