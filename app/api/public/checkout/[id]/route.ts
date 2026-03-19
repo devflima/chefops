@@ -11,7 +11,7 @@ export async function GET(
 
     const { data, error } = await admin
       .from('checkout_sessions')
-      .select('id, status, created_order_id, created_order:orders(order_number)')
+      .select('id, status, created_order_id, created_order:orders(id, order_number, status, payment_status)')
       .eq('id', id)
       .single()
 
@@ -32,6 +32,8 @@ export async function GET(
         status: data.status,
         created_order_id: data.created_order_id,
         order_number: order?.order_number ?? null,
+        order_status: order?.status ?? null,
+        payment_status: order?.payment_status ?? null,
       },
     })
   } catch (error) {

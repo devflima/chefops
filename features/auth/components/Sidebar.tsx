@@ -102,15 +102,18 @@ export default function Sidebar({ profile }: Props) {
             <p className="text-xs text-slate-400 capitalize">{profile?.role}</p>
           </div>
         </div>
-        <form action="/api/auth/logout" method="POST">
-          <button
-            type="submit"
-            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </button>
-        </form>
+        <button
+          type="button"
+          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          onClick={async () => {
+            const res = await fetch('/api/auth/logout', { method: 'POST' })
+            const json = await res.json().catch(() => null)
+            window.location.href = json?.data?.redirectTo ?? '/login'
+          }}
+        >
+          <LogOut className="w-4 h-4" />
+          Sair
+        </button>
       </div>
     </aside>
   )

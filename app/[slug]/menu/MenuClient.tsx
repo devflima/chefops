@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ShoppingCart, Plus, Minus, X, ChefHat, Trash2 } from 'lucide-react'
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
+import { toast } from 'sonner'
 
 type Extra = {
   id: string
@@ -38,6 +39,15 @@ type Props = {
   tableInfo: { id: string; number: string } | null
   checkoutSessionId: string | null
   checkoutResult: string | null
+}
+
+type PublicOrderStatus = {
+  id: string
+  order_number: number
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+  payment_status: 'pending' | 'paid' | 'refunded'
+  created_at: string
+  updated_at: string
 }
 
 type Customer = {
@@ -108,10 +118,12 @@ export default function MenuClient({
   const [paymentMethod, setPaymentMethod] = useState<string>(tableInfo ? 'table' : 'online')
   const [notes, setNotes] = useState('')
   const [orderNumber, setOrderNumber] = useState<number | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [onlineCheckoutLoading, setOnlineCheckoutLoading] = useState(false)
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null)
+  const [publicOrderStatus, setPublicOrderStatus] = useState<PublicOrderStatus | null>(null)
 
   const createOrder = useCreateOrder()
   const paymentOptions = tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online
@@ -142,9 +154,10 @@ export default function MenuClient({
 
   function addToCart(item: MenuItem, halfFlavor?: MenuItem) {
     const border = selectedBorders[item.id] ?? null
+    const itemName = halfFlavor ? `${item.name} / ${halfFlavor.name}` : item.name
     const cartItem: CartItem = {
       menu_item_id: item.id,
-      name: halfFlavor ? `${item.name} / ${halfFlavor.name}` : item.name,
+      name: itemName,
       price: halfFlavor ? Math.max(item.price, halfFlavor.price) : item.price,
       quantity: 1,
       extras: border ? [{ name: border.name, price: border.price }] : [],
@@ -153,6 +166,16 @@ export default function MenuClient({
     setCart((prev) => [...prev, cartItem])
     setSelectedBorders((prev) => ({ ...prev, [item.id]: null }))
     setHalfFlavorModal(null)
+    toast.success(`${itemName} adicionado ao carrinho`, {
+      description: `Agora voce tem ${cartCount + 1} item(ns) no carrinho.`,
+      action: {
+        label: 'Ver carrinho',
+        onClick: () => {
+          setCartOpen(true)
+          setCheckoutStep('cart')
+        },
+      },
+    })
   }
 
   function incrementCart(index: number) {
@@ -243,7 +266,16 @@ export default function MenuClient({
         if (!res.ok || cancelled) return
 
         if (json.data?.status === 'converted' && json.data?.order_number) {
+          setOrderId(json.data.created_order_id)
           setOrderNumber(json.data.order_number)
+          setPublicOrderStatus(json.data.created_order_id ? {
+            id: json.data.created_order_id,
+            order_number: json.data.order_number,
+            status: json.data.order_status ?? 'pending',
+            payment_status: json.data.payment_status ?? 'paid',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } : null)
           setCheckoutStep('done')
           setCartOpen(true)
           setCart([])
@@ -276,6 +308,35 @@ export default function MenuClient({
       cancelled = true
     }
   }, [checkoutResult, checkoutSessionId])
+
+  useEffect(() => {
+    if (!orderId) return
+
+    let cancelled = false
+
+    async function pollOrderStatus() {
+      try {
+        const res = await fetch(`/api/public/orders/${orderId}/status`)
+        const json = await res.json()
+
+        if (!res.ok || cancelled) return
+
+        setPublicOrderStatus(json.data)
+
+        if (!['delivered', 'cancelled'].includes(json.data.status)) {
+          window.setTimeout(pollOrderStatus, 10000)
+        }
+      } catch {
+        // silently ignore and try again on next poll cycle
+      }
+    }
+
+    pollOrderStatus()
+
+    return () => {
+      cancelled = true
+    }
+  }, [orderId])
 
   async function handleContinueToAddress() {
     if (!validateInfo()) return
@@ -371,7 +432,16 @@ export default function MenuClient({
         items: cart,
       })
 
+      setOrderId(order.id)
       setOrderNumber(order.order_number)
+      setPublicOrderStatus({
+        id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+        payment_status: order.payment_status,
+        created_at: order.created_at,
+        updated_at: order.updated_at,
+      })
       setCheckoutStep('done')
       setCart([])
     } catch (e: unknown) {
@@ -386,6 +456,30 @@ export default function MenuClient({
       return
     }
     await handlePlaceOrder(address)
+  }
+
+  const orderSteps: Array<{
+    key: PublicOrderStatus['status']
+    label: string
+    description: string
+  }> = [
+    { key: 'pending', label: 'Recebido', description: 'Seu pedido entrou na fila do estabelecimento.' },
+    { key: 'confirmed', label: 'Confirmado', description: 'O estabelecimento confirmou seu pedido.' },
+    { key: 'preparing', label: 'Em preparo', description: 'Seu pedido está sendo preparado.' },
+    { key: 'ready', label: 'Pronto', description: tableInfo ? 'Seu pedido está pronto para servir.' : 'Seu pedido está pronto para sair.' },
+    { key: 'delivered', label: 'Entregue', description: 'Pedido finalizado com sucesso.' },
+  ]
+
+  function getStepState(stepKey: PublicOrderStatus['status']) {
+    if (!publicOrderStatus) return 'upcoming'
+    if (publicOrderStatus.status === 'cancelled') return 'upcoming'
+
+    const currentIndex = orderSteps.findIndex((step) => step.key === publicOrderStatus.status)
+    const stepIndex = orderSteps.findIndex((step) => step.key === stepKey)
+
+    if (stepIndex < currentIndex) return 'done'
+    if (stepIndex === currentIndex) return 'current'
+    return 'upcoming'
   }
 
   return (
@@ -847,6 +941,57 @@ export default function MenuClient({
                 <p className="text-slate-500 text-sm mb-1">Seu número de pedido é</p>
                 <p className="text-4xl font-bold text-slate-900 mb-4">#{orderNumber}</p>
                 {tableInfo && <p className="text-sm text-slate-500">Comanda da <strong>Mesa {tableInfo.number}</strong></p>}
+                {publicOrderStatus?.status === 'cancelled' ? (
+                  <div className="mt-6 w-full rounded-xl border border-red-200 bg-red-50 p-4 text-left">
+                    <p className="font-medium text-red-700">Pedido cancelado</p>
+                    <p className="mt-1 text-sm text-red-600">
+                      O estabelecimento cancelou o pedido. Se o pagamento foi online, o reembolso será processado.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-6 w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+                    <p className="mb-4 text-sm font-medium text-slate-700">Acompanhe o status do pedido</p>
+                    <div className="space-y-3">
+                      {orderSteps.map((step) => {
+                        const state = getStepState(step.key)
+                        return (
+                          <div key={step.key} className="flex items-start gap-3">
+                            <div
+                              className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
+                                state === 'done'
+                                  ? 'border-green-500 bg-green-500 text-white'
+                                  : state === 'current'
+                                    ? 'border-slate-900 bg-slate-900 text-white'
+                                    : 'border-slate-300 bg-white text-slate-400'
+                              }`}
+                            >
+                              {state === 'done' ? '✓' : ''}
+                            </div>
+                            <div>
+                              <p className={`text-sm font-medium ${state === 'upcoming' ? 'text-slate-400' : 'text-slate-900'}`}>
+                                {step.label}
+                              </p>
+                              <p className={`text-xs ${state === 'upcoming' ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {step.description}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs text-slate-500">
+                      <span>Pagamento</span>
+                      <span className="font-medium text-slate-700">
+                        {publicOrderStatus?.payment_status === 'paid'
+                          ? 'Aprovado'
+                          : publicOrderStatus?.payment_status === 'refunded'
+                            ? 'Reembolsado'
+                            : 'Pendente'}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <Button className="mt-8 w-full" onClick={() => setCartOpen(false)}>Fechar</Button>
               </div>
             )}
