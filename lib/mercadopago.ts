@@ -118,6 +118,25 @@ export async function getPaymentById(paymentId: string, accessToken?: string | n
   })
 }
 
+export async function refundPaymentById(params: {
+  paymentId: string
+  accessToken: string
+  amount?: number
+}) {
+  return mercadoPagoRequest<{
+    id: number
+    amount?: number
+    status?: string
+  }>(`/v1/payments/${params.paymentId}/refunds`, {
+    method: 'POST',
+    idempotencyKey: crypto.randomUUID(),
+    accessToken: params.accessToken,
+    body: JSON.stringify(
+      typeof params.amount === 'number' ? { amount: params.amount } : {}
+    ),
+  })
+}
+
 function parseSignatureHeader(value: string | null) {
   if (!value) return null
 

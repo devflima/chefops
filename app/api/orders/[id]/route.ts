@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { refundOrderIfNeeded } from '@/lib/order-refunds'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -54,6 +56,7 @@ export async function PATCH(
 ) {
   try {
     const supabase = await createClient()
+    const admin = createAdminClient()
     const { id } = await params
     const body = await request.json()
     const parsed = updateSchema.safeParse(body)
@@ -65,9 +68,34 @@ export async function PATCH(
       )
     }
 
-    const { data, error } = await supabase
+    const { data: existingOrder, error: existingOrderError } = await supabase
       .from('orders')
-      .update(parsed.data)
+      .select('id, status, payment_status')
+      .eq('id', id)
+      .single()
+
+    if (existingOrderError || !existingOrder) {
+      return NextResponse.json(
+        { error: 'Pedido não encontrado.' },
+        { status: 404 }
+      )
+    }
+
+    const shouldRefund =
+      parsed.data.status === 'cancelled' &&
+      existingOrder.status !== 'cancelled' &&
+      existingOrder.payment_status === 'paid'
+
+    const updatePayload = {
+      ...parsed.data,
+      ...(parsed.data.status === 'cancelled' && !parsed.data.cancelled_reason
+        ? { cancelled_reason: 'Cancelado pelo estabelecimento' }
+        : {}),
+    }
+
+    const { data, error } = await admin
+      .from('orders')
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single()
@@ -77,6 +105,12 @@ export async function PATCH(
         { error: 'Pedido não encontrado.' },
         { status: 404 }
       )
+    }
+
+    if (shouldRefund) {
+      await refundOrderIfNeeded(id)
+      data.payment_status = 'refunded'
+      data.refunded_at = new Date().toISOString()
     }
 
     return NextResponse.json({ data })

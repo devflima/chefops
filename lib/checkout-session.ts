@@ -50,9 +50,10 @@ async function resolveSessionId(
 export async function createOrderFromCheckoutSession(params: {
   checkoutSessionId: string
   payload: CheckoutSessionPayload
+  paymentId?: string | null
 }) {
   const admin = createAdminClient()
-  const { checkoutSessionId, payload } = params
+  const { checkoutSessionId, payload, paymentId } = params
 
   const subtotal = payload.items.reduce((sum, item) => {
     const extrasTotal = item.extras?.reduce((inner, extra) => inner + extra.price, 0) ?? 0
@@ -73,6 +74,8 @@ export async function createOrderFromCheckoutSession(params: {
       table_number: payload.table_number ?? null,
       payment_method: 'online',
       payment_status: 'paid',
+      payment_provider: paymentId ? 'mercado_pago' : null,
+      payment_transaction_id: paymentId ?? null,
       notes: payload.notes ?? null,
       subtotal,
       total: subtotal,

@@ -109,6 +109,9 @@ export type Order = {
   status: OrderStatus
   payment_method: PaymentMethod
   payment_status: PaymentStatus
+  payment_provider?: string | null
+  payment_transaction_id?: string | null
+  refunded_at?: string | null
   subtotal: number
   total: number
   notes: string | null

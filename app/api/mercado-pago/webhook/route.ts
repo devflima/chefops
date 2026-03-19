@@ -46,6 +46,9 @@ export async function POST(request: NextRequest) {
         .from('orders')
         .update({
           payment_status: paymentStatus,
+          payment_provider: 'mercado_pago',
+          payment_transaction_id: String(payment.id),
+          refunded_at: paymentStatus === 'refunded' ? new Date().toISOString() : null,
         })
         .eq('id', orderId)
 
@@ -78,6 +81,7 @@ export async function POST(request: NextRequest) {
         await createOrderFromCheckoutSession({
           checkoutSessionId,
           payload: checkoutSession.payload,
+          paymentId: String(payment.id),
         })
       }
     }

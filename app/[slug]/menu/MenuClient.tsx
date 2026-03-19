@@ -46,6 +46,8 @@ type PublicOrderStatus = {
   order_number: number
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
   payment_status: 'pending' | 'paid' | 'refunded'
+  cancelled_reason?: string | null
+  refunded_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -55,6 +57,15 @@ type Customer = {
   name: string
   phone: string
   addresses?: CustomerAddress[]
+}
+
+type StoredActiveOrder = {
+  id: string
+  order_number: number
+}
+
+function getActiveOrderStorageKey(tenantSlug: string, tableId?: string | null) {
+  return `chefops:active-order:${tenantSlug}:${tableId ?? 'no-table'}`
 }
 
 function formatPhone(value: string) {
@@ -124,6 +135,8 @@ export default function MenuClient({
   const [onlineCheckoutLoading, setOnlineCheckoutLoading] = useState(false)
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null)
   const [publicOrderStatus, setPublicOrderStatus] = useState<PublicOrderStatus | null>(null)
+  const [cancelOrderLoading, setCancelOrderLoading] = useState(false)
+  const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreateOrder()
   const paymentOptions = tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online
@@ -253,6 +266,22 @@ export default function MenuClient({
   }
 
   useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(activeOrderStorageKey)
+      if (!raw) return
+
+      const stored = JSON.parse(raw) as StoredActiveOrder
+
+      if (stored?.id) {
+        setOrderId(stored.id)
+        setOrderNumber(stored.order_number)
+      }
+    } catch {
+      // ignore corrupted local state
+    }
+  }, [activeOrderStorageKey])
+
+  useEffect(() => {
     if (!checkoutSessionId) return
 
     let cancelled = false
@@ -337,6 +366,23 @@ export default function MenuClient({
       cancelled = true
     }
   }, [orderId])
+
+  useEffect(() => {
+    if (!orderId || !orderNumber || !publicOrderStatus) return
+
+    if (['delivered', 'cancelled'].includes(publicOrderStatus.status)) {
+      window.localStorage.removeItem(activeOrderStorageKey)
+      return
+    }
+
+    window.localStorage.setItem(
+      activeOrderStorageKey,
+      JSON.stringify({
+        id: orderId,
+        order_number: orderNumber,
+      } satisfies StoredActiveOrder)
+    )
+  }, [activeOrderStorageKey, orderId, orderNumber, publicOrderStatus])
 
   async function handleContinueToAddress() {
     if (!validateInfo()) return
@@ -458,6 +504,43 @@ export default function MenuClient({
     await handlePlaceOrder(address)
   }
 
+  async function handleCancelOrder() {
+    if (!orderId || !publicOrderStatus) return
+
+    const reason = window.prompt('Motivo do cancelamento:', 'Cancelado pelo cliente')
+    if (reason === null) return
+
+    try {
+      setCancelOrderLoading(true)
+
+      const res = await fetch(`/api/public/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cancelled_reason: reason.trim() || 'Cancelado pelo cliente',
+        }),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        throw new Error(json.error)
+      }
+
+      setPublicOrderStatus(json.data)
+      setCheckoutNotice(
+        json.data.payment_status === 'refunded'
+          ? 'Pedido cancelado e reembolso solicitado com sucesso.'
+          : 'Pedido cancelado com sucesso.'
+      )
+      toast.success('Pedido cancelado com sucesso.')
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao cancelar pedido.')
+    } finally {
+      setCancelOrderLoading(false)
+    }
+  }
+
   const orderSteps: Array<{
     key: PublicOrderStatus['status']
     label: string
@@ -516,6 +599,31 @@ export default function MenuClient({
         {checkoutNotice && (
           <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
             {checkoutNotice}
+          </div>
+        )}
+
+        {publicOrderStatus && !cartOpen && !['delivered', 'cancelled'].includes(publicOrderStatus.status) && (
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  Pedido em andamento #{publicOrderStatus.order_number}
+                </p>
+                <p className="mt-1 text-sm text-emerald-700">
+                  Seu pedido está em {orderSteps.find((step) => step.key === publicOrderStatus.status)?.label.toLowerCase() ?? 'andamento'}.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() => {
+                  setCartOpen(true)
+                  setCheckoutStep('done')
+                }}
+              >
+                Acompanhar
+              </Button>
+            </div>
           </div>
         )}
 
@@ -945,8 +1053,13 @@ export default function MenuClient({
                   <div className="mt-6 w-full rounded-xl border border-red-200 bg-red-50 p-4 text-left">
                     <p className="font-medium text-red-700">Pedido cancelado</p>
                     <p className="mt-1 text-sm text-red-600">
-                      O estabelecimento cancelou o pedido. Se o pagamento foi online, o reembolso será processado.
+                      {publicOrderStatus.cancelled_reason ?? 'O pedido foi cancelado.'}
                     </p>
+                    {publicOrderStatus.payment_status === 'refunded' && (
+                      <p className="mt-2 text-xs text-red-500">
+                        Reembolso solicitado com sucesso no pagamento online.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-6 w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
@@ -990,6 +1103,17 @@ export default function MenuClient({
                             : 'Pendente'}
                       </span>
                     </div>
+
+                    {['pending', 'confirmed'].includes(publicOrderStatus?.status ?? '') && (
+                      <Button
+                        variant="outline"
+                        className="mt-4 w-full border-red-200 text-red-700 hover:bg-red-50"
+                        onClick={handleCancelOrder}
+                        disabled={cancelOrderLoading}
+                      >
+                        {cancelOrderLoading ? 'Cancelando...' : 'Cancelar pedido'}
+                      </Button>
+                    )}
                   </div>
                 )}
                 <Button className="mt-8 w-full" onClick={() => setCartOpen(false)}>Fechar</Button>
