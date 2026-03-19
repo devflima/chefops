@@ -35,10 +35,14 @@ export default async function MenuPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ table?: string }>
+  searchParams: Promise<{ table?: string; checkout_session?: string; checkout_result?: string }>
 }) {
   const { slug } = await params
-  const { table: tableToken } = await searchParams
+  const {
+    table: tableToken,
+    checkout_session: checkoutSessionId,
+    checkout_result: checkoutResult,
+  } = await searchParams
 
   const { data: tenant } = await publicSupabase
     .from('tenants')
@@ -100,6 +104,8 @@ export default async function MenuPage({
       tenant={tenant}
       items={items}
       tableInfo={tableInfo}
+      checkoutSessionId={checkoutSessionId ?? null}
+      checkoutResult={checkoutResult ?? null}
     />
   )
 }

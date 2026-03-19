@@ -82,6 +82,7 @@ export default function PedidosPage() {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
   const [manualOrderOpen, setManualOrderOpen] = useState(false)
+  const [chargingOrderId, setChargingOrderId] = useState<string | null>(null)
   const { data, isLoading } = useOrders({ status: statusFilter })
   const updateStatus = useUpdateOrderStatus()
 
@@ -99,6 +100,33 @@ export default function PedidosPage() {
       status: 'cancelled',
       cancelled_reason: reason,
     })
+  }
+
+  async function handleMercadoPagoCheckout(order: Order) {
+    try {
+      setChargingOrderId(order.id)
+
+      const res = await fetch(`/api/orders/${order.id}/mercado-pago`, {
+        method: 'POST',
+      })
+      const json = await res.json()
+
+      if (!res.ok) {
+        throw new Error(json.error)
+      }
+
+      const url = json.data?.init_point || json.data?.sandbox_init_point
+
+      if (!url) {
+        throw new Error('Mercado Pago não retornou um link de pagamento.')
+      }
+
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao gerar cobrança.')
+    } finally {
+      setChargingOrderId(null)
+    }
   }
 
   const filters: { label: string; value: string }[] = [
@@ -252,6 +280,17 @@ export default function PedidosPage() {
                       })}
                     </p>
                     <div className="mt-3 flex justify-end gap-2">
+                      {order.payment_status === 'pending' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                          disabled={chargingOrderId === order.id}
+                          onClick={() => handleMercadoPagoCheckout(order)}
+                        >
+                          {chargingOrderId === order.id ? 'Gerando...' : 'Cobrar com MP'}
+                        </Button>
+                      )}
                       {config.next && (
                         <Button
                           size="sm"

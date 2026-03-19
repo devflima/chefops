@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCreateOrder } from '@/features/orders/hooks/useOrders'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,6 +36,8 @@ type Props = {
   tenant: { id: string; name: string; slug: string; plan: string }
   items: MenuItem[]
   tableInfo: { id: string; number: string } | null
+  checkoutSessionId: string | null
+  checkoutResult: string | null
 }
 
 type Customer = {
@@ -80,7 +82,13 @@ const paymentOptionsByContext = {
   online: [{ value: 'online', label: 'Pagar online' }, { value: 'delivery', label: 'Pagar na entrega' }],
 }
 
-export default function MenuClient({ tenant, items, tableInfo }: Props) {
+export default function MenuClient({
+  tenant,
+  items,
+  tableInfo,
+  checkoutSessionId,
+  checkoutResult,
+}: Props) {
   const isPaidPlan = tenant.plan !== 'free'
 
   const [cart, setCart] = useState<CartItem[]>([])
@@ -102,6 +110,8 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
   const [orderNumber, setOrderNumber] = useState<number | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [onlineCheckoutLoading, setOnlineCheckoutLoading] = useState(false)
+  const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null)
 
   const createOrder = useCreateOrder()
   const paymentOptions = tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online
@@ -219,13 +229,112 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
     return Object.keys(errs).length === 0
   }
 
+  useEffect(() => {
+    if (!checkoutSessionId) return
+
+    let cancelled = false
+    let attempts = 0
+
+    async function pollCheckout() {
+      try {
+        const res = await fetch(`/api/public/checkout/${checkoutSessionId}`)
+        const json = await res.json()
+
+        if (!res.ok || cancelled) return
+
+        if (json.data?.status === 'converted' && json.data?.order_number) {
+          setOrderNumber(json.data.order_number)
+          setCheckoutStep('done')
+          setCartOpen(true)
+          setCart([])
+          setCheckoutNotice('Pagamento confirmado. Pedido enviado para o estabelecimento.')
+          return
+        }
+
+        if (json.data?.status === 'approved') {
+          setCheckoutNotice('Pagamento aprovado. Estamos confirmando seu pedido.')
+        } else if (checkoutResult === 'pending') {
+          setCheckoutNotice('Pagamento pendente. Assim que confirmar, seu pedido sera enviado.')
+        } else if (checkoutResult === 'failure') {
+          setCheckoutNotice('O pagamento nao foi concluido. Tente novamente.')
+        }
+
+        attempts += 1
+        if (attempts < 10) {
+          window.setTimeout(pollCheckout, 3000)
+        }
+      } catch {
+        if (!cancelled) {
+          setCheckoutNotice('Nao foi possivel consultar o status do pagamento agora.')
+        }
+      }
+    }
+
+    pollCheckout()
+
+    return () => {
+      cancelled = true
+    }
+  }, [checkoutResult, checkoutSessionId])
+
   async function handleContinueToAddress() {
     if (!validateInfo()) return
+    if (paymentMethod === 'online') {
+      if (!tableInfo) {
+        setCheckoutStep('address')
+        return
+      }
+
+      await handleStartOnlineCheckout()
+      return
+    }
+
     if (!tableInfo) {
       setCheckoutStep('address')
       return
     }
     await handlePlaceOrder()
+  }
+
+  async function handleStartOnlineCheckout(deliveryAddress?: Partial<CustomerAddress>) {
+    try {
+      setOnlineCheckoutLoading(true)
+
+      const res = await fetch('/api/public/checkout/mercado-pago', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenant.id,
+          tenant_slug: tenant.slug,
+          customer_name: customerName,
+          customer_phone: phone.replace(/\D/g, '') || undefined,
+          customer_cpf: customerCpf || undefined,
+          table_number: tableInfo?.number,
+          table_id: tableInfo?.id,
+          notes: notes || undefined,
+          delivery_address: deliveryAddress as CustomerAddress | undefined,
+          items: cart,
+        }),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        throw new Error(json.error)
+      }
+
+      const checkoutUrl = json.data?.init_point || json.data?.sandbox_init_point
+
+      if (!checkoutUrl) {
+        throw new Error('O Mercado Pago nao retornou um link de pagamento.')
+      }
+
+      window.location.href = checkoutUrl
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Erro ao iniciar pagamento online.')
+    } finally {
+      setOnlineCheckoutLoading(false)
+    }
   }
 
   async function handlePlaceOrder(deliveryAddress?: Partial<CustomerAddress>) {
@@ -272,6 +381,10 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
 
   async function handleAddressSubmit() {
     if (!validateAddress()) return
+    if (paymentMethod === 'online') {
+      await handleStartOnlineCheckout(address)
+      return
+    }
     await handlePlaceOrder(address)
   }
 
@@ -306,6 +419,12 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
 
       {/* Cardápio */}
       <main className="max-w-2xl mx-auto px-4 py-6">
+        {checkoutNotice && (
+          <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            {checkoutNotice}
+          </div>
+        )}
+
         {tableInfo && (
           <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-6 text-sm text-orange-700">
             Você está na <strong>Mesa {tableInfo.number}</strong>
@@ -643,9 +762,9 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
                   <Button
                     className="w-full"
                     onClick={handleContinueToAddress}
-                    disabled={createOrder.isPending || (isPaidPlan && !phoneVerified)}
+                    disabled={createOrder.isPending || onlineCheckoutLoading || (isPaidPlan && !phoneVerified)}
                   >
-                    {createOrder.isPending ? 'Enviando...' : 'Continuar'}
+                    {createOrder.isPending || onlineCheckoutLoading ? 'Processando...' : 'Continuar'}
                   </Button>
                   <Button variant="outline" className="w-full" onClick={() => setCheckoutStep('cart')}>
                     Voltar
@@ -710,8 +829,8 @@ export default function MenuClient({ tenant, items, tableInfo }: Props) {
                   </div>
                 </div>
                 <div className="p-4 border-t border-slate-200 space-y-2">
-                  <Button className="w-full" onClick={handleAddressSubmit} disabled={createOrder.isPending}>
-                    {createOrder.isPending ? 'Enviando...' : 'Fazer pedido'}
+                  <Button className="w-full" onClick={handleAddressSubmit} disabled={createOrder.isPending || onlineCheckoutLoading}>
+                    {createOrder.isPending || onlineCheckoutLoading ? 'Processando...' : paymentMethod === 'online' ? 'Ir para pagamento' : 'Fazer pedido'}
                   </Button>
                   <Button variant="outline" className="w-full" onClick={() => setCheckoutStep('info')}>Voltar</Button>
                 </div>
