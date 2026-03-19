@@ -12,40 +12,54 @@ export async function GET() {
   try {
     const supabase = await createClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
+    }
+
     const { data, error } = await supabase
       .from('tables')
-      .select(
-        `
+      .select(`
         *,
         active_session:table_sessions(
           id, status, customer_count, total, opened_at,
           orders(id, order_number, status, total, items:order_items(*))
         )
-      `
-      )
+      `)
+      .eq('tenant_id', profile.tenant_id)
       .order('number', { ascending: true })
 
     if (error) throw error
 
-    const tables = data.map((t) => {
-      const session = Array.isArray(t.active_session)
-        ? (t.active_session.find(
-            (s: { status: string }) => s.status === 'open'
-          ) ?? null)
-        : null
+    const tables = data.map((t) => ({
+      ...t,
+      active_session: Array.isArray(t.active_session)
+        ? t.active_session.find((s: { status: string }) => s.status === 'open') ?? null
+        : null,
+    }))
 
-      // Calcula total em tempo real somando todos os pedidos da sessão
+    // Calcula total em tempo real
+    const tablesWithTotal = tables.map((t) => {
+      const session = t.active_session
       if (session && session.orders) {
         session.total = session.orders.reduce(
-          (sum: number, o: { total: number }) => sum + Number(o.total),
-          0
+          (sum: number, o: { total: number }) => sum + Number(o.total), 0
         )
       }
-
-      return { ...t, active_session: session }
+      return t
     })
 
-    return NextResponse.json({ data: tables })
+    return NextResponse.json({ data: tablesWithTotal })
   } catch (error) {
     console.error('[tables:get]', error)
     return NextResponse.json(

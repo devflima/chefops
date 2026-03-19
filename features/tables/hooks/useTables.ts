@@ -16,6 +16,36 @@ export function useTables() {
   })
 }
 
+export function useUpdateTable() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; number?: string; capacity?: number }) => {
+      const res = await fetch(`/api/tables/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      return json.data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tables'] }),
+  })
+}
+
+export function useDeleteTable() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/tables/${id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      return json.data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tables'] }),
+  })
+}
+
 export function useCreateTable() {
   const queryClient = useQueryClient()
   return useMutation({

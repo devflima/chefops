@@ -50,6 +50,34 @@ const paymentLabels = {
   delivery: 'Na entrega',
 }
 
+type DeliveryAddress = {
+  street?: string | null
+  number?: string | null
+  complement?: string | null
+  neighborhood?: string | null
+  city?: string | null
+  state?: string | null
+  zip_code?: string | null
+}
+
+function normalizeDeliveryAddress(value: unknown): DeliveryAddress | null {
+  if (!value) return null
+
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as DeliveryAddress
+    } catch {
+      return null
+    }
+  }
+
+  if (typeof value === 'object') {
+    return value as DeliveryAddress
+  }
+
+  return null
+}
+
 export default function PedidosPage() {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
@@ -120,6 +148,7 @@ export default function PedidosPage() {
         <div className="space-y-3">
           {data?.data?.map((order: Order) => {
             const config = statusConfig[order.status]
+            const address = normalizeDeliveryAddress(order.delivery_address)
             return (
               <div
                 key={order.id}
@@ -141,44 +170,57 @@ export default function PedidosPage() {
                       </span>
                     </div>
                     {order.customer_name && (
-                      <div className="text-sm text-slate-600 mb-1 space-y-0.5">
+                      <div className="mb-1 space-y-0.5 text-sm text-slate-600">
                         <p>
                           Cliente: <span className="font-medium">{order.customer_name}</span>
                           {order.table_number && ` — Mesa ${order.table_number}`}
                         </p>
                         {order.customer_phone && (
-                          <p className="text-slate-500">
-                            📞 {order.customer_phone}
-                          </p>
-                        )}
-                        {order.delivery_address && (
-                          <div className="mt-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-800">
-                            <p className="font-medium mb-0.5">📍 Endereço de entrega</p>
-                            <p>
-                              {(order.delivery_address as { street: string; number: string; complement?: string; neighborhood?: string; city: string; state: string }).street},{' '}
-                              {(order.delivery_address as { street: string; number: string; complement?: string; neighborhood?: string; city: string; state: string }).number}
-                              {(order.delivery_address as { complement?: string }).complement && ` — ${(order.delivery_address as { complement?: string }).complement}`}
-                            </p>
-                            <p>
-                              {(order.delivery_address as { neighborhood?: string }).neighborhood && `${(order.delivery_address as { neighborhood?: string }).neighborhood}, `}
-                              {(order.delivery_address as { city: string; state: string }).city} — {(order.delivery_address as { city: string; state: string }).state}
-                            </p>
-                          </div>
+                          <p className="text-slate-500">📞 {order.customer_phone}</p>
                         )}
                       </div>
                     )}
+
+                    {address && (
+                      <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                        <p className="mb-0.5 font-medium">📍 Endereço de entrega</p>
+
+                        {(address.street || address.number || address.complement) && (
+                          <p>
+                            {[address.street, address.number].filter(Boolean).join(', ')}
+                            {address.complement ? ` - ${address.complement}` : ''}
+                          </p>
+                        )}
+
+                        {(address.neighborhood || address.city || address.state) && (
+                          <p>
+                            {[address.neighborhood, address.city, address.state]
+                              .filter(Boolean)
+                              .join(' - ')}
+                          </p>
+                        )}
+
+                        {address.zip_code && (
+                          <p className="mt-0.5 text-blue-600">CEP: {address.zip_code}</p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Itens */}
                     <div className="mt-2 space-y-0.5">
                       {order.items?.map((item) => (
-                        <p key={item.id} className="text-sm text-slate-500">
-                          {item.quantity}× {item.name}
-                          {item.notes && (
-                            <span className="text-slate-400">
-                              {' '}
-                              ({item.notes})
-                            </span>
-                          )}
-                        </p>
+                        <div key={item.id}>
+                          <p className="text-sm text-slate-500">
+                            {item.quantity}× {item.name}
+                            {item.notes && <span className="text-slate-400"> ({item.notes})</span>}
+                          </p>
+                          {item.extras?.map((extra) => (
+                            <p key={extra.id} className="text-xs text-slate-400 ml-4">
+                              + {extra.name}
+                              {extra.price > 0 && ` R$ ${Number(extra.price).toFixed(2)}`}
+                            </p>
+                          ))}
+                        </div>
                       ))}
                     </div>
                     {order.notes && (

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import {
   useTables,
   useCreateTable,
+  useUpdateTable,
+  useDeleteTable,
   useOpenSession,
   useCloseSession,
 } from '@/features/tables/hooks/useTables'
@@ -26,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Plus, Users, Clock, QrCode } from 'lucide-react'
+import { Plus, Users, Clock, QrCode, Pencil, Trash2 } from 'lucide-react'
 import type { Table } from '@/features/tables/types'
 import FeatureGate from '@/features/plans/components/FeatureGate'
 
@@ -80,6 +82,9 @@ export default function MesasPage() {
 
   const { data: tables, isLoading } = useTables()
   const createTable = useCreateTable()
+  const [editingTable, setEditingTable] = useState<Table | null>(null)
+  const updateTable = useUpdateTable()
+  const deleteTable = useDeleteTable()
   const openSession = useOpenSession()
   const closeSession = useCloseSession()
 
@@ -103,6 +108,26 @@ export default function MesasPage() {
         message: e instanceof Error ? e.message : 'Erro ao criar mesa.',
       })
     }
+  }
+
+  async function handleDeleteTable(table: Table) {
+    if (!confirm(`Excluir a Mesa ${table.number}? Esta ação não pode ser desfeita.`)) return
+      try {
+        await deleteTable.mutateAsync(table.id)
+      } catch (e: unknown) {
+        alert(e instanceof Error ? e.message : 'Erro ao excluir mesa.')
+      }
+  }
+
+  async function onEditTable(values: TableForm) {
+    if (!editingTable) return
+      try {
+        await updateTable.mutateAsync({ id: editingTable.id, ...values })
+        setEditingTable(null)
+        tableForm.reset()
+      } catch (e: unknown) {
+        tableForm.setError('root', { message: e instanceof Error ? e.message : 'Erro ao atualizar mesa.' })
+      }
   }
 
   async function onOpenSession(values: SessionForm) {
@@ -184,12 +209,31 @@ export default function MesasPage() {
                     <span className="text-2xl font-bold text-slate-900">
                       {table.number}
                     </span>
-                    <span
-                      className={`flex items-center gap-1.5 text-xs font-medium ${config.text}`}
-                    >
-                      <span className={`h-2 w-2 rounded-full ${config.dot}`} />
-                      {config.label}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingTable(table)
+                          tableForm.reset({ number: table.number, capacity: table.capacity })
+                          setNewTableOpen(true)
+                        }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      {table.status === 'available' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteTable(table) }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <span className={`flex items-center gap-1.5 text-xs font-medium ${config.text}`}>
+                        <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+                        {config.label}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="mb-3 flex items-center gap-1 text-xs text-slate-500">
@@ -364,11 +408,11 @@ export default function MesasPage() {
         <Dialog open={newTableOpen} onOpenChange={setNewTableOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nova mesa</DialogTitle>
+              <DialogTitle>{editingTable ? `Editar Mesa ${editingTable.number}` : 'Nova mesa'}</DialogTitle>
             </DialogHeader>
             <Form {...tableForm}>
               <form
-                onSubmit={tableForm.handleSubmit(onCreateTable)}
+                onSubmit={tableForm.handleSubmit(editingTable ? onEditTable : onCreateTable)} 
                 className="space-y-4"
               >
                 <FormField
