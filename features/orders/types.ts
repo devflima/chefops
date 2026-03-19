@@ -100,6 +100,12 @@ export type Order = {
   customer_cpf: string | null
   customer_id: string | null
   table_number: string | null
+  tab_id?: string | null
+  tab?: {
+    id: string
+    label: string
+    status: 'open' | 'closed'
+  } | null
   status: OrderStatus
   payment_method: PaymentMethod
   payment_status: PaymentStatus
@@ -121,6 +127,7 @@ export type CreateOrderPayload = {
   customer_id?: string
   table_number?: string
   table_id?: string
+  tab_id?: string
   payment_method: PaymentMethod
   notes?: string
   delivery_address?: CustomerAddress

@@ -27,6 +27,7 @@ const createOrderSchema = z.object({
   customer_id: z.string().uuid().optional(),
   table_number: z.string().optional(),
   table_id: z.string().uuid().optional(),
+  tab_id: z.string().uuid().optional(),
   payment_method: z.enum(['online', 'table', 'counter', 'delivery']),
   notes: z.string().optional(),
   delivery_address: z.object({
@@ -77,6 +78,23 @@ async function resolveSessionId(
   return session?.id ?? null
 }
 
+async function resolveTabId(
+  admin: ReturnType<typeof createAdminClient>,
+  tabId: string,
+  tenantId: string
+): Promise<string | null> {
+  const { data: tab } = await admin
+    .from('tabs')
+    .select('id, status')
+    .eq('id', tabId)
+    .eq('tenant_id', tenantId)
+    .single()
+
+  if (!tab || tab.status !== 'open') return null
+
+  return tab.id
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -92,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('orders')
-      .select('*, items:order_items(*, extras:order_item_extras(*))', { count: 'exact' })
+      .select('*, tab:tabs(id, label, status), items:order_items(*, extras:order_item_extras(*))', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(rangeFrom, rangeTo)
 
@@ -129,6 +147,13 @@ export async function POST(request: NextRequest) {
     const { tenant_id, items, delivery_address, ...orderData } = parsed.data
     const admin = createAdminClient()
 
+    if (orderData.table_id && orderData.tab_id) {
+      return NextResponse.json(
+        { error: 'Selecione apenas uma origem: mesa ou comanda.' },
+        { status: 400 }
+      )
+    }
+
     // Verifica limite do plano free
     const { data: tenantData } = await admin
       .from('tenants')
@@ -161,6 +186,28 @@ export async function POST(request: NextRequest) {
       return sum + (item.price + extrasTotal) * item.quantity
     }, 0)
 
+    const tableSessionId = orderData.table_id
+      ? await resolveSessionId(admin, orderData.table_id, tenant_id)
+      : null
+
+    const tabId = orderData.tab_id
+      ? await resolveTabId(admin, orderData.tab_id, tenant_id)
+      : null
+
+    if (orderData.table_id && !tableSessionId) {
+      return NextResponse.json(
+        { error: 'Não foi possível abrir ou localizar a comanda da mesa.' },
+        { status: 422 }
+      )
+    }
+
+    if (orderData.tab_id && !tabId) {
+      return NextResponse.json(
+        { error: 'Comanda não encontrada ou já fechada.' },
+        { status: 422 }
+      )
+    }
+
     const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
@@ -168,9 +215,8 @@ export async function POST(request: NextRequest) {
         tenant_id,
         subtotal,
         total: subtotal,
-        table_session_id: orderData.table_id
-          ? await resolveSessionId(admin, orderData.table_id, tenant_id)
-          : null,
+        table_session_id: tableSessionId,
+        tab_id: tabId,
         delivery_address: delivery_address ?? null,
       })
       .select()

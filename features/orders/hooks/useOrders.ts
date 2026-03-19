@@ -51,6 +51,7 @@ export function useUpdateOrderStatus() {
 }
 
 export function useCreateOrder() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (payload: CreateOrderPayload) => {
       const res = await fetch('/api/orders', {
@@ -61,6 +62,10 @@ export function useCreateOrder() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
       return json.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['tables'] })
     },
   })
 }

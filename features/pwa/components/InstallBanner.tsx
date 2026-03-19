@@ -16,11 +16,10 @@ export default function InstallBanner() {
   useEffect(() => {
     // Verifica se já instalou ou dispensou
     const isDismissed = localStorage.getItem('pwa-dismissed')
-    if (isDismissed) { setDismissed(true); return }
+    if (isDismissed) return
 
     // Verifica se já está instalado
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      setDismissed(true)
       return
     }
 

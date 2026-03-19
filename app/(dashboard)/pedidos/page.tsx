@@ -6,10 +6,10 @@ import {
   useUpdateOrderStatus,
 } from '@/features/orders/hooks/useOrders'
 import { useQueryClient } from '@tanstack/react-query'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, Plus } from 'lucide-react'
 import type { Order, OrderStatus } from '@/features/orders/types'
+import ManualOrderDialog from '@/features/orders/components/ManualOrderDialog'
 
 const statusConfig: Record<
   OrderStatus,
@@ -81,6 +81,7 @@ function normalizeDeliveryAddress(value: unknown): DeliveryAddress | null {
 export default function PedidosPage() {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
+  const [manualOrderOpen, setManualOrderOpen] = useState(false)
   const { data, isLoading } = useOrders({ status: statusFilter })
   const updateStatus = useUpdateOrderStatus()
 
@@ -118,6 +119,10 @@ export default function PedidosPage() {
             Atualiza automaticamente a cada 15 segundos
           </p>
         </div>
+        <Button onClick={() => setManualOrderOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo pedido
+        </Button>
       </div>
 
       {/* Filtros */}
@@ -174,11 +179,18 @@ export default function PedidosPage() {
                         <p>
                           Cliente: <span className="font-medium">{order.customer_name}</span>
                           {order.table_number && ` — Mesa ${order.table_number}`}
+                          {!order.table_number && order.tab?.label && ` — Comanda ${order.tab.label}`}
                         </p>
                         {order.customer_phone && (
                           <p className="text-slate-500">📞 {order.customer_phone}</p>
                         )}
                       </div>
+                    )}
+
+                    {!order.customer_name && order.tab?.label && (
+                      <p className="mb-1 text-sm text-slate-600">
+                        Comanda: <span className="font-medium">{order.tab.label}</span>
+                      </p>
                     )}
 
                     {address && (
@@ -284,6 +296,11 @@ export default function PedidosPage() {
           })}
         </div>
       )}
+
+      <ManualOrderDialog
+        open={manualOrderOpen}
+        onOpenChange={setManualOrderOpen}
+      />
     </div>
   )
 }

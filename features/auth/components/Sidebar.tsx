@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, ArrowLeftRight,
   UtensilsCrossed, ClipboardList, BarChart2,
   LayoutGrid, MonitorCheck, Tag, LogOut, ChefHat,
-  CreditCard, Settings
+  CreditCard, Settings, ReceiptText
 } from 'lucide-react'
 
 const navItems = [
@@ -19,6 +19,7 @@ const navItems = [
   { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed },
   { href: '/extras',      label: 'Adicionais',  icon: Settings },
   { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList },
+  { href: '/comandas',    label: 'Comandas',    icon: ReceiptText },
   { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid },
   { href: '/kds',         label: 'Cozinha',     icon: MonitorCheck },
   { href: '/vendas',      label: 'Vendas',      icon: BarChart2 },
