@@ -70,7 +70,6 @@ export async function createOrderFromCheckoutSession(params: {
       customer_name: payload.customer_name,
       customer_phone: payload.customer_phone ?? null,
       customer_cpf: payload.customer_cpf ?? null,
-      table_id: payload.table_id ?? null,
       table_number: payload.table_number ?? null,
       payment_method: 'online',
       payment_status: 'paid',

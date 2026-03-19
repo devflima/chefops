@@ -144,10 +144,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { tenant_id, items, delivery_address, ...orderData } = parsed.data
+    const {
+      tenant_id,
+      items,
+      delivery_address,
+      table_id,
+      tab_id,
+      ...orderData
+    } = parsed.data
     const admin = createAdminClient()
 
-    if (orderData.table_id && orderData.tab_id) {
+    if (table_id && tab_id) {
       return NextResponse.json(
         { error: 'Selecione apenas uma origem: mesa ou comanda.' },
         { status: 400 }
@@ -186,22 +193,22 @@ export async function POST(request: NextRequest) {
       return sum + (item.price + extrasTotal) * item.quantity
     }, 0)
 
-    const tableSessionId = orderData.table_id
-      ? await resolveSessionId(admin, orderData.table_id, tenant_id)
+    const tableSessionId = table_id
+      ? await resolveSessionId(admin, table_id, tenant_id)
       : null
 
-    const tabId = orderData.tab_id
-      ? await resolveTabId(admin, orderData.tab_id, tenant_id)
+    const tabId = tab_id
+      ? await resolveTabId(admin, tab_id, tenant_id)
       : null
 
-    if (orderData.table_id && !tableSessionId) {
+    if (table_id && !tableSessionId) {
       return NextResponse.json(
         { error: 'Não foi possível abrir ou localizar a comanda da mesa.' },
         { status: 422 }
       )
     }
 
-    if (orderData.tab_id && !tabId) {
+    if (tab_id && !tabId) {
       return NextResponse.json(
         { error: 'Comanda não encontrada ou já fechada.' },
         { status: 422 }
