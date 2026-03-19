@@ -1,6 +1,7 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refundOrderIfNeeded } from '@/lib/order-refunds'
+import { deductOrderStockIfNeeded } from '@/lib/stock-deduction'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -60,7 +61,7 @@ export async function PATCH(
   try {
     const auth = await requireTenantRoles(['owner', 'manager', 'cashier', 'kitchen'])
     if (!auth.ok) return auth.response
-    const { supabase, profile } = auth
+    const { supabase, profile, user } = auth
     const admin = createAdminClient()
     const { id } = await params
     const body = await request.json()
@@ -91,6 +92,10 @@ export async function PATCH(
       parsed.data.status === 'cancelled' &&
       existingOrder.status !== 'cancelled' &&
       existingOrder.payment_status === 'paid'
+    const shouldDeductStock =
+      !!parsed.data.status &&
+      ['confirmed', 'preparing', 'ready', 'delivered'].includes(parsed.data.status) &&
+      existingOrder.status === 'pending'
 
     const updatePayload = {
       ...parsed.data,
@@ -117,6 +122,13 @@ export async function PATCH(
       await refundOrderIfNeeded(id)
       data.payment_status = 'refunded'
       data.refunded_at = new Date().toISOString()
+    }
+
+    if (shouldDeductStock) {
+      const deductionResult = await deductOrderStockIfNeeded(id, user.id)
+      if (deductionResult.deducted) {
+        data.stock_deducted_at = new Date().toISOString()
+      }
     }
 
     return NextResponse.json({ data })

@@ -12,7 +12,9 @@ import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -61,6 +63,7 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
   const [customerPhone, setCustomerPhone] = useState('')
   const [notes, setNotes] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
+  const [selectedMenuItemId, setSelectedMenuItemId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
   const availableItems = useMemo(
@@ -106,6 +109,7 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
     setCustomerPhone('')
     setNotes('')
     setCart([])
+    setSelectedMenuItemId('')
     setErrorMessage('')
   }
 
@@ -203,13 +207,13 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
+      <DialogContent className="max-h-[95vh] w-[min(1160px,calc(100%-0.75rem))] max-w-none overflow-hidden p-0">
+        <DialogHeader className="border-b border-slate-200 px-6 py-4">
           <DialogTitle>Novo pedido manual</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
-          <div className="space-y-4">
+        <div className="grid max-h-[calc(95vh-73px)] gap-7 lg:gap-0 lg:grid-cols-[1.4fr_0.9fr]">
+          <div className="space-y-5 overflow-y-auto px-6 py-5 lg:pb-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Tipo do pedido</label>
@@ -272,7 +276,7 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
 
             {orderMode === 'tab' && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
                   <Input
                     value={newTabLabel}
                     onChange={(event) => setNewTabLabel(event.target.value)}
@@ -354,39 +358,54 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
                   Nenhum item disponivel no cardapio.
                 </div>
               ) : (
-                <div className="max-h-[26rem] space-y-4 overflow-y-auto pr-1">
-                  {orderedGroups.map(([key, group]) => (
-                    <div key={key} className="space-y-2">
-                      <p className="text-sm font-medium text-slate-600">{group.label}</p>
-                      <div className="grid gap-2 md:grid-cols-2">
-                        {group.items.map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => addItem(item)}
-                            className="rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:border-slate-300 hover:bg-slate-50"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="font-medium text-slate-900">{item.name}</p>
-                                <p className="text-sm text-slate-500">
-                                  R$ {Number(item.price).toFixed(2)}
-                                </p>
-                              </div>
-                              <Plus className="h-4 w-4 text-slate-400" />
-                            </div>
-                          </button>
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <Select value={selectedMenuItemId} onValueChange={setSelectedMenuItemId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecione um item do cardápio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orderedGroups.map(([key, group]) => (
+                          <SelectGroup key={key}>
+                            <SelectLabel>{group.label}</SelectLabel>
+                            {group.items.map((item) => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.name} - R$ {Number(item.price).toFixed(2)}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         ))}
-                      </div>
-                    </div>
-                  ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      type="button"
+                      className="w-full md:w-auto"
+                      onClick={() => {
+                        const item = availableItems.find((entry) => entry.id === selectedMenuItemId)
+                        if (!item) {
+                          setErrorMessage('Selecione um item do cardápio para adicionar.')
+                          return
+                        }
+                        setErrorMessage('')
+                        addItem(item)
+                        setSelectedMenuItemId('')
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Adicionar
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Escolha o item e adicione ao resumo do pedido.
+                  </p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="border-t border-slate-200 bg-slate-50 px-6 pt-8 pb-6 mt-6 lg:border-t-0 lg:border-l lg:px-6 lg:py-6">
+            <div className="mt-4 mb-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-slate-900">Resumo</h3>
                 <p className="text-sm text-slate-500">
@@ -404,7 +423,7 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
               <Badge>{cart.reduce((sum, item) => sum + item.quantity, 0)} itens</Badge>
             </div>
 
-            <div className="max-h-[22rem] space-y-2 overflow-y-auto">
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
               {cart.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-400">
                   Adicione itens para montar o pedido.
@@ -459,8 +478,8 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
               )}
             </div>
 
-            <div className="mt-4 border-t border-slate-200 pt-4">
-              <div className="mb-4 flex items-center justify-between">
+            <div className="mt-6 border-t border-slate-200 pt-5">
+              <div className="mb-5 flex items-center justify-between">
                 <span className="text-sm text-slate-500">Total</span>
                 <span className="text-xl font-semibold text-slate-900">
                   R$ {total.toFixed(2)}
@@ -473,7 +492,8 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
                 </p>
               )}
 
-              <div className="flex gap-2">
+              <div className="sticky bottom-0 -mx-3 mt-6 bg-slate-50 px-3 pb-4 pt-3">
+                <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -490,6 +510,7 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
                 >
                   {createOrder.isPending ? 'Criando...' : 'Criar pedido'}
                 </Button>
+                </div>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useMenuItems, useCreateMenuItem } from '@/features/orders/hooks/useOrders'
-import { useCategories } from '@/features/products/hooks/useProducts'
+import { useCategories, useProducts } from '@/features/products/hooks/useProducts'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -28,6 +28,11 @@ const menuItemSchema = z.object({
 
 type MenuItemForm = z.infer<typeof menuItemSchema>
 
+type MenuItemIngredient = {
+  product_id: string
+  quantity: number
+}
+
 export default function CardapioPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<MenuItem | null>(null)
@@ -39,6 +44,7 @@ export default function CardapioPage() {
 
   const { data: allItems, isLoading } = useMenuItems()
   const { data: categories } = useCategories()
+  const { data: products } = useProducts({ active: true, page: 1, pageSize: 100 })
   const createMenuItem = useCreateMenuItem()
   const queryClient = useQueryClient()
 
@@ -67,10 +73,15 @@ export default function CardapioPage() {
   })
 
   const [selectedExtras, setSelectedExtras] = useState<string[]>([])
+  const [linkedProductId, setLinkedProductId] = useState<string>('none')
+  const [ingredients, setIngredients] = useState<MenuItemIngredient[]>([])
 
   function openCreate() {
     setEditing(null)
     form.reset({ name: '', description: '', price: 0, display_order: 0 })
+    setLinkedProductId('none')
+    setIngredients([])
+    setSelectedExtras([])
     setOpen(true)
   }
 
@@ -87,33 +98,62 @@ export default function CardapioPage() {
     const res = await fetch(`/api/menu-items/${item.id}/extras`)
     const json = await res.json()
     setSelectedExtras(json.data?.map((e: { id: string }) => e.id) ?? [])
+
+    const ingredientsRes = await fetch(`/api/menu-items/${item.id}/ingredients`)
+    const ingredientsJson = await ingredientsRes.json()
+    setIngredients(
+      (ingredientsJson.data ?? []).map((ingredient: { product_id: string; quantity: number }) => ({
+        product_id: ingredient.product_id,
+        quantity: Number(ingredient.quantity),
+      }))
+    )
+    setLinkedProductId(item.product_id ?? 'none')
     setOpen(true)
   }
 
   async function onSubmit(values: MenuItemForm) {
     try {
+      const payload = {
+        ...values,
+        product_id: linkedProductId === 'none' ? null : linkedProductId,
+      }
+
+      let menuItemId = editing?.id ?? null
+
       if (editing) {
         const res = await fetch(`/api/menu-items/${editing.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error)
         queryClient.invalidateQueries({ queryKey: ['menu-items'] })
       } else {
-        await createMenuItem.mutateAsync(values)
+        const createdItem = await createMenuItem.mutateAsync(payload)
+        menuItemId = createdItem.id
       }
-            // Salva extras vinculados
-      if (editing) {
-        await fetch(`/api/menu-items/${editing.id}/extras`, {
+
+      if (menuItemId) {
+        await fetch(`/api/menu-items/${menuItemId}/extras`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ extra_ids: selectedExtras }),
         })
+
+        await fetch(`/api/menu-items/${menuItemId}/ingredients`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ingredients: ingredients.filter((ingredient) => ingredient.product_id !== 'none'),
+          }),
+        })
       }
       setOpen(false)
       form.reset()
+      setSelectedExtras([])
+      setIngredients([])
+      setLinkedProductId('none')
     } catch (e: unknown) {
       form.setError('root', {
         message: e instanceof Error ? e.message : 'Erro ao salvar item.',
@@ -138,6 +178,22 @@ export default function CardapioPage() {
     } finally {
       setDeletingId(null)
     }
+  }
+
+  function addIngredient() {
+    setIngredients((current) => [...current, { product_id: 'none', quantity: 1 }])
+  }
+
+  function updateIngredient(index: number, patch: Partial<MenuItemIngredient>) {
+    setIngredients((current) =>
+      current.map((ingredient, ingredientIndex) =>
+        ingredientIndex === index ? { ...ingredient, ...patch } : ingredient
+      )
+    )
+  }
+
+  function removeIngredient(index: number) {
+    setIngredients((current) => current.filter((_, ingredientIndex) => ingredientIndex !== index))
   }
 
   return (
@@ -274,7 +330,7 @@ export default function CardapioPage() {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[92vh] w-[min(840px,calc(100%-1.5rem))] max-w-none overflow-y-auto p-6">
           <DialogHeader>
             <DialogTitle>{editing ? 'Editar item' : 'Novo item do cardápio'}</DialogTitle>
           </DialogHeader>
@@ -333,6 +389,84 @@ export default function CardapioPage() {
                   <FormMessage />
                 </FormItem>
               )} />
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-2">
+                  Produto base para baixa simples
+                </label>
+                <Select value={linkedProductId} onValueChange={setLinkedProductId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecionar produto base" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum produto vinculado</SelectItem>
+                    {products?.data?.map((product: { id: string; name: string; unit: string }) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-slate-400">
+                  Se não houver ficha técnica, este produto será usado como baixa automática padrão.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Ficha técnica</p>
+                    <p className="text-xs text-slate-500">
+                      Defina os insumos e quantidades que serão baixados automaticamente.
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addIngredient} className="shrink-0">
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                    Adicionar insumo
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {ingredients.length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      Nenhum insumo configurado. O sistema usará o produto base, se houver.
+                    </p>
+                  ) : (
+                    ingredients.map((ingredient, index) => (
+                      <div key={`${ingredient.product_id}-${index}`} className="grid grid-cols-[1fr_120px_auto] gap-3">
+                        <Select
+                          value={ingredient.product_id}
+                          onValueChange={(value) => updateIngredient(index, { product_id: value })}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecionar insumo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Selecionar insumo</SelectItem>
+                            {products?.data?.map((product: { id: string; name: string; unit: string }) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0.001"
+                          value={ingredient.quantity}
+                          onChange={(event) =>
+                            updateIngredient(index, { quantity: Number(event.target.value) || 0 })
+                          }
+                        />
+                        <Button type="button" variant="ghost" onClick={() => removeIngredient(index)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
 
               {allExtras && allExtras.length > 0 && (
                 <div>

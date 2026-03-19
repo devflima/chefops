@@ -19,6 +19,16 @@ export type MenuItem = {
   created_at: string
   category?: { id: string; name: string }
   extras?: { extra: Extra }[]
+  ingredients?: {
+    id: string
+    product_id: string
+    quantity: number
+    product?: {
+      id: string
+      name: string
+      unit: string
+    } | null
+  }[]
 }
 
 export type CartExtra = {
@@ -116,6 +126,7 @@ export type Order = {
   total: number
   notes: string | null
   cancelled_reason: string | null
+  stock_deducted_at?: string | null
   delivery_address: CustomerAddress | null
   created_at: string
   updated_at: string
