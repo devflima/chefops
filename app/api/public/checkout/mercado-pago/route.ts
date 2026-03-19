@@ -3,12 +3,14 @@ import { createCheckoutPreference, getMercadoPagoWebhookUrl } from '@/lib/mercad
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+const nullableString = z.string().nullable().optional()
+
 const cartItemSchema = z.object({
   menu_item_id: z.string().uuid(),
   name: z.string(),
   price: z.number().min(0),
   quantity: z.number().int().positive(),
-  notes: z.string().optional(),
+  notes: nullableString,
   extras: z.array(z.object({
     name: z.string(),
     price: z.number().min(0),
@@ -23,22 +25,22 @@ const checkoutSchema = z.object({
   tenant_id: z.string().uuid(),
   tenant_slug: z.string().min(1),
   customer_name: z.string().min(2),
-  customer_phone: z.string().optional(),
-  customer_cpf: z.string().optional(),
-  table_id: z.string().uuid().optional(),
-  table_number: z.string().optional(),
-  notes: z.string().optional(),
+  customer_phone: nullableString,
+  customer_cpf: nullableString,
+  table_id: z.string().uuid().nullable().optional(),
+  table_number: nullableString,
+  notes: nullableString,
   delivery_address: z.object({
-    zip_code: z.string().optional(),
-    street: z.string().optional(),
-    number: z.string().optional(),
-    complement: z.string().optional(),
-    neighborhood: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    label: z.string().optional(),
-    is_default: z.boolean().optional(),
-  }).optional(),
+    zip_code: nullableString,
+    street: nullableString,
+    number: nullableString,
+    complement: nullableString,
+    neighborhood: nullableString,
+    city: nullableString,
+    state: nullableString,
+    label: nullableString,
+    is_default: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   items: z.array(cartItemSchema).min(1),
 })
 
