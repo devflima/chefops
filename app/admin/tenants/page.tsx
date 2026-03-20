@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import PaginationControls from '@/components/shared/PaginationControls'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -355,9 +356,14 @@ export default function AdminTenantsPage() {
                         {formatDate(tenant.next_billing_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <Button variant="ghost" size="sm" onClick={() => openTenant(tenant)}>
-                          Gerenciar
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => openTenant(tenant)}>
+                            Gerenciar
+                          </Button>
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/admin/tenants/${tenant.id}`}>Detalhes</Link>
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
