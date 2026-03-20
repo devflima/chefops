@@ -118,7 +118,7 @@ export default function PedidosPage() {
         throw new Error(json.error)
       }
 
-      const url = json.data?.init_point || json.data?.sandbox_init_point
+      const url = json.data?.sandbox_init_point || json.data?.init_point
 
       if (!url) {
         throw new Error('Mercado Pago não retornou um link de pagamento.')

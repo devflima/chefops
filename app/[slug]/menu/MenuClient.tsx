@@ -430,7 +430,7 @@ export default function MenuClient({
         throw new Error(json.error)
       }
 
-      const checkoutUrl = json.data?.init_point || json.data?.sandbox_init_point
+      const checkoutUrl = json.data?.sandbox_init_point || json.data?.init_point
 
       if (!checkoutUrl) {
         throw new Error('O Mercado Pago nao retornou um link de pagamento.')
