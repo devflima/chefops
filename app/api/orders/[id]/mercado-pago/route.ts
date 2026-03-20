@@ -74,6 +74,15 @@ export async function POST(
         ? preference.init_point
         : preference.sandbox_init_point || preference.init_point
 
+    console.info('[orders:mercado-pago:preference-created]', {
+      tenantId: order.tenant_id,
+      orderId: order.id,
+      liveMode: tenantAccount?.live_mode ?? null,
+      preferenceId: preference.id,
+      checkoutUrl,
+      hasSandboxUrl: Boolean(preference.sandbox_init_point),
+    })
+
     return NextResponse.json({
       data: {
         preference_id: preference.id,
