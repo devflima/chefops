@@ -17,6 +17,7 @@ export default function PlanosPage() {
     plan: 'basic' | 'pro'
     next_payment_date: string | null
     cancel_at_period_end?: boolean
+    scheduled_plan?: 'basic' | 'pro' | null
   } | null>(null)
 
   const plans: Plan[] = ['free', 'basic', 'pro']
@@ -75,6 +76,24 @@ export default function PlanosPage() {
     }
   }
 
+  async function handleSchedulePlanChange(plan: 'basic' | 'pro') {
+    try {
+      const res = await fetch('/api/billing/subscription', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduled_plan: plan }),
+      })
+      const json = await res.json()
+
+      if (!res.ok) throw new Error(json.error)
+
+      setCurrentSubscription(json.data)
+      alert(`Mudança programada com sucesso. O plano ${PLAN_LABELS[plan]} entra na próxima renovação.`)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao programar troca de plano.')
+    }
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -106,6 +125,12 @@ export default function PlanosPage() {
               {new Date(currentSubscription.next_payment_date).toLocaleDateString('pt-BR')}
             </span>
             .
+          </p>
+        )}
+        {currentSubscription?.scheduled_plan && currentSubscription.next_payment_date && (
+          <p className="mt-2 text-sm text-blue-700">
+            Mudança programada para <span className="font-medium">{PLAN_LABELS[currentSubscription.scheduled_plan]}</span>{' '}
+            em {new Date(currentSubscription.next_payment_date).toLocaleDateString('pt-BR')}.
           </p>
         )}
       </div>
@@ -183,9 +208,20 @@ export default function PlanosPage() {
                   className="w-full"
                   variant={isPopular ? 'default' : 'outline'}
                   disabled={loadingPlan === plan}
-                  onClick={() => handleSubscribe(plan)}
+                  onClick={() => {
+                    const hasPaidSubscription = currentSubscription && ['authorized', 'pending'].includes(currentSubscription.status)
+                    if (hasPaidSubscription) {
+                      void handleSchedulePlanChange(plan)
+                      return
+                    }
+                    void handleSubscribe(plan)
+                  }}
                 >
-                  {loadingPlan === plan ? 'Redirecionando...' : 'Assinar agora'}
+                  {loadingPlan === plan
+                    ? 'Redirecionando...'
+                    : currentSubscription && ['authorized', 'pending'].includes(currentSubscription.status)
+                      ? 'Trocar no próximo ciclo'
+                      : 'Assinar agora'}
                 </Button>
               )}
             </div>

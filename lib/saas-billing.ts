@@ -58,6 +58,30 @@ export async function getLatestSaasBillingSubscription(tenantId: string) {
   return data
 }
 
+export async function scheduleSaasPlanChange(params: {
+  tenantId: string
+  scheduledPlan: BillingPlan
+}) {
+  const admin = createAdminClient()
+  const latest = await getLatestSaasBillingSubscription(params.tenantId)
+
+  if (!latest?.id) {
+    throw new Error('Assinatura atual não encontrada para programar a troca de plano.')
+  }
+
+  const { data, error } = await admin
+    .from('saas_billing_subscriptions')
+    .update({
+      scheduled_plan: params.scheduledPlan,
+    })
+    .eq('id', latest.id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function cancelSaasBillingSubscriptionAtPeriodEnd(params: {
   tenantId: string
   mercadoPagoPreapprovalId: string
@@ -176,9 +200,12 @@ export async function syncTenantFromSaasSubscription(preapproval: MercadoPagoPre
 
   const admin = createAdminClient()
 
+  const existing = await getLatestSaasBillingSubscription(tenantId)
+  const effectivePlan = (existing?.scheduled_plan as BillingPlan | null) ?? plan
+
   await upsertSaasBillingSubscription({
     tenantId,
-    plan,
+    plan: effectivePlan,
     mercadoPagoPreapprovalId: preapproval.id,
     payerEmail: preapproval.payer_email ?? '',
     externalReference: preapproval.external_reference ?? buildSaasExternalReference({ tenantId, plan }),
@@ -196,14 +223,26 @@ export async function syncTenantFromSaasSubscription(preapproval: MercadoPagoPre
     const { error } = await admin
       .from('tenants')
       .update({
-        plan,
+        plan: effectivePlan,
         next_billing_at: preapproval.next_payment_date ?? null,
         plan_ends_at: null,
       })
       .eq('id', tenantId)
 
     if (error) throw error
-    return { synced: true as const, tenantId, plan, status: preapproval.status }
+
+    if (existing?.scheduled_plan) {
+      await admin
+        .from('saas_billing_subscriptions')
+        .update({
+          plan: effectivePlan,
+          scheduled_plan: null,
+        })
+        .eq('tenant_id', tenantId)
+        .eq('mercado_pago_preapproval_id', preapproval.id)
+    }
+
+    return { synced: true as const, tenantId, plan: effectivePlan, status: preapproval.status }
   }
 
   if (['cancelled', 'paused'].includes(preapproval.status)) {

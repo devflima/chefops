@@ -6,6 +6,7 @@ import {
   ensureTenantBillingAccessState,
   getBillingPlanAmount,
   getLatestSaasBillingSubscription,
+  scheduleSaasPlanChange,
   type BillingPlan,
   upsertSaasBillingSubscription,
 } from '@/lib/saas-billing'
@@ -15,6 +16,10 @@ import { z } from 'zod'
 
 const createSchema = z.object({
   plan: z.enum(['basic', 'pro']),
+})
+
+const scheduleSchema = z.object({
+  scheduled_plan: z.enum(['basic', 'pro']),
 })
 
 export async function GET() {
@@ -64,6 +69,45 @@ export async function DELETE() {
     console.error('[billing-subscription:delete]', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erro ao cancelar assinatura.' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const auth = await requireTenantRoles(['owner'])
+    if (!auth.ok) return auth.response
+    const { profile } = auth
+
+    const currentSubscription = await getLatestSaasBillingSubscription(profile.tenant_id)
+    if (!currentSubscription?.mercado_pago_preapproval_id) {
+      return NextResponse.json(
+        { error: 'Nenhuma assinatura encontrada para programar a troca de plano.' },
+        { status: 404 }
+      )
+    }
+
+    const body = await request.json()
+    const parsed = scheduleSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0].message },
+        { status: 400 }
+      )
+    }
+
+    const updated = await scheduleSaasPlanChange({
+      tenantId: profile.tenant_id,
+      scheduledPlan: parsed.data.scheduled_plan,
+    })
+
+    return NextResponse.json({ data: updated })
+  } catch (error) {
+    console.error('[billing-subscription:patch]', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Erro ao programar troca de plano.' },
       { status: 500 }
     )
   }
