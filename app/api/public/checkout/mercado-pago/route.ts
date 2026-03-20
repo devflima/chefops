@@ -62,8 +62,6 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient()
     const tenantAccount = await getTenantMercadoPagoAccount(payload.tenant_id)
     const tenantAccessToken = await getTenantMercadoPagoAccessToken(payload.tenant_id)
-    const cleanPhone = payload.customer_phone?.replace(/\D/g, '') ?? ''
-    const cleanCpf = payload.customer_cpf?.replace(/\D/g, '') ?? ''
 
     if (!tenantAccessToken) {
       return NextResponse.json(
@@ -105,18 +103,6 @@ export async function POST(request: NextRequest) {
       },
       payer: {
         name: payload.customer_name,
-        phone: cleanPhone.length >= 10
-          ? {
-              area_code: cleanPhone.slice(0, 2),
-              number: cleanPhone.slice(2),
-            }
-          : undefined,
-        identification: cleanCpf.length === 11
-          ? {
-              type: 'CPF',
-              number: cleanCpf,
-            }
-          : undefined,
       },
       metadata: {
         checkout_session_id: session.id,
