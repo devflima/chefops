@@ -1,6 +1,6 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
 import { createCheckoutPreference } from '@/lib/mercadopago'
-import { getTenantMercadoPagoAccessToken } from '@/lib/tenant-mercadopago'
+import { getTenantMercadoPagoAccessToken, getTenantMercadoPagoAccount } from '@/lib/tenant-mercadopago'
 import { NextResponse } from 'next/server'
 
 export async function POST(
@@ -41,6 +41,7 @@ export async function POST(
       )
     }
 
+    const tenantAccount = await getTenantMercadoPagoAccount(order.tenant_id)
     const tenantAccessToken = await getTenantMercadoPagoAccessToken(order.tenant_id)
 
     if (!tenantAccessToken) {
@@ -68,9 +69,15 @@ export async function POST(
       })),
     })
 
+    const checkoutUrl =
+      tenantAccount?.live_mode
+        ? preference.init_point
+        : preference.sandbox_init_point || preference.init_point
+
     return NextResponse.json({
       data: {
         preference_id: preference.id,
+        checkout_url: checkoutUrl,
         init_point: preference.init_point,
         sandbox_init_point: preference.sandbox_init_point,
       },

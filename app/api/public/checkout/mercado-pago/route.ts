@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createCheckoutPreference, getMercadoPagoWebhookUrl } from '@/lib/mercadopago'
-import { getTenantMercadoPagoAccessToken } from '@/lib/tenant-mercadopago'
+import { getTenantMercadoPagoAccessToken, getTenantMercadoPagoAccount } from '@/lib/tenant-mercadopago'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
 
     const payload = parsed.data
     const admin = createAdminClient()
+    const tenantAccount = await getTenantMercadoPagoAccount(payload.tenant_id)
     const tenantAccessToken = await getTenantMercadoPagoAccessToken(payload.tenant_id)
 
     if (!tenantAccessToken) {
@@ -123,9 +124,15 @@ export async function POST(request: NextRequest) {
 
     if (updateError) throw updateError
 
+    const checkoutUrl =
+      tenantAccount?.live_mode
+        ? preference.init_point
+        : preference.sandbox_init_point || preference.init_point
+
     return NextResponse.json({
       data: {
         checkout_session_id: session.id,
+        checkout_url: checkoutUrl,
         init_point: preference.init_point,
         sandbox_init_point: preference.sandbox_init_point,
       },
