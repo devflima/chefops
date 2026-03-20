@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { PLAN_INCLUDED_FEATURES, PLAN_RESOURCE_LIMITS, type Plan } from '@/features/plans/types'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import {
   getAvailableRolesForPlan,
   PLAN_MAX_USERS,
@@ -25,6 +26,8 @@ export async function GET() {
     if (!profile) {
       return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
     }
+
+    await ensureTenantBillingAccessState(profile.tenant_id)
 
     const { data: tenant, error } = await supabase
       .from('tenants')

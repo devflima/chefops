@@ -15,6 +15,11 @@ type MercadoPagoPreapproval = {
   last_modified?: string | null
 }
 
+function hasBillingPeriodEnded(nextBillingAt?: string | null) {
+  if (!nextBillingAt) return true
+  return new Date(nextBillingAt).getTime() <= Date.now()
+}
+
 export function getBillingPlanAmount(plan: BillingPlan) {
   return PLAN_PRICES[plan]
 }
@@ -51,6 +56,78 @@ export async function getLatestSaasBillingSubscription(tenantId: string) {
 
   if (error) throw error
   return data
+}
+
+export async function cancelSaasBillingSubscriptionAtPeriodEnd(params: {
+  tenantId: string
+  mercadoPagoPreapprovalId: string
+  nextPaymentDate?: string | null
+}) {
+  const admin = createAdminClient()
+
+  const { data, error } = await admin
+    .from('saas_billing_subscriptions')
+    .update({
+      status: 'cancelled',
+      cancel_at_period_end: true,
+      canceled_at: new Date().toISOString(),
+      next_payment_date: params.nextPaymentDate ?? null,
+    })
+    .eq('tenant_id', params.tenantId)
+    .eq('mercado_pago_preapproval_id', params.mercadoPagoPreapprovalId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function ensureTenantBillingAccessState(tenantId: string) {
+  const admin = createAdminClient()
+  const subscription = await getLatestSaasBillingSubscription(tenantId)
+
+  if (!subscription?.cancel_at_period_end) {
+    return { downgraded: false as const, subscription }
+  }
+
+  const effectiveEnd =
+    subscription.next_payment_date ??
+    (await admin
+      .from('tenants')
+      .select('next_billing_at')
+      .eq('id', tenantId)
+      .single()).data?.next_billing_at ??
+    null
+
+  if (!hasBillingPeriodEnded(effectiveEnd)) {
+    return { downgraded: false as const, subscription }
+  }
+
+  const { error: tenantError } = await admin
+    .from('tenants')
+    .update({
+      plan: 'free',
+      next_billing_at: null,
+      plan_ends_at: new Date().toISOString(),
+    })
+    .eq('id', tenantId)
+
+  if (tenantError) throw tenantError
+
+  const { data: updatedSubscription, error: subError } = await admin
+    .from('saas_billing_subscriptions')
+    .update({
+      metadata: {
+        downgrade_applied_at: new Date().toISOString(),
+      },
+    })
+    .eq('id', subscription.id)
+    .select()
+    .single()
+
+  if (subError) throw subError
+
+  return { downgraded: true as const, subscription: updatedSubscription }
 }
 
 export async function upsertSaasBillingSubscription(params: {
@@ -130,17 +207,16 @@ export async function syncTenantFromSaasSubscription(preapproval: MercadoPagoPre
   }
 
   if (['cancelled', 'paused'].includes(preapproval.status)) {
-    const { error } = await admin
-      .from('tenants')
+    await admin
+      .from('saas_billing_subscriptions')
       .update({
-        plan: 'free',
-        next_billing_at: null,
-        plan_ends_at: new Date().toISOString(),
+        cancel_at_period_end: true,
+        canceled_at: new Date().toISOString(),
+        next_payment_date: preapproval.next_payment_date ?? null,
       })
-      .eq('id', tenantId)
+      .eq('mercado_pago_preapproval_id', preapproval.id)
 
-    if (error) throw error
-    return { synced: true as const, tenantId, plan: 'free', status: preapproval.status }
+    return { synced: true as const, tenantId, plan, status: preapproval.status }
   }
 
   return { synced: true as const, tenantId, plan, status: preapproval.status }

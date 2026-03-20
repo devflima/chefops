@@ -2,12 +2,14 @@ import { requireTenantRoles } from '@/lib/auth-guards'
 import {
   buildSaasExternalReference,
   buildSaasSubscriptionReason,
+  cancelSaasBillingSubscriptionAtPeriodEnd,
+  ensureTenantBillingAccessState,
   getBillingPlanAmount,
   getLatestSaasBillingSubscription,
   type BillingPlan,
   upsertSaasBillingSubscription,
 } from '@/lib/saas-billing'
-import { createSaasSubscriptionLink } from '@/lib/mercadopago'
+import { createSaasSubscriptionLink, updatePreapprovalById } from '@/lib/mercadopago'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -20,12 +22,48 @@ export async function GET() {
     const auth = await requireTenantRoles(['owner'])
     if (!auth.ok) return auth.response
 
+    await ensureTenantBillingAccessState(auth.profile.tenant_id)
     const subscription = await getLatestSaasBillingSubscription(auth.profile.tenant_id)
     return NextResponse.json({ data: subscription })
   } catch (error) {
     console.error('[billing-subscription:get]', error)
     return NextResponse.json(
       { error: 'Erro ao buscar assinatura atual.' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE() {
+  try {
+    const auth = await requireTenantRoles(['owner'])
+    if (!auth.ok) return auth.response
+    const { profile } = auth
+
+    const subscription = await getLatestSaasBillingSubscription(profile.tenant_id)
+    if (!subscription?.mercado_pago_preapproval_id) {
+      return NextResponse.json(
+        { error: 'Nenhuma assinatura ativa encontrada para cancelamento.' },
+        { status: 404 }
+      )
+    }
+
+    await updatePreapprovalById({
+      preapprovalId: subscription.mercado_pago_preapproval_id,
+      body: { status: 'cancelled' },
+    })
+
+    const updated = await cancelSaasBillingSubscriptionAtPeriodEnd({
+      tenantId: profile.tenant_id,
+      mercadoPagoPreapprovalId: subscription.mercado_pago_preapproval_id,
+      nextPaymentDate: subscription.next_payment_date ?? null,
+    })
+
+    return NextResponse.json({ data: updated })
+  } catch (error) {
+    console.error('[billing-subscription:delete]', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Erro ao cancelar assinatura.' },
       { status: 500 }
     )
   }

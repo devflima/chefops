@@ -16,6 +16,7 @@ export default function PlanosPage() {
     status: string
     plan: 'basic' | 'pro'
     next_payment_date: string | null
+    cancel_at_period_end?: boolean
   } | null>(null)
 
   const plans: Plan[] = ['free', 'basic', 'pro']
@@ -56,6 +57,24 @@ export default function PlanosPage() {
     }
   }
 
+  async function handleCancelSubscription() {
+    if (!window.confirm('Cancelar a renovação da assinatura? Você continuará com acesso até a próxima cobrança.')) {
+      return
+    }
+
+    try {
+      const res = await fetch('/api/billing/subscription', { method: 'DELETE' })
+      const json = await res.json()
+
+      if (!res.ok) throw new Error(json.error)
+
+      setCurrentSubscription(json.data)
+      alert('Renovação cancelada com sucesso. Seu plano continuará ativo até o vencimento atual.')
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao cancelar assinatura.')
+    }
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -78,6 +97,15 @@ export default function PlanosPage() {
                 </span>
               </>
             )}
+          </p>
+        )}
+        {currentSubscription?.cancel_at_period_end && currentSubscription.next_payment_date && (
+          <p className="mt-2 text-sm text-amber-700">
+            Renovação cancelada. O acesso continua até{' '}
+            <span className="font-medium">
+              {new Date(currentSubscription.next_payment_date).toLocaleDateString('pt-BR')}
+            </span>
+            .
           </p>
         )}
       </div>
@@ -164,6 +192,18 @@ export default function PlanosPage() {
           )
         })}
       </div>
+
+      {currentSubscription && ['authorized', 'pending'].includes(currentSubscription.status) && !currentSubscription.cancel_at_period_end && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
+          <h3 className="font-medium text-amber-900">Cancelar renovação</h3>
+          <p className="mt-1 text-sm text-amber-800">
+            Ao cancelar, sua assinatura não será renovada e o acesso ao plano atual continua até a próxima cobrança.
+          </p>
+          <Button variant="outline" className="mt-4" onClick={handleCancelSubscription}>
+            Cancelar assinatura
+          </Button>
+        </div>
+      )}
 
       <div className="mt-8 bg-slate-50 rounded-xl p-6 border border-slate-200">
         <h3 className="font-medium text-slate-900 mb-1">Precisa de ajuda para escolher?</h3>

@@ -196,6 +196,19 @@ export async function getPreapprovalById(preapprovalId: string, accessToken?: st
   })
 }
 
+export async function updatePreapprovalById(params: {
+  preapprovalId: string
+  body: Record<string, unknown>
+  accessToken?: string
+}) {
+  return mercadoPagoRequest<SubscriptionPreapproval>(`/preapproval/${params.preapprovalId}`, {
+    method: 'PUT',
+    idempotencyKey: crypto.randomUUID(),
+    accessToken: params.accessToken,
+    body: JSON.stringify(params.body),
+  })
+}
+
 function parseSignatureHeader(value: string | null) {
   if (!value) return null
 
