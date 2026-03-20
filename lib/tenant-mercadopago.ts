@@ -64,20 +64,6 @@ async function exchangeOAuthCode(body: Record<string, string>) {
     throw new Error(json?.message || json?.error || 'Mercado Pago OAuth failed.')
   }
 
-  console.info('[mercado-pago:oauth:token-response]', {
-    keys: Object.keys(json ?? {}),
-    userId: json?.user_id ?? null,
-    liveMode: json?.live_mode ?? null,
-    scope: json?.scope ?? null,
-    tokenType: json?.token_type ?? null,
-    expiresIn: json?.expires_in ?? null,
-    refreshExpiresIn: json?.expires_in_refresh_token ?? null,
-    sponsorId: json?.sponsor_id ?? null,
-    userTest: json?.user_test ?? null,
-    publicKeyPrefix: typeof json?.public_key === 'string' ? json.public_key.slice(0, 6) : null,
-    accessTokenPrefix: typeof json?.access_token === 'string' ? json.access_token.slice(0, 6) : null,
-  })
-
   return json as OAuthTokenResponse
 }
 
@@ -102,18 +88,6 @@ export async function upsertTenantMercadoPagoAccount(params: {
 }) {
   const admin = createAdminClient()
   const expiresAt = new Date(Date.now() + params.tokens.expires_in * 1000).toISOString()
-
-  console.info('[mercado-pago:oauth:account-upsert]', {
-    tenantId: params.tenantId,
-    userId: params.tokens.user_id,
-    liveMode: params.tokens.live_mode ?? null,
-    scope: params.tokens.scope ?? null,
-    tokenType: params.tokens.token_type ?? null,
-    expiresAt,
-    rawKeys: Object.keys(params.tokens ?? {}),
-    sponsorId: params.tokens.sponsor_id ?? null,
-    userTest: params.tokens.user_test ?? null,
-  })
 
   const { error } = await admin
     .from('tenant_payment_accounts')

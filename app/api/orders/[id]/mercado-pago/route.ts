@@ -78,8 +78,6 @@ export async function POST(
       tenantId: order.tenant_id,
       orderId: order.id,
       liveMode: tenantAccount?.live_mode ?? null,
-      preferenceId: preference.id,
-      checkoutUrl,
       hasSandboxUrl: Boolean(preference.sandbox_init_point),
     })
 

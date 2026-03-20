@@ -133,9 +133,7 @@ export async function POST(request: NextRequest) {
       tenantId: payload.tenant_id,
       tenantSlug: payload.tenant_slug,
       liveMode: tenantAccount?.live_mode ?? null,
-      preferenceId: preference.id,
       checkoutSessionId: session.id,
-      checkoutUrl,
       hasSandboxUrl: Boolean(preference.sandbox_init_point),
     })
 
