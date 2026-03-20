@@ -25,6 +25,14 @@ type AdminTenant = {
   last_order_at: string | null
 }
 
+type TenantHistoryEvent = {
+  id: string
+  event_type: string
+  message: string
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
 const statusConfig = {
   active: { label: 'Ativo', color: 'bg-green-100 text-green-700' },
   inactive: { label: 'Inativo', color: 'bg-slate-100 text-slate-600' },
@@ -71,6 +79,8 @@ export default function AdminTenantsPage() {
   const [newBillingDate, setNewBillingDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [page, setPage] = useState(1)
+  const [history, setHistory] = useState<TenantHistoryEvent[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   async function loadTenants() {
     setLoading(true)
@@ -97,6 +107,18 @@ export default function AdminTenantsPage() {
         ? new Date(tenant.next_billing_at).toISOString().split('T')[0]
         : ''
     )
+    void loadTenantHistory(tenant.id)
+  }
+
+  async function loadTenantHistory(tenantId: string) {
+    setHistoryLoading(true)
+    try {
+      const res = await fetch(`/api/admin/tenants/${tenantId}/history`)
+      const json = await res.json()
+      setHistory(json.data ?? [])
+    } finally {
+      setHistoryLoading(false)
+    }
   }
 
   async function handleSave() {
@@ -114,6 +136,7 @@ export default function AdminTenantsPage() {
         }),
       })
       await loadTenants()
+      await loadTenantHistory(selected.id)
       setSelected(null)
     } finally {
       setSaving(false)
@@ -134,6 +157,7 @@ export default function AdminTenantsPage() {
         }),
       })
       await loadTenants()
+      await loadTenantHistory(selected.id)
       setSelected(null)
     } finally {
       setSaving(false)
@@ -150,6 +174,7 @@ export default function AdminTenantsPage() {
         body: JSON.stringify({ status: 'active' }),
       })
       await loadTenants()
+      await loadTenantHistory(selected.id)
       setSelected(null)
     } finally {
       setSaving(false)
@@ -469,6 +494,38 @@ export default function AdminTenantsPage() {
                   >
                     Suspender
                   </Button>
+                )}
+              </div>
+
+              <div className="border-t border-slate-200 pt-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Histórico administrativo</h3>
+                  <span className="text-xs text-slate-400">Últimos 20 eventos</span>
+                </div>
+
+                {historyLoading ? (
+                  <div className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
+                    Carregando histórico...
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
+                    Nenhum evento administrativo registrado ainda.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {history.map((event) => (
+                      <div key={event.id} className="rounded-lg border border-slate-200 px-3 py-2">
+                        <p className="text-sm text-slate-700">{event.message}</p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {new Date(event.created_at).toLocaleDateString('pt-BR')} às{' '}
+                          {new Date(event.created_at).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

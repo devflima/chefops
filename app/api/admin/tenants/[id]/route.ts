@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { recordAdminTenantEvent } from '@/lib/admin-audit'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -47,6 +48,14 @@ export async function PATCH(
     }
 
     const admin = createAdminClient()
+    const { data: currentTenant, error: currentTenantError } = await admin
+      .from('tenants')
+      .select('id, name, plan, status, next_billing_at, suspension_reason')
+      .eq('id', id)
+      .single()
+
+    if (currentTenantError || !currentTenant) throw currentTenantError
+
     const updates: Record<string, unknown> = { ...parsed.data }
 
     // Se suspendendo, registra a data
@@ -68,6 +77,64 @@ export async function PATCH(
       .single()
 
     if (error) throw error
+
+    const events: Array<Promise<void>> = []
+
+    if (parsed.data.plan && parsed.data.plan !== currentTenant.plan) {
+      events.push(
+        recordAdminTenantEvent({
+          tenantId: id,
+          adminUserId: user.id,
+          eventType: 'plan_changed',
+          message: `Plano alterado de ${currentTenant.plan} para ${parsed.data.plan}.`,
+          metadata: {
+            from: currentTenant.plan,
+            to: parsed.data.plan,
+          },
+        })
+      )
+    }
+
+    if (parsed.data.status && parsed.data.status !== currentTenant.status) {
+      events.push(
+        recordAdminTenantEvent({
+          tenantId: id,
+          adminUserId: user.id,
+          eventType: parsed.data.status === 'suspended' ? 'tenant_suspended' : 'tenant_status_changed',
+          message:
+            parsed.data.status === 'suspended'
+              ? `Estabelecimento suspenso. Motivo: ${parsed.data.suspension_reason ?? 'Não informado'}.`
+              : `Status alterado de ${currentTenant.status} para ${parsed.data.status}.`,
+          metadata: {
+            from: currentTenant.status,
+            to: parsed.data.status,
+            suspension_reason: parsed.data.suspension_reason ?? null,
+          },
+        })
+      )
+    }
+
+    if (
+      typeof parsed.data.next_billing_at !== 'undefined' &&
+      parsed.data.next_billing_at !== currentTenant.next_billing_at
+    ) {
+      events.push(
+        recordAdminTenantEvent({
+          tenantId: id,
+          adminUserId: user.id,
+          eventType: 'billing_date_changed',
+          message: 'Próxima cobrança atualizada no admin.',
+          metadata: {
+            from: currentTenant.next_billing_at,
+            to: parsed.data.next_billing_at,
+          },
+        })
+      )
+    }
+
+    if (events.length > 0) {
+      await Promise.all(events)
+    }
 
     return NextResponse.json({ data })
   } catch (error) {
