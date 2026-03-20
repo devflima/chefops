@@ -1,6 +1,7 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refundOrderIfNeeded } from '@/lib/order-refunds'
+import { sendOrderWhatsappNotification } from '@/lib/order-whatsapp'
 import { deductOrderStockIfNeeded } from '@/lib/stock-deduction'
 import { hasPlanFeature } from '@/features/plans/types'
 import { NextRequest, NextResponse } from 'next/server'
@@ -130,6 +131,27 @@ export async function PATCH(
       const deductionResult = await deductOrderStockIfNeeded(id, user.id)
       if (deductionResult.deducted) {
         data.stock_deducted_at = new Date().toISOString()
+      }
+    }
+
+    const statusChanged = parsed.data.status && parsed.data.status !== existingOrder.status
+    const eventKeyByStatus = {
+      confirmed: 'order_confirmed',
+      preparing: 'order_preparing',
+      ready: 'order_ready',
+      delivered: 'order_delivered',
+      cancelled: 'order_cancelled',
+    } as const
+
+    if (statusChanged) {
+      const eventKey = eventKeyByStatus[parsed.data.status as keyof typeof eventKeyByStatus]
+      if (eventKey) {
+        await sendOrderWhatsappNotification({
+          orderId: id,
+          eventKey,
+        }).catch((error) => {
+          console.error('[order-whatsapp:status-change]', error)
+        })
       }
     }
 

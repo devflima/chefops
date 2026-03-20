@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
+import { sendOrderWhatsappNotification } from '@/lib/order-whatsapp'
 
 type CheckoutSessionPayload = {
   tenant_id: string
@@ -131,6 +132,13 @@ export async function createOrderFromCheckoutSession(params: {
     .eq('id', checkoutSessionId)
 
   if (checkoutUpdateError) throw checkoutUpdateError
+
+  await sendOrderWhatsappNotification({
+    orderId: order.id,
+    eventKey: 'order_received',
+  }).catch((error) => {
+    console.error('[order-whatsapp:received]', error)
+  })
 
   return order
 }

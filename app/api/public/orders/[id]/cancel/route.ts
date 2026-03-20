@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refundOrderIfNeeded } from '@/lib/order-refunds'
+import { sendOrderWhatsappNotification } from '@/lib/order-whatsapp'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
@@ -48,6 +49,13 @@ export async function POST(
     }
 
     await refundOrderIfNeeded(id)
+
+    await sendOrderWhatsappNotification({
+      orderId: id,
+      eventKey: 'order_cancelled',
+    }).catch((error) => {
+      console.error('[order-whatsapp:public-cancel]', error)
+    })
 
     const { data: updatedOrder, error: updatedOrderError } = await admin
       .from('orders')
