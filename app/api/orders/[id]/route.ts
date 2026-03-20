@@ -2,6 +2,7 @@ import { requireTenantRoles } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refundOrderIfNeeded } from '@/lib/order-refunds'
 import { deductOrderStockIfNeeded } from '@/lib/stock-deduction'
+import { hasPlanFeature } from '@/features/plans/types'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -95,7 +96,8 @@ export async function PATCH(
     const shouldDeductStock =
       !!parsed.data.status &&
       ['confirmed', 'preparing', 'ready', 'delivered'].includes(parsed.data.status) &&
-      existingOrder.status === 'pending'
+      existingOrder.status === 'pending' &&
+      hasPlanFeature(profile.tenant?.plan ?? 'free', 'stock_automation')
 
     const updatePayload = {
       ...parsed.data,

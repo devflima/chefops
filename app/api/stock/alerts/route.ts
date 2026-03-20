@@ -1,13 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantFeature('stock', ['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
 
     const { data, error } = await supabase
       .from('stock_balance')
       .select('*')
+      .eq('tenant_id', profile.tenant_id)
       .eq('active', true)
       .filter('current_stock', 'lte', 'min_stock')
       .order('current_stock', { ascending: true })

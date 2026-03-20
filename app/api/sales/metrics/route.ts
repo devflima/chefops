@@ -1,9 +1,9 @@
-import { requireTenantRoles } from '@/lib/auth-guards'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager'])
+    const auth = await requireTenantFeature('sales', ['owner', 'manager'])
     if (!auth.ok) return auth.response
     const { supabase, profile } = auth
     const { searchParams } = new URL(request.url)

@@ -22,12 +22,15 @@ export function useHasFeature(feature: PlanFeature) {
 }
 
 export function useCanAddMore(
-  resource: 'users' | 'tables' | 'products',
+  resource: 'users' | 'tables' | 'products' | 'categories' | 'extras' | 'menu_items',
   current: number
 ) {
   const { data } = usePlan()
   if (!data) return false
-  const limit = data[`max_${resource}` as keyof TenantPlan] as number
+  const limit =
+    resource === 'categories' || resource === 'extras' || resource === 'menu_items'
+      ? data.resource_limits?.[resource] ?? -1
+      : (data[`max_${resource}` as keyof TenantPlan] as number)
   if (limit === -1) return true // ilimitado
   return current < limit
 }

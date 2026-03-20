@@ -6,7 +6,10 @@ export type PlanFeature =
   | 'tables'
   | 'kds'
   | 'stock'
+  | 'stock_automation'
   | 'sales'
+  | 'payments'
+  | 'team'
   | 'reports'
   | 'white_label'
 
@@ -17,6 +20,11 @@ export type TenantPlan = {
   max_users: number
   max_tables: number
   max_products: number
+  resource_limits?: {
+    categories: number
+    extras: number
+    menu_items: number
+  }
   features: PlanFeature[]
   role_limits?: RoleLimits
   available_roles?: EstablishmentRole[]
@@ -25,9 +33,9 @@ export type TenantPlan = {
 }
 
 export const PLAN_LABELS: Record<Plan, string> = {
-  free: 'Free',
-  basic: 'Basic',
-  pro: 'Pro',
+  free: 'Basic',
+  basic: 'Standard',
+  pro: 'Premium',
 }
 
 export const PLAN_PRICES: Record<Plan, number> = {
@@ -41,7 +49,8 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
     '1 owner + 1 usuário adicional',
     'Até 20 produtos',
     'Cardápio digital público',
-    'Pedidos online ilimitados',
+    'Até 50 pedidos online por mês',
+    'Integração com pagamento',
   ],
   basic: [
     '1 owner, 1 manager, 1 cashier e 1 kitchen',
@@ -49,16 +58,46 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
     'Até 10 mesas e comandas',
     'KDS — tela da cozinha',
     'Controle de estoque',
+    'Baixa automática por ficha técnica',
     'Dashboard de vendas',
+    'Equipe com perfis por função',
     'Suporte por email',
   ],
   pro: [
     'Até 27 usuários por operação',
     '2 owners, 5 managers, 10 cashiers e 10 kitchen',
     'Mesas ilimitadas',
-    'Tudo do Basic',
+    'Tudo do Standard',
     'Relatórios avançados',
     'White-label',
     'Suporte prioritário',
   ],
+}
+
+export const PLAN_INCLUDED_FEATURES: Record<Plan, PlanFeature[]> = {
+  free: ['orders', 'menu', 'tables', 'payments', 'team'],
+  basic: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'team'],
+  pro: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'team', 'reports', 'white_label'],
+}
+
+export const PLAN_RESOURCE_LIMITS: Record<Plan, TenantPlan['resource_limits']> = {
+  free: {
+    categories: 10,
+    extras: 20,
+    menu_items: 30,
+  },
+  basic: {
+    categories: -1,
+    extras: -1,
+    menu_items: -1,
+  },
+  pro: {
+    categories: -1,
+    extras: -1,
+    menu_items: -1,
+  },
+}
+
+export function hasPlanFeature(plan: Plan, feature: PlanFeature) {
+  return PLAN_INCLUDED_FEATURES[plan].includes(feature)
 }

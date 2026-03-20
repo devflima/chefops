@@ -31,9 +31,9 @@ const statusConfig = {
 }
 
 const planConfig = {
-  free:  { label: 'Free',  color: 'bg-slate-100 text-slate-600' },
-  basic: { label: 'Basic', color: 'bg-blue-100 text-blue-700' },
-  pro:   { label: 'Pro',   color: 'bg-purple-100 text-purple-700' },
+  free:  { label: 'Basic',    color: 'bg-slate-100 text-slate-600' },
+  basic: { label: 'Standard', color: 'bg-blue-100 text-blue-700' },
+  pro:   { label: 'Premium',  color: 'bg-purple-100 text-purple-700' },
 }
 
 export default function AdminTenantsPage() {
@@ -249,9 +249,9 @@ export default function AdminTenantsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="free">Free</SelectItem>
-                    <SelectItem value="basic">Basic — R$ 89/mês</SelectItem>
-                    <SelectItem value="pro">Pro — R$ 189/mês</SelectItem>
+                    <SelectItem value="free">Basic</SelectItem>
+                    <SelectItem value="basic">Standard — R$ 89/mês</SelectItem>
+                    <SelectItem value="pro">Premium — R$ 189/mês</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

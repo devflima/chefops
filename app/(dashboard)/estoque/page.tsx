@@ -106,7 +106,7 @@ export default function EstoquePage() {
   }
 
   return (
-    <FeatureGate feature='tables'>
+    <FeatureGate feature='stock'>
         <div>
         <div className="flex items-center justify-between mb-6">
           <div>

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PaginationControls from '@/components/shared/PaginationControls'
 import { Plus, Package } from 'lucide-react'
 import type { Product } from '@/features/products/types'
+import { useCanAddMore, usePlan } from '@/features/plans/hooks/usePlan'
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
@@ -48,6 +49,9 @@ export default function ProdutosPage() {
   const { data: categories } = useCategories()
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
+  const { data: plan } = usePlan()
+  const canAddMoreProducts = useCanAddMore('products', data?.count ?? 0)
+  const productLimitReached = !!plan && !canAddMoreProducts
 
   const form = useForm<ProductForm, unknown, ProductForm>({
     resolver: zodResolver(productSchema) as Resolver<ProductForm>,
@@ -95,12 +99,19 @@ export default function ProdutosPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Produtos</h1>
           <p className="text-slate-500 text-sm mt-1">
             {data?.count ?? 0} produtos cadastrados
+            {plan && plan.max_products !== -1 ? ` · ${data?.count ?? 0}/${plan.max_products} no plano` : ''}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} disabled={productLimitReached}>
           <Plus className="w-4 h-4 mr-2" /> Novo produto
         </Button>
       </div>
+
+      {productLimitReached && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          O plano atual atingiu o limite de {plan?.max_products} produtos. Faça upgrade para cadastrar mais.
+        </div>
+      )}
 
       <div className="mb-6 flex flex-wrap gap-3">
         <select
@@ -141,7 +152,7 @@ export default function ProdutosPage() {
           <div className="p-12 text-center">
             <Package className="w-8 h-8 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">Nenhum produto cadastrado.</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={openCreate}>
+            <Button variant="outline" size="sm" className="mt-4" onClick={openCreate} disabled={productLimitReached}>
               Cadastrar primeiro produto
             </Button>
           </div>

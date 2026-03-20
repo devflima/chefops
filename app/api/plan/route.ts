@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { PLAN_INCLUDED_FEATURES, PLAN_RESOURCE_LIMITS } from '@/features/plans/types'
 import {
   getAvailableRolesForPlan,
   PLAN_MAX_USERS,
@@ -37,6 +38,8 @@ export async function GET() {
       data: {
         ...tenant,
         max_users: PLAN_MAX_USERS[tenant.plan],
+        features: PLAN_INCLUDED_FEATURES[tenant.plan],
+        resource_limits: PLAN_RESOURCE_LIMITS[tenant.plan],
         role_limits: PLAN_ROLE_LIMITS[tenant.plan],
         available_roles: getAvailableRolesForPlan(tenant.plan),
       },

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { usePlan } from '@/features/plans/hooks/usePlan'
+import { PLAN_LABELS } from '@/features/plans/types'
 import {
   LayoutDashboard, Package, ArrowLeftRight,
   UtensilsCrossed, ClipboardList, BarChart2,
@@ -65,7 +66,7 @@ export default function Sidebar({ profile }: Props) {
           </div>
           {plan && (
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${planColors[plan.plan]}`}>
-              {plan.plan.charAt(0).toUpperCase() + plan.plan.slice(1)}
+              {PLAN_LABELS[plan.plan]}
             </span>
           )}
         </div>

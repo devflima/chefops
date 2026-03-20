@@ -1,4 +1,4 @@
-import { requireTenantRoles } from '@/lib/auth-guards'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -11,7 +11,7 @@ const movementSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager'])
+    const auth = await requireTenantFeature('stock', ['owner', 'manager'])
     if (!auth.ok) return auth.response
     const { supabase, profile } = auth
     const { searchParams } = new URL(request.url)
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager'])
+    const auth = await requireTenantFeature('stock', ['owner', 'manager'])
     if (!auth.ok) return auth.response
     const { supabase, profile, user } = auth
     const body = await request.json()

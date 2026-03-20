@@ -72,6 +72,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('max_products')
+      .eq('id', profile.tenant_id)
+      .single()
+
+    if ((tenant?.max_products ?? -1) !== -1) {
+      const { count } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id)
+
+      if ((count ?? 0) >= (tenant?.max_products ?? 0)) {
+        return NextResponse.json(
+          { error: `Limite de ${tenant?.max_products} produtos atingido para o plano atual.` },
+          { status: 429 }
+        )
+      }
+    }
+
     const { data, error } = await supabase
       .from('products')
       .insert({ ...parsed.data, tenant_id: profile.tenant_id })

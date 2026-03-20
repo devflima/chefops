@@ -1,4 +1,4 @@
-import { requireTenantRoles } from '@/lib/auth-guards'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -16,7 +16,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager'])
+    const auth = await requireTenantFeature('stock_automation', ['owner', 'manager'])
     if (!auth.ok) return auth.response
     const { supabase, profile } = auth
     const { id } = await params
@@ -45,7 +45,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager'])
+    const auth = await requireTenantFeature('stock_automation', ['owner', 'manager'])
     if (!auth.ok) return auth.response
     const { supabase, profile } = auth
     const { id } = await params

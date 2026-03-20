@@ -1,32 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextResponse } from 'next/server'
 
 export async function POST() {
   try {
-    const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id, role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
-    }
-
-    // Apenas owner e manager podem fechar o dia
-    if (!['owner', 'manager'].includes(profile.role)) {
-      return NextResponse.json(
-        { error: 'Sem permissão para fechar o dia.' },
-        { status: 403 }
-      )
-    }
+    const auth = await requireTenantFeature('stock', ['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile, user } = auth
 
     const today = new Date().toISOString().split('T')[0]
 

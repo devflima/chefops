@@ -50,6 +50,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const plan = profile.tenant?.plan ?? 'free'
+    if (plan === 'free') {
+      const { count } = await supabase
+        .from('extras')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id)
+        .eq('active', true)
+
+      if ((count ?? 0) >= 20) {
+        return NextResponse.json(
+          { error: 'Limite de 20 adicionais atingido para o plano Free.' },
+          { status: 429 }
+        )
+      }
+    }
+
     const { data, error } = await supabase
       .from('extras')
       .insert({ ...parsed.data, tenant_id: profile.tenant_id })

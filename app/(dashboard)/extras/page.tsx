@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Settings, Pencil, Trash2 } from 'lucide-react'
 import type { Resolver } from 'react-hook-form'
+import { useCanAddMore, usePlan } from '@/features/plans/hooks/usePlan'
 
 type Extra = {
   id: string
@@ -51,6 +52,7 @@ export default function ExtrasPage() {
   const [nameFilter, setNameFilter] = useState('')
   const pageSize = 10
   const queryClient = useQueryClient()
+  const { data: plan } = usePlan()
 
   const { data: extras, isLoading } = useQuery({
     queryKey: ['extras'],
@@ -71,6 +73,9 @@ export default function ExtrasPage() {
     return true
   })
   const paginatedExtras = filteredExtras.slice((page - 1) * pageSize, page * pageSize)
+  const extrasCount = extras?.length ?? 0
+  const canAddMoreExtras = useCanAddMore('extras', extrasCount)
+  const extrasLimitReached = !!plan && !canAddMoreExtras
 
   function openCreate() {
     setEditing(null)
@@ -122,12 +127,21 @@ export default function ExtrasPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Adicionais</h1>
           <p className="text-slate-500 text-sm mt-1">
             Bordas, sabores e outros adicionais do cardápio
+            {plan?.resource_limits?.extras !== -1
+              ? ` · ${extrasCount}/${plan?.resource_limits?.extras} no plano`
+              : ''}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} disabled={extrasLimitReached}>
           <Plus className="w-4 h-4 mr-2" /> Novo adicional
         </Button>
       </div>
+
+      {extrasLimitReached && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          O plano atual atingiu o limite de {plan?.resource_limits?.extras} adicionais. Faça upgrade para cadastrar mais.
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="flex flex-wrap gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
@@ -163,7 +177,7 @@ export default function ExtrasPage() {
             <p className="text-slate-400 text-xs mt-1">
               Cadastre bordas recheadas, sabores extras e outros adicionais.
             </p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={openCreate}>
+            <Button variant="outline" size="sm" className="mt-4" onClick={openCreate} disabled={extrasLimitReached}>
               Criar primeiro adicional
             </Button>
           </div>

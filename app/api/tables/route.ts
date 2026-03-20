@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireTenantRoles(['owner', 'manager', 'cashier'])
     if (!auth.ok) return auth.response
-    const { profile } = auth
+    const { supabase, profile } = auth
     const body = await request.json()
     const parsed = tableSchema.safeParse(body)
 
@@ -72,6 +72,26 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = createAdminClient()
+
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('max_tables')
+      .eq('id', profile.tenant_id)
+      .single()
+
+    if ((tenant?.max_tables ?? -1) !== -1) {
+      const { count } = await supabase
+        .from('tables')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id)
+
+      if ((count ?? 0) >= (tenant?.max_tables ?? 0)) {
+        return NextResponse.json(
+          { error: `Limite de ${tenant?.max_tables} mesas atingido para o plano atual.` },
+          { status: 429 }
+        )
+      }
+    }
 
     // Cria mesa e QR Code juntos
     const { data: table, error: tableError } = await admin

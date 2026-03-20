@@ -14,6 +14,7 @@ import PaginationControls from '@/components/shared/PaginationControls'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useCanAddMore, useHasFeature, usePlan } from '@/features/plans/hooks/usePlan'
 import { Plus, UtensilsCrossed, Pencil, Trash2, RotateCcw } from 'lucide-react'
 import type { MenuItem } from '@/features/orders/types'
 import type { Resolver } from 'react-hook-form'
@@ -47,6 +48,8 @@ export default function CardapioPage() {
   const { data: products } = useProducts({ active: true, page: 1, pageSize: 100 })
   const createMenuItem = useCreateMenuItem()
   const queryClient = useQueryClient()
+  const hasStockAutomation = useHasFeature('stock_automation')
+  const { data: plan } = usePlan()
 
   const items = (allItems ?? []).filter((item: MenuItem) => {
     if (statusFilter === 'available' && !item.available) return false
@@ -57,6 +60,9 @@ export default function CardapioPage() {
 
   const inactiveCount = allItems?.filter((i: MenuItem) => !i.available).length ?? 0
   const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize)
+  const menuItemCount = allItems?.length ?? 0
+  const canAddMoreMenuItems = useCanAddMore('menu_items', menuItemCount)
+  const menuItemLimitReached = !!plan && !canAddMoreMenuItems
 
   const form = useForm<MenuItemForm, unknown, MenuItemForm>({
     resolver: zodResolver(menuItemSchema) as Resolver<MenuItemForm>,
@@ -99,15 +105,20 @@ export default function CardapioPage() {
     const json = await res.json()
     setSelectedExtras(json.data?.map((e: { id: string }) => e.id) ?? [])
 
-    const ingredientsRes = await fetch(`/api/menu-items/${item.id}/ingredients`)
-    const ingredientsJson = await ingredientsRes.json()
-    setIngredients(
-      (ingredientsJson.data ?? []).map((ingredient: { product_id: string; quantity: number }) => ({
-        product_id: ingredient.product_id,
-        quantity: Number(ingredient.quantity),
-      }))
-    )
-    setLinkedProductId(item.product_id ?? 'none')
+    if (hasStockAutomation) {
+      const ingredientsRes = await fetch(`/api/menu-items/${item.id}/ingredients`)
+      const ingredientsJson = await ingredientsRes.json()
+      setIngredients(
+        (ingredientsJson.data ?? []).map((ingredient: { product_id: string; quantity: number }) => ({
+          product_id: ingredient.product_id,
+          quantity: Number(ingredient.quantity),
+        }))
+      )
+      setLinkedProductId(item.product_id ?? 'none')
+    } else {
+      setIngredients([])
+      setLinkedProductId('none')
+    }
     setOpen(true)
   }
 
@@ -115,7 +126,7 @@ export default function CardapioPage() {
     try {
       const payload = {
         ...values,
-        product_id: linkedProductId === 'none' ? null : linkedProductId,
+        product_id: hasStockAutomation && linkedProductId !== 'none' ? linkedProductId : null,
       }
 
       let menuItemId = editing?.id ?? null
@@ -141,13 +152,15 @@ export default function CardapioPage() {
           body: JSON.stringify({ extra_ids: selectedExtras }),
         })
 
-        await fetch(`/api/menu-items/${menuItemId}/ingredients`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ingredients: ingredients.filter((ingredient) => ingredient.product_id !== 'none'),
-          }),
-        })
+        if (hasStockAutomation) {
+          await fetch(`/api/menu-items/${menuItemId}/ingredients`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ingredients: ingredients.filter((ingredient) => ingredient.product_id !== 'none'),
+            }),
+          })
+        }
       }
       setOpen(false)
       form.reset()
@@ -204,14 +217,28 @@ export default function CardapioPage() {
           <p className="text-slate-500 text-sm mt-1">
             {allItems?.filter((i: MenuItem) => i.available).length ?? 0} itens disponíveis
             {inactiveCount > 0 && ` · ${inactiveCount} inativo${inactiveCount > 1 ? 's' : ''}`}
+            {plan?.resource_limits?.menu_items !== -1
+              ? ` · ${menuItemCount}/${plan?.resource_limits?.menu_items} no plano`
+              : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={openCreate}>
+          <Button onClick={openCreate} disabled={menuItemLimitReached}>
             <Plus className="w-4 h-4 mr-2" /> Novo item
           </Button>
         </div>
       </div>
+
+      {plan?.plan === 'free' && (
+        <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+          No plano Basic, o estabelecimento pode receber até 50 pedidos online por mês.
+          {menuItemLimitReached && (
+            <span className="mt-2 block text-amber-800">
+              O limite de {plan?.resource_limits?.menu_items} itens de cardápio do plano também foi atingido.
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-3">
         <select
@@ -252,7 +279,13 @@ export default function CardapioPage() {
             <p className="text-slate-500 text-sm">
               Nenhum item encontrado para os filtros atuais.
             </p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={openCreate}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={openCreate}
+              disabled={menuItemLimitReached}
+            >
               Adicionar primeiro item
             </Button>
           </div>
@@ -390,83 +423,94 @@ export default function CardapioPage() {
                 </FormItem>
               )} />
 
-              <div>
-                <label className="text-sm font-medium text-slate-700 block mb-2">
-                  Produto base para baixa simples
-                </label>
-                <Select value={linkedProductId} onValueChange={setLinkedProductId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecionar produto base" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum produto vinculado</SelectItem>
-                    {products?.data?.map((product: { id: string; name: string; unit: string }) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="mt-1 text-xs text-slate-400">
-                  Se não houver ficha técnica, este produto será usado como baixa automática padrão.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="mb-3 flex items-center justify-between">
+              {hasStockAutomation ? (
+                <>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">Ficha técnica</p>
-                    <p className="text-xs text-slate-500">
-                      Defina os insumos e quantidades que serão baixados automaticamente.
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Produto base para baixa simples
+                    </label>
+                    <Select value={linkedProductId} onValueChange={setLinkedProductId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecionar produto base" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum produto vinculado</SelectItem>
+                        {products?.data?.map((product: { id: string; name: string; unit: string }) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Se não houver ficha técnica, este produto será usado como baixa automática padrão.
                     </p>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={addIngredient} className="shrink-0">
-                    <Plus className="mr-2 h-3.5 w-3.5" />
-                    Adicionar insumo
-                  </Button>
-                </div>
 
-                <div className="space-y-3">
-                  {ingredients.length === 0 ? (
-                    <p className="text-sm text-slate-400">
-                      Nenhum insumo configurado. O sistema usará o produto base, se houver.
-                    </p>
-                  ) : (
-                    ingredients.map((ingredient, index) => (
-                      <div key={`${ingredient.product_id}-${index}`} className="grid grid-cols-[1fr_120px_auto] gap-3">
-                        <Select
-                          value={ingredient.product_id}
-                          onValueChange={(value) => updateIngredient(index, { product_id: value })}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecionar insumo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Selecionar insumo</SelectItem>
-                            {products?.data?.map((product: { id: string; name: string; unit: string }) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          step="0.001"
-                          min="0.001"
-                          value={ingredient.quantity}
-                          onChange={(event) =>
-                            updateIngredient(index, { quantity: Number(event.target.value) || 0 })
-                          }
-                        />
-                        <Button type="button" variant="ghost" onClick={() => removeIngredient(index)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                  <div className="rounded-xl border border-slate-200 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Ficha técnica</p>
+                        <p className="text-xs text-slate-500">
+                          Defina os insumos e quantidades que serão baixados automaticamente.
+                        </p>
                       </div>
-                    ))
-                  )}
+                      <Button type="button" variant="outline" size="sm" onClick={addIngredient} className="shrink-0">
+                        <Plus className="mr-2 h-3.5 w-3.5" />
+                        Adicionar insumo
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {ingredients.length === 0 ? (
+                        <p className="text-sm text-slate-400">
+                          Nenhum insumo configurado. O sistema usará o produto base, se houver.
+                        </p>
+                      ) : (
+                        ingredients.map((ingredient, index) => (
+                          <div key={`${ingredient.product_id}-${index}`} className="grid grid-cols-[1fr_120px_auto] gap-3">
+                            <Select
+                              value={ingredient.product_id}
+                              onValueChange={(value) => updateIngredient(index, { product_id: value })}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecionar insumo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Selecionar insumo</SelectItem>
+                                {products?.data?.map((product: { id: string; name: string; unit: string }) => (
+                                  <SelectItem key={product.id} value={product.id}>
+                                    {product.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              step="0.001"
+                              min="0.001"
+                              value={ingredient.quantity}
+                              onChange={(event) =>
+                                updateIngredient(index, { quantity: Number(event.target.value) || 0 })
+                              }
+                            />
+                            <Button type="button" variant="ghost" onClick={() => removeIngredient(index)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-700">Baixa automática de estoque</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Vincular produto base e ficha técnica é um recurso disponível apenas nos planos pagos.
+                  </p>
                 </div>
-              </div>
+              )}
 
               {allExtras && allExtras.length > 0 && (
                 <div>

@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantRoles } from '@/lib/auth-guards'
+import { hasPlanFeature } from '@/features/plans/types'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -18,7 +19,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const { id } = await params
     const body = await request.json()
     const parsed = updateSchema.safeParse(body)
@@ -30,10 +33,19 @@ export async function PATCH(
       )
     }
 
+    const plan = profile.tenant?.plan ?? 'free'
+    if (parsed.data.product_id && !hasPlanFeature(plan, 'stock_automation')) {
+      return NextResponse.json(
+        { error: 'Baixa automática está disponível apenas nos planos pagos.' },
+        { status: 403 }
+      )
+    }
+
     const { data, error } = await supabase
       .from('menu_items')
       .update(parsed.data)
       .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
       .select('*, category:categories(id, name)')
       .single()
 
@@ -59,13 +71,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantRoles(['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const { id } = await params
 
     const { error } = await supabase
       .from('menu_items')
       .update({ available: false })
       .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
 
     if (error) throw error
 

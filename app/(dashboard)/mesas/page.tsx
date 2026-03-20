@@ -31,6 +31,7 @@ import {
 import { Plus, Users, Clock, QrCode, Pencil, Trash2 } from 'lucide-react'
 import type { Table } from '@/features/tables/types'
 import FeatureGate from '@/features/plans/components/FeatureGate'
+import { useCanAddMore, usePlan } from '@/features/plans/hooks/usePlan'
 
 const tableSchema = z.object({
   number: z.string().min(1, 'Número obrigatório'),
@@ -87,6 +88,7 @@ export default function MesasPage() {
   const deleteTable = useDeleteTable()
   const openSession = useOpenSession()
   const closeSession = useCloseSession()
+  const { data: plan } = usePlan()
 
   const tableForm = useForm<TableForm, unknown, TableForm>({
     resolver: zodResolver(tableSchema) as Resolver<TableForm>,
@@ -163,6 +165,9 @@ export default function MesasPage() {
     tables?.filter((t: Table) => t.status === 'available').length ?? 0
   const occupied =
     tables?.filter((t: Table) => t.status === 'occupied').length ?? 0
+  const tableCount = tables?.length ?? 0
+  const canAddMoreTables = useCanAddMore('tables', tableCount)
+  const tableLimitReached = !!plan && !canAddMoreTables
 
   return (
     <FeatureGate feature='tables'>
@@ -173,12 +178,19 @@ export default function MesasPage() {
             <p className="mt-1 text-sm text-slate-500">
               {occupied} ocupada{occupied !== 1 ? 's' : ''} · {available} livre
               {available !== 1 ? 's' : ''}
+              {plan && plan.max_tables !== -1 ? ` · ${tableCount}/${plan.max_tables} mesas` : ''}
             </p>
           </div>
-          <Button onClick={() => setNewTableOpen(true)}>
+          <Button onClick={() => setNewTableOpen(true)} disabled={tableLimitReached}>
             <Plus className="mr-2 h-4 w-4" /> Nova mesa
           </Button>
         </div>
+
+        {tableLimitReached && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            O plano atual atingiu o limite de {plan?.max_tables} mesas. Faça upgrade para cadastrar mais.
+          </div>
+        )}
 
         {isLoading ? (
           <div className="py-12 text-center text-slate-400">Carregando...</div>
@@ -190,6 +202,7 @@ export default function MesasPage() {
               size="sm"
               className="mt-4"
               onClick={() => setNewTableOpen(true)}
+              disabled={tableLimitReached}
             >
               Cadastrar primeira mesa
             </Button>

@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form'
 import { Plus, Tag, ChefHat, GlassWater, Pencil, Trash2 } from 'lucide-react'
 import type { Category } from '@/features/products/types'
+import { useCanAddMore, usePlan } from '@/features/plans/hooks/usePlan'
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
@@ -44,6 +45,7 @@ export default function CategoriasPage() {
   const pageSize = 10
 
   const { data: categories, isLoading } = useCategories()
+  const { data: plan } = usePlan()
   const filteredCategories = (categories ?? []).filter((category: Category) => {
     if (destinationFilter === 'kitchen' && !category.goes_to_kitchen) return false
     if (destinationFilter === 'counter' && category.goes_to_kitchen) return false
@@ -51,6 +53,9 @@ export default function CategoriasPage() {
     return true
   })
   const paginatedCategories = filteredCategories.slice((page - 1) * pageSize, page * pageSize)
+  const categoryCount = categories?.length ?? 0
+  const canAddMoreCategories = useCanAddMore('categories', categoryCount)
+  const categoryLimitReached = !!plan && !canAddMoreCategories
   const queryClient = useQueryClient()
 
   const form = useForm<CategoryForm, unknown, CategoryForm>({
@@ -131,12 +136,21 @@ export default function CategoriasPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Categorias</h1>
           <p className="mt-1 text-sm text-slate-500">
             Defina quais categorias vão para a cozinha
+            {plan?.resource_limits?.categories !== -1
+              ? ` · ${categoryCount}/${plan?.resource_limits?.categories} no plano`
+              : ''}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} disabled={categoryLimitReached}>
           <Plus className="mr-2 h-4 w-4" /> Nova categoria
         </Button>
       </div>
+
+      {categoryLimitReached && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          O plano atual atingiu o limite de {plan?.resource_limits?.categories} categorias. Faça upgrade para cadastrar mais.
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="flex flex-wrap gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
@@ -175,6 +189,7 @@ export default function CategoriasPage() {
               size="sm"
               className="mt-4"
               onClick={openCreate}
+              disabled={categoryLimitReached}
             >
               Criar primeira categoria
             </Button>

@@ -48,6 +48,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const plan = profile.tenant?.plan ?? 'free'
+    if (plan === 'free') {
+      const { count } = await supabase
+        .from('categories')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id)
+
+      if ((count ?? 0) >= 10) {
+        return NextResponse.json(
+          { error: 'Limite de 10 categorias atingido para o plano Free.' },
+          { status: 429 }
+        )
+      }
+    }
+
     const { data, error } = await supabase
       .from('categories')
       .insert({ ...parsed.data, tenant_id: profile.tenant_id })

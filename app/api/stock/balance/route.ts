@@ -1,9 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantFeature('stock', ['owner', 'manager'])
+    if (!auth.ok) return auth.response
+    const { supabase, profile } = auth
     const { searchParams } = new URL(request.url)
 
     const category_id = searchParams.get('category_id') || ''
@@ -12,6 +14,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('stock_balance')
       .select('*')
+      .eq('tenant_id', profile.tenant_id)
       .order('product_name', { ascending: true })
 
     if (only_active) query = query.eq('active', true)

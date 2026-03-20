@@ -63,7 +63,7 @@ export default function VendasPage() {
     : []
 
   return (
-    <FeatureGate feature='tables'>
+    <FeatureGate feature='sales'>
       <div>
         <div className="mb-6 flex items-center justify-between">
           <div>

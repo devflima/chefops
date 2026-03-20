@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { EstablishmentRole } from '@/lib/rbac'
+import type { PlanFeature } from '@/features/plans/types'
+import { hasPlanFeature } from '@/features/plans/types'
 import { NextResponse } from 'next/server'
 
 export async function getCurrentProfile() {
@@ -73,4 +75,29 @@ export async function requireTenantRoles(allowedRoles?: EstablishmentRole[]) {
     ok: true as const,
     ...context,
   }
+}
+
+export async function requireTenantFeature(
+  feature: PlanFeature,
+  allowedRoles?: EstablishmentRole[]
+) {
+  const context = await requireTenantRoles(allowedRoles)
+
+  if (!context.ok) {
+    return context
+  }
+
+  const plan = context.profile.tenant?.plan ?? 'free'
+
+  if (!hasPlanFeature(plan, feature)) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: 'Este recurso não está disponível no plano atual.' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return context
 }

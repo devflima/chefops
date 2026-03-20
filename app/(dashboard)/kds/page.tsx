@@ -98,7 +98,7 @@ export default function KDSPage() {
   const orders: Order[] = data ?? []
 
   return (
-    <FeatureGate feature='tables'>
+    <FeatureGate feature='kds'>
       <div className="min-h-screen bg-slate-900 p-6">
         <div className="mb-6 flex items-center justify-between">
           <div>

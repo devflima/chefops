@@ -1,4 +1,5 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
+import { hasPlanFeature } from '@/features/plans/types'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -50,6 +51,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
         { status: 400 }
+      )
+    }
+
+    const plan = profile.tenant?.plan ?? 'free'
+    if (plan === 'free') {
+      const { count } = await supabase
+        .from('menu_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id)
+
+      if ((count ?? 0) >= 30) {
+        return NextResponse.json(
+          { error: 'Limite de 30 itens de cardápio atingido para o plano Free.' },
+          { status: 429 }
+        )
+      }
+    }
+
+    if (parsed.data.product_id && !hasPlanFeature(plan, 'stock_automation')) {
+      return NextResponse.json(
+        { error: 'Baixa automática está disponível apenas nos planos pagos.' },
+        { status: 403 }
       )
     }
 

@@ -1,9 +1,9 @@
-import { requireTenantRoles } from '@/lib/auth-guards'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager', 'kitchen'])
+    const auth = await requireTenantFeature('kds', ['owner', 'manager', 'kitchen'])
     if (!auth.ok) return auth.response
     const { supabase, profile } = auth
 
