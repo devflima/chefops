@@ -43,7 +43,7 @@ function getTwilioWhatsappConfig() {
     return null
   }
 
-  return { accountSid, authToken, from }
+  return { accountSid, authToken, from: normalizeWhatsappChannelAddress(from) }
 }
 
 function normalizeBrazilPhone(rawPhone: string | null | undefined) {
@@ -68,6 +68,22 @@ function normalizeBrazilPhone(rawPhone: string | null | undefined) {
   }
 
   return `+${digits}`
+}
+
+function normalizeWhatsappChannelAddress(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return trimmed
+
+  if (trimmed.startsWith('whatsapp:')) {
+    return trimmed
+  }
+
+  if (trimmed.startsWith('+')) {
+    return `whatsapp:${trimmed.replace(/[^\d+]/g, '')}`
+  }
+
+  const digits = trimmed.replace(/\D/g, '')
+  return digits ? `whatsapp:+${digits}` : trimmed
 }
 
 function buildOrderWhatsappMessage(params: {
