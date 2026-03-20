@@ -207,13 +207,13 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[95vh] w-[min(1160px,calc(100%-0.75rem))] max-w-none overflow-hidden p-0">
+      <DialogContent className="max-h-[95vh] w-[min(820px,calc(100%-0.75rem))] max-w-none overflow-hidden p-0">
         <DialogHeader className="border-b border-slate-200 px-6 py-4">
           <DialogTitle>Novo pedido manual</DialogTitle>
         </DialogHeader>
 
-        <div className="grid max-h-[calc(95vh-73px)] gap-7 lg:gap-0 lg:grid-cols-[1.4fr_0.9fr]">
-          <div className="space-y-5 overflow-y-auto px-6 py-5 lg:pb-6">
+        <div className="max-h-[calc(95vh-73px)] overflow-y-auto px-6 py-5">
+          <div className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Tipo do pedido</label>
@@ -402,10 +402,8 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="border-t border-slate-200 bg-slate-50 px-6 pt-8 pb-6 mt-6 lg:border-t-0 lg:border-l lg:px-6 lg:py-6">
-            <div className="mt-4 mb-4 flex items-center justify-between">
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-slate-900">Resumo</h3>
                 <p className="text-sm text-slate-500">
@@ -423,7 +421,7 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
               <Badge>{cart.reduce((sum, item) => sum + item.quantity, 0)} itens</Badge>
             </div>
 
-            <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+            <div className="space-y-2">
               {cart.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-400">
                   Adicione itens para montar o pedido.
@@ -492,26 +490,27 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
                 </p>
               )}
 
-              <div className="sticky bottom-0 -mx-3 mt-6 bg-slate-50 px-3 pb-4 pt-3">
+              <div className="mt-6 pt-1">
                 <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleOpenChange(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="button"
-                  className="flex-1"
-                  disabled={createOrder.isPending || createTab.isPending || menuLoading}
-                  onClick={handleSubmit}
-                >
-                  {createOrder.isPending ? 'Criando...' : 'Criar pedido'}
-                </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleOpenChange(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    className="flex-1"
+                    disabled={createOrder.isPending || createTab.isPending || menuLoading}
+                    onClick={handleSubmit}
+                  >
+                    {createOrder.isPending ? 'Criando...' : 'Criar pedido'}
+                  </Button>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>

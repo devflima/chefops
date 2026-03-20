@@ -369,7 +369,7 @@ export default function PedidosPage() {
                       </p>
                     )}
 
-                    {hasWhatsappNotifications && latestWhatsapp && (
+                    {hasWhatsappNotifications && ['online', 'delivery'].includes(order.payment_method) && !order.table_number && latestWhatsapp && (
                       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-medium text-slate-500">WhatsApp</span>
