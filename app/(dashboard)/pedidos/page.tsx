@@ -5,6 +5,7 @@ import {
   useOrders,
   useUpdateOrderStatus,
 } from '@/features/orders/hooks/useOrders'
+import { useDeliveryDrivers } from '@/features/delivery/hooks/useDeliveryDrivers'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import PaginationControls from '@/components/shared/PaginationControls'
@@ -102,6 +103,7 @@ export default function PedidosPage() {
   const [manualOrderOpen, setManualOrderOpen] = useState(false)
   const [chargingOrderId, setChargingOrderId] = useState<string | null>(null)
   const { data, isLoading } = useOrders({ status: statusFilter, page, pageSize })
+  const { data: deliveryDrivers } = useDeliveryDrivers()
   const updateStatus = useUpdateOrderStatus()
 
   async function handleAdvance(order: Order) {
@@ -148,6 +150,14 @@ export default function PedidosPage() {
     } finally {
       setChargingOrderId(null)
     }
+  }
+
+  async function handleAssignDriver(order: Order, deliveryDriverId: string) {
+    await updateStatus.mutateAsync({
+      id: order.id,
+      status: order.status,
+      delivery_driver_id: deliveryDriverId || null,
+    })
   }
 
   const filters: { label: string; value: string }[] = [
@@ -274,6 +284,36 @@ export default function PedidosPage() {
                       </div>
                     )}
 
+                    {order.payment_method === 'delivery' && (
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                              Entregador
+                            </p>
+                            <p className="text-sm text-slate-700">
+                              {order.delivery_driver?.name ?? 'Aguardando atribuição'}
+                            </p>
+                          </div>
+                          <select
+                            value={order.delivery_driver_id ?? ''}
+                            onChange={(event) => handleAssignDriver(order, event.target.value)}
+                            disabled={updateStatus.isPending}
+                            className="h-9 min-w-56 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            <option value="">Sem entregador</option>
+                            {(deliveryDrivers ?? [])
+                              .filter((driver) => driver.active || driver.id === order.delivery_driver_id)
+                              .map((driver) => (
+                                <option key={driver.id} value={driver.id}>
+                                  {driver.name} · {driver.vehicle_type}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Itens */}
                     <div className="mt-2 space-y-0.5">
                       {order.items?.map((item) => (
@@ -346,9 +386,19 @@ export default function PedidosPage() {
                     )}
                   </div>
                   <div className="flex-shrink-0 text-right">
-                    <p className="font-semibold text-slate-900">
-                      R$ {Number(order.total).toFixed(2)}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500">
+                        Subtotal: <span className="font-medium text-slate-900">R$ {Number(order.subtotal).toFixed(2)}</span>
+                      </p>
+                      {Number(order.delivery_fee ?? 0) > 0 && (
+                        <p className="text-sm text-slate-500">
+                          Entrega: <span className="font-medium text-slate-900">R$ {Number(order.delivery_fee).toFixed(2)}</span>
+                        </p>
+                      )}
+                      <p className="font-semibold text-slate-900">
+                        R$ {Number(order.total).toFixed(2)}
+                      </p>
+                    </div>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {new Date(order.created_at).toLocaleTimeString('pt-BR', {
                         hour: '2-digit',

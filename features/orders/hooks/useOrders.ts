@@ -35,16 +35,18 @@ export function useUpdateOrderStatus() {
     mutationFn: async ({
       id,
       status,
+      delivery_driver_id,
       cancelled_reason,
     }: {
       id: string
       status: OrderStatus
+      delivery_driver_id?: string | null
       cancelled_reason?: string
     }) => {
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, cancelled_reason }),
+        body: JSON.stringify({ status, cancelled_reason, delivery_driver_id }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)

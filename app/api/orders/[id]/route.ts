@@ -19,6 +19,7 @@ const updateSchema = z.object({
     ])
     .optional(),
   payment_status: z.enum(['pending', 'paid', 'refunded']).optional(),
+  delivery_driver_id: z.string().uuid().nullable().optional(),
   cancelled_reason: z.string().optional(),
 })
 
@@ -34,7 +35,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from('orders')
-      .select('*, items:order_items(*, extras:order_item_extras(*)), notifications:order_notifications(id, channel, event_key, status, recipient, error_message, created_at)')
+      .select('*, delivery_driver:delivery_drivers(id, name, phone, vehicle_type, active), items:order_items(*, extras:order_item_extras(*)), notifications:order_notifications(id, channel, event_key, status, recipient, error_message, created_at)')
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
       .single()
@@ -78,7 +79,7 @@ export async function PATCH(
 
     const { data: existingOrder, error: existingOrderError } = await supabase
       .from('orders')
-      .select('id, tenant_id, status, payment_status')
+      .select('id, tenant_id, status, payment_status, payment_method')
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
       .single()
@@ -102,16 +103,36 @@ export async function PATCH(
 
     const updatePayload = {
       ...parsed.data,
+      ...(parsed.data.delivery_driver_id !== undefined && existingOrder.payment_method !== 'delivery'
+        ? { delivery_driver_id: null }
+        : {}),
       ...(parsed.data.status === 'cancelled' && !parsed.data.cancelled_reason
         ? { cancelled_reason: 'Cancelado pelo estabelecimento' }
         : {}),
+    }
+
+    if (parsed.data.delivery_driver_id) {
+      const { data: driver } = await supabase
+        .from('delivery_drivers')
+        .select('id')
+        .eq('id', parsed.data.delivery_driver_id)
+        .eq('tenant_id', profile.tenant_id)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (!driver) {
+        return NextResponse.json(
+          { error: 'Entregador não encontrado ou inativo.' },
+          { status: 422 }
+        )
+      }
     }
 
     const { data, error } = await admin
       .from('orders')
       .update(updatePayload)
       .eq('id', id)
-      .select()
+      .select('*, delivery_driver:delivery_drivers(id, name, phone, vehicle_type, active)')
       .single()
 
     if (error || !data) {

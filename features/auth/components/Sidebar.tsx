@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Package, ArrowLeftRight,
   UtensilsCrossed, ClipboardList, BarChart2,
   LayoutGrid, MonitorCheck, Tag, LogOut, ChefHat,
-  CreditCard, Settings, ReceiptText, PlugZap, Users
+  CreditCard, Settings, ReceiptText, PlugZap, Users, Bike
 } from 'lucide-react'
 
 const navItems = [
@@ -20,6 +20,7 @@ const navItems = [
   { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed, roles: ['owner', 'manager'] },
   { href: '/extras',      label: 'Adicionais',  icon: Settings,        roles: ['owner', 'manager'] },
   { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList,   roles: ['owner', 'manager', 'cashier', 'kitchen'] },
+  { href: '/entregadores',label: 'Entregadores',icon: Bike,            roles: ['owner', 'manager', 'cashier'] },
   { href: '/comandas',    label: 'Comandas',    icon: ReceiptText,     roles: ['owner', 'manager', 'cashier'] },
   { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid,      roles: ['owner', 'manager', 'cashier'] },
   { href: '/kds',         label: 'Cozinha',     icon: MonitorCheck,    roles: ['owner', 'manager', 'kitchen'] },

@@ -47,6 +47,7 @@ export const DASHBOARD_ROUTE_ROLES = [
   { path: '/cardapio', roles: ['owner', 'manager'] as EstablishmentRole[] },
   { path: '/extras', roles: ['owner', 'manager'] as EstablishmentRole[] },
   { path: '/pedidos', roles: ['owner', 'manager', 'cashier', 'kitchen'] as EstablishmentRole[] },
+  { path: '/entregadores', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[] },
   { path: '/comandas', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[] },
   { path: '/mesas', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[] },
   { path: '/kds', roles: ['owner', 'manager', 'kitchen'] as EstablishmentRole[] },

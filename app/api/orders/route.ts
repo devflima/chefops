@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('orders')
-      .select('*, tab:tabs(id, label, status), items:order_items(*, extras:order_item_extras(*)), notifications:order_notifications(id, channel, event_key, status, recipient, error_message, created_at)', { count: 'exact' })
+      .select('*, tab:tabs(id, label, status), delivery_driver:delivery_drivers(id, name, phone, vehicle_type, active), items:order_items(*, extras:order_item_extras(*)), notifications:order_notifications(id, channel, event_key, status, recipient, error_message, created_at)', { count: 'exact' })
       .eq('tenant_id', profile.tenant_id)
       .order('created_at', { ascending: false })
       .range(rangeFrom, rangeTo)

@@ -119,6 +119,14 @@ export type Order = {
   status: OrderStatus
   payment_method: PaymentMethod
   payment_status: PaymentStatus
+  delivery_driver_id?: string | null
+  delivery_driver?: {
+    id: string
+    name: string
+    phone: string | null
+    vehicle_type: string
+    active: boolean
+  } | null
   payment_provider?: string | null
   payment_transaction_id?: string | null
   refunded_at?: string | null
