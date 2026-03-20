@@ -34,7 +34,16 @@ type MenuItem = {
 }
 
 type Props = {
-  tenant: { id: string; name: string; slug: string; plan: string }
+  tenant: {
+    id: string
+    name: string
+    slug: string
+    plan: string
+    delivery_settings?: {
+      delivery_enabled: boolean
+      flat_fee: number
+    } | null
+  }
   items: MenuItem[]
   tableInfo: { id: string; number: string } | null
   checkoutSessionId: string | null
@@ -139,7 +148,8 @@ export default function MenuClient({
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreateOrder()
-  const paymentOptions = tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online
+  const paymentOptions = (tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online)
+    .filter((option) => option.value !== 'delivery' || tenant.delivery_settings?.delivery_enabled)
 
   // Agrupamento por categoria — sem dependência de joins aninhados
   const grouped: Record<string, { category: Category | null; items: MenuItem[] }> = {}
@@ -157,6 +167,10 @@ export default function MenuClient({
     const ext = i.extras?.reduce((s, e) => s + e.price, 0) ?? 0
     return sum + (i.price + ext) * i.quantity
   }, 0)
+  const deliveryFee = !tableInfo && tenant.delivery_settings?.delivery_enabled
+    ? Number(tenant.delivery_settings.flat_fee ?? 0)
+    : 0
+  const orderTotal = cartTotal + deliveryFee
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0)
 
   function getBorders(item: MenuItem): Extra[] {
@@ -419,6 +433,7 @@ export default function MenuClient({
           table_number: tableInfo?.number,
           table_id: tableInfo?.id,
           notes: notes || undefined,
+          delivery_fee: deliveryFee,
           delivery_address: deliveryAddress as CustomerAddress | undefined,
           items: cart,
         }),
@@ -477,6 +492,7 @@ export default function MenuClient({
         table_id: tableInfo?.id,
         payment_method: paymentMethod as 'online' | 'table' | 'counter' | 'delivery',
         notes: notes || undefined,
+        delivery_fee: deliveryFee,
         delivery_address: deliveryAddress as CustomerAddress | undefined,
         items: cart,
       })
@@ -842,8 +858,18 @@ export default function MenuClient({
                     </div>
                     <div className="p-4 border-t border-slate-200">
                       <div className="flex justify-between text-sm mb-4">
-                        <span className="text-slate-500">Total</span>
+                        <span className="text-slate-500">Subtotal</span>
                         <span className="font-semibold text-slate-900">R$ {cartTotal.toFixed(2)}</span>
+                      </div>
+                      {deliveryFee > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Taxa de entrega</span>
+                          <span className="font-medium text-slate-900">R$ {deliveryFee.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-500">Total</span>
+                        <span className="font-semibold text-slate-900">R$ {orderTotal.toFixed(2)}</span>
                       </div>
                       <Button className="w-full mb-2" onClick={() => setCheckoutStep('info')}>
                         Continuar
@@ -961,8 +987,18 @@ export default function MenuClient({
 
                 <div className="p-4 border-t border-slate-200 space-y-2">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-500">Total</span>
+                    <span className="text-slate-500">Subtotal</span>
                     <span className="font-semibold">R$ {cartTotal.toFixed(2)}</span>
+                  </div>
+                  {deliveryFee > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Taxa de entrega</span>
+                      <span className="font-semibold">R$ {deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Total</span>
+                    <span className="font-semibold">R$ {orderTotal.toFixed(2)}</span>
                   </div>
                   <Button
                     className="w-full"

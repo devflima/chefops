@@ -30,6 +30,7 @@ const createOrderSchema = z.object({
   tab_id: z.string().uuid().optional(),
   payment_method: z.enum(['online', 'table', 'counter', 'delivery']),
   notes: z.string().optional(),
+  delivery_fee: z.number().min(0).optional(),
   delivery_address: z.object({
     zip_code:     z.string().nullable().optional(),
     street:       z.string().nullable().optional(),
@@ -205,6 +206,10 @@ export async function POST(request: NextRequest) {
       const extrasTotal = item.extras?.reduce((s, e) => s + e.price, 0) ?? 0
       return sum + (item.price + extrasTotal) * item.quantity
     }, 0)
+    const deliveryFee =
+      ['online', 'delivery'].includes(parsed.data.payment_method) && delivery_address
+      ? Number(parsed.data.delivery_fee ?? 0)
+      : 0
 
     const tableSessionId = table_id
       ? await resolveSessionId(admin, table_id, tenant_id)
@@ -234,7 +239,8 @@ export async function POST(request: NextRequest) {
         ...orderData,
         tenant_id,
         subtotal,
-        total: subtotal,
+        delivery_fee: deliveryFee,
+        total: subtotal + deliveryFee,
         table_session_id: tableSessionId,
         tab_id: tabId,
         delivery_address: delivery_address ?? null,

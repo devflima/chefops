@@ -123,6 +123,7 @@ export type Order = {
   payment_transaction_id?: string | null
   refunded_at?: string | null
   subtotal: number
+  delivery_fee?: number
   total: number
   notes: string | null
   cancelled_reason: string | null
@@ -153,6 +154,7 @@ export type CreateOrderPayload = {
   tab_id?: string
   payment_method: PaymentMethod
   notes?: string
+  delivery_fee?: number
   delivery_address?: CustomerAddress
   items: CartItem[]
 }

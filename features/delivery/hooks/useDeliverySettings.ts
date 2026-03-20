@@ -1,0 +1,41 @@
+'use client'
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
+export type DeliverySettings = {
+  tenant_id: string
+  delivery_enabled: boolean
+  flat_fee: number
+}
+
+export function useDeliverySettings() {
+  return useQuery({
+    queryKey: ['delivery-settings'],
+    queryFn: async () => {
+      const res = await fetch('/api/delivery-settings')
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      return json.data as DeliverySettings
+    },
+  })
+}
+
+export function useUpdateDeliverySettings() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: Omit<DeliverySettings, 'tenant_id'>) => {
+      const res = await fetch('/api/delivery-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      return json.data as DeliverySettings
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-settings'] })
+    },
+  })
+}

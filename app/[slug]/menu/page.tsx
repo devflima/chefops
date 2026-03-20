@@ -46,7 +46,7 @@ export default async function MenuPage({
 
   const { data: tenant } = await publicSupabase
     .from('tenants')
-    .select('id, name, slug, status, plan')
+    .select('id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee)')
     .eq('slug', slug)
     .eq('status', 'active')
     .single()
@@ -101,7 +101,15 @@ export default async function MenuPage({
 
   return (
     <MenuClient
-      tenant={tenant}
+      tenant={{
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        plan: tenant.plan,
+        delivery_settings: Array.isArray(tenant.tenant_delivery_settings)
+          ? (tenant.tenant_delivery_settings[0] ?? null)
+          : (tenant.tenant_delivery_settings ?? null),
+      }}
       items={items}
       tableInfo={tableInfo}
       checkoutSessionId={checkoutSessionId ?? null}

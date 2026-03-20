@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,11 +9,26 @@ import {
   useDisconnectMercadoPagoAccount,
   useMercadoPagoAccount,
 } from '@/features/payments/hooks/useMercadoPagoAccount'
+import { useHasFeature } from '@/features/plans/hooks/usePlan'
+import {
+  useNotificationSettings,
+  useUpdateNotificationSettings,
+} from '@/features/notifications/hooks/useNotificationSettings'
+import {
+  useDeliverySettings,
+  useUpdateDeliverySettings,
+} from '@/features/delivery/hooks/useDeliverySettings'
 
 export default function IntegracoesPage() {
   const params = useSearchParams()
   const account = useMercadoPagoAccount()
   const disconnect = useDisconnectMercadoPagoAccount()
+  const hasWhatsappNotifications = useHasFeature('whatsapp_notifications')
+  const notificationSettings = useNotificationSettings()
+  const updateNotificationSettings = useUpdateNotificationSettings()
+  const deliverySettings = useDeliverySettings()
+  const updateDeliverySettings = useUpdateDeliverySettings()
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState<string | null>(null)
 
   useEffect(() => {
     const status = params.get('mercado_pago')
@@ -30,6 +45,17 @@ export default function IntegracoesPage() {
   }, [params])
 
   const connected = !!account.data
+  const deliveryFeeValue = deliveryFeeInput ?? String(deliverySettings.data?.flat_fee ?? 0)
+  const whatsappOptions = notificationSettings.data
+    ? [
+        { key: 'whatsapp_order_received', label: 'Pedido recebido' },
+        { key: 'whatsapp_order_confirmed', label: 'Pedido confirmado' },
+        { key: 'whatsapp_order_preparing', label: 'Em preparo' },
+        { key: 'whatsapp_order_ready', label: 'Pedido pronto' },
+        { key: 'whatsapp_order_delivered', label: 'Pedido entregue' },
+        { key: 'whatsapp_order_cancelled', label: 'Pedido cancelado' },
+      ] as const
+    : []
 
   return (
     <div>
@@ -149,6 +175,142 @@ export default function IntegracoesPage() {
                 Conectar Mercado Pago
               </a>
             </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 max-w-2xl rounded-2xl border border-slate-200 bg-white p-6">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-slate-900">Entrega</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Configure uma taxa fixa para pedidos de delivery feitos pelo cardápio online.
+          </p>
+        </div>
+
+        {deliverySettings.isLoading ? (
+          <div className="py-6 text-sm text-slate-400">Carregando configuração de entrega...</div>
+        ) : deliverySettings.data ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+              <div>
+                <p className="font-medium text-slate-900">Habilitar entrega</p>
+                <p className="text-sm text-slate-500">Mostra a opção de delivery no cardápio público.</p>
+              </div>
+              <button
+                type="button"
+                disabled={updateDeliverySettings.isPending}
+                onClick={async () => {
+                  await updateDeliverySettings.mutateAsync({
+                    ...deliverySettings.data,
+                    delivery_enabled: !deliverySettings.data.delivery_enabled,
+                  })
+                }}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                  deliverySettings.data.delivery_enabled ? 'bg-slate-900' : 'bg-slate-200'
+                } ${updateDeliverySettings.isPending ? 'opacity-60' : ''}`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                    deliverySettings.data.delivery_enabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 p-4">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Taxa fixa de entrega (R$)
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={deliveryFeeValue}
+                  onChange={(event) => setDeliveryFeeInput(event.target.value)}
+                  className="w-40 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                />
+                <Button
+                  variant="outline"
+                  disabled={updateDeliverySettings.isPending}
+                  onClick={async () => {
+                    await updateDeliverySettings.mutateAsync({
+                      ...deliverySettings.data,
+                      flat_fee: Number(deliveryFeeValue || 0),
+                    })
+                    setDeliveryFeeInput(null)
+                  }}
+                >
+                  {updateDeliverySettings.isPending ? 'Salvando...' : 'Salvar taxa'}
+                </Button>
+                <p className="self-center text-sm text-slate-500">
+                  Esse valor será somado ao total dos pedidos com entrega.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="py-6 text-sm text-slate-400">
+            Não foi possível carregar as configurações de entrega.
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 max-w-2xl rounded-2xl border border-slate-200 bg-white p-6">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-slate-900">Notificações WhatsApp</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Escolha em quais eventos o cliente deve receber atualização automática pelo WhatsApp.
+          </p>
+        </div>
+
+        {!hasWhatsappNotifications ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-medium text-amber-900">
+              Recurso disponível apenas nos planos Standard e Premium.
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              Faça upgrade para habilitar notificações automáticas por WhatsApp para os pedidos.
+            </p>
+          </div>
+        ) : notificationSettings.isLoading ? (
+          <div className="py-6 text-sm text-slate-400">Carregando configurações...</div>
+        ) : notificationSettings.data ? (
+          <div className="space-y-3">
+            {whatsappOptions.map((option) => (
+              <div
+                key={option.key}
+                className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3"
+              >
+                <div>
+                  <p className="font-medium text-slate-900">{option.label}</p>
+                  <p className="text-sm text-slate-500">Enviar quando este evento acontecer.</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={updateNotificationSettings.isPending}
+                  onClick={async () => {
+                    await updateNotificationSettings.mutateAsync({
+                      ...notificationSettings.data,
+                      [option.key]: !notificationSettings.data[option.key],
+                    })
+                  }}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                    notificationSettings.data[option.key] ? 'bg-slate-900' : 'bg-slate-200'
+                  } ${updateNotificationSettings.isPending ? 'opacity-60' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                      notificationSettings.data[option.key] ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-6 text-sm text-slate-400">
+            Não foi possível carregar as configurações de WhatsApp.
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasPlanFeature } from '@/features/plans/types'
 
 type OrderWhatsappEventKey =
   | 'order_received'
@@ -19,6 +20,15 @@ type OrderForNotification = {
   refunded_at: string | null
   cancelled_reason: string | null
   total: number
+}
+
+type NotificationSettings = {
+  whatsapp_order_received: boolean
+  whatsapp_order_confirmed: boolean
+  whatsapp_order_preparing: boolean
+  whatsapp_order_ready: boolean
+  whatsapp_order_delivered: boolean
+  whatsapp_order_cancelled: boolean
 }
 
 function getTwilioWhatsappConfig() {
@@ -88,6 +98,19 @@ function buildOrderWhatsappMessage(params: {
       return `${greeting} Seu pedido ${orderRef} foi cancelado pela ${params.tenantName}.${reasonNote}${refundNote}`
     }
   }
+}
+
+function isEventEnabled(eventKey: OrderWhatsappEventKey, settings: NotificationSettings) {
+  const eventMap: Record<OrderWhatsappEventKey, keyof NotificationSettings> = {
+    order_received: 'whatsapp_order_received',
+    order_confirmed: 'whatsapp_order_confirmed',
+    order_preparing: 'whatsapp_order_preparing',
+    order_ready: 'whatsapp_order_ready',
+    order_delivered: 'whatsapp_order_delivered',
+    order_cancelled: 'whatsapp_order_cancelled',
+  }
+
+  return settings[eventMap[eventKey]]
 }
 
 async function createNotificationLog(params: {
@@ -175,9 +198,49 @@ export async function sendOrderWhatsappNotification(params: {
 
   const { data: tenant } = await admin
     .from('tenants')
-    .select('name')
+    .select('name, plan')
     .eq('id', order.tenant_id)
     .single()
+
+  if (!hasPlanFeature((tenant?.plan as 'free' | 'basic' | 'pro') ?? 'free', 'whatsapp_notifications')) {
+    await createNotificationLog({
+      orderId: order.id,
+      tenantId: order.tenant_id,
+      eventKey: params.eventKey,
+      status: 'skipped',
+      recipient: phone,
+      errorMessage: 'feature-not-available-for-plan',
+    })
+    return { sent: false, reason: 'feature-not-available' as const }
+  }
+
+  const { data: settings } = await admin
+    .from('tenant_notification_settings')
+    .select('whatsapp_order_received, whatsapp_order_confirmed, whatsapp_order_preparing, whatsapp_order_ready, whatsapp_order_delivered, whatsapp_order_cancelled')
+    .eq('tenant_id', order.tenant_id)
+    .maybeSingle()
+
+  const mergedSettings: NotificationSettings = {
+    whatsapp_order_received: true,
+    whatsapp_order_confirmed: true,
+    whatsapp_order_preparing: true,
+    whatsapp_order_ready: true,
+    whatsapp_order_delivered: false,
+    whatsapp_order_cancelled: true,
+    ...(settings ?? {}),
+  }
+
+  if (!isEventEnabled(params.eventKey, mergedSettings)) {
+    await createNotificationLog({
+      orderId: order.id,
+      tenantId: order.tenant_id,
+      eventKey: params.eventKey,
+      status: 'skipped',
+      recipient: phone,
+      errorMessage: 'event-disabled-by-tenant',
+    })
+    return { sent: false, reason: 'event-disabled' as const }
+  }
 
   const body = buildOrderWhatsappMessage({
     eventKey: params.eventKey,

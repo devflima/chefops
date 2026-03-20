@@ -10,6 +10,7 @@ type CheckoutSessionPayload = {
   table_id?: string
   table_number?: string
   notes?: string
+  delivery_fee?: number
   delivery_address?: CustomerAddress
   items: CartItem[]
 }
@@ -60,6 +61,7 @@ export async function createOrderFromCheckoutSession(params: {
     const extrasTotal = item.extras?.reduce((inner, extra) => inner + extra.price, 0) ?? 0
     return sum + (item.price + extrasTotal) * item.quantity
   }, 0)
+  const deliveryFee = Number(payload.delivery_fee ?? 0)
 
   const tableSessionId = payload.table_id
     ? await resolveSessionId(admin, payload.table_id, payload.tenant_id)
@@ -79,7 +81,8 @@ export async function createOrderFromCheckoutSession(params: {
       payment_transaction_id: paymentId ?? null,
       notes: payload.notes ?? null,
       subtotal,
-      total: subtotal,
+      delivery_fee: deliveryFee,
+      total: subtotal + deliveryFee,
       delivery_address: payload.delivery_address ?? null,
       table_session_id: tableSessionId,
     })

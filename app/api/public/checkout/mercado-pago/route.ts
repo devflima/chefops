@@ -31,6 +31,7 @@ const checkoutSchema = z.object({
   table_id: z.string().uuid().nullable().optional(),
   table_number: nullableString,
   notes: nullableString,
+  delivery_fee: z.number().min(0).optional(),
   delivery_address: z.object({
     zip_code: nullableString,
     street: nullableString,
@@ -73,13 +74,14 @@ export async function POST(request: NextRequest) {
       const extras = item.extras?.reduce((inner, extra) => inner + extra.price, 0) ?? 0
       return sum + (item.price + extras) * item.quantity
     }, 0)
+    const deliveryFee = Number(payload.delivery_fee ?? 0)
 
     const { data: session, error: sessionError } = await admin
       .from('checkout_sessions')
       .insert({
         tenant_id: payload.tenant_id,
         status: 'pending',
-        amount,
+        amount: amount + deliveryFee,
         payload,
       })
       .select()
@@ -109,9 +111,18 @@ export async function POST(request: NextRequest) {
       items: payload.items.map((item) => ({
         title: item.name,
         quantity: item.quantity,
-        unit_price: Number(item.price),
-        currency_id: 'BRL',
-      })),
+        unit_price: Number(item.price) + (item.extras?.reduce((inner, extra) => inner + extra.price, 0) ?? 0),
+        currency_id: 'BRL' as const,
+      })).concat(
+        deliveryFee > 0
+          ? [{
+              title: 'Taxa de entrega',
+              quantity: 1,
+              unit_price: deliveryFee,
+              currency_id: 'BRL' as const,
+            }]
+          : []
+      ),
     })
 
     const { error: updateError } = await admin

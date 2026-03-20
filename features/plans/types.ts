@@ -9,6 +9,7 @@ export type PlanFeature =
   | 'stock_automation'
   | 'sales'
   | 'payments'
+  | 'whatsapp_notifications'
   | 'team'
   | 'reports'
   | 'white_label'
@@ -60,6 +61,7 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
     'Controle de estoque',
     'Baixa automática por ficha técnica',
     'Dashboard de vendas',
+    'Notificações por WhatsApp',
     'Equipe com perfis por função',
     'Suporte por email',
   ],
@@ -76,8 +78,8 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
 
 export const PLAN_INCLUDED_FEATURES: Record<Plan, PlanFeature[]> = {
   free: ['orders', 'menu', 'tables', 'payments', 'team'],
-  basic: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'team'],
-  pro: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'team', 'reports', 'white_label'],
+  basic: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'whatsapp_notifications', 'team'],
+  pro: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'whatsapp_notifications', 'team', 'reports', 'white_label'],
 }
 
 export const PLAN_RESOURCE_LIMITS: Record<Plan, TenantPlan['resource_limits']> = {
