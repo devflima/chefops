@@ -20,7 +20,6 @@ type TenantRow = {
   status: 'active' | 'inactive' | 'suspended'
   created_at: string
   next_billing_at: string | null
-  trial_ends_at: string | null
 }
 
 type OrderRow = {
@@ -98,7 +97,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     admin
       .from('tenants')
-      .select('id, name, slug, plan, status, created_at, next_billing_at, trial_ends_at')
+      .select('id, name, slug, plan, status, created_at, next_billing_at')
       .order('created_at', { ascending: false }),
     admin
       .from('orders')
@@ -154,12 +153,6 @@ export default async function AdminPage() {
     return new Date(tenant.next_billing_at) < today
   })
 
-  const trialEndingSoon = typedTenants.filter((tenant) => {
-    if (!tenant.trial_ends_at || tenant.plan !== 'free') return false
-    const trialEndsAt = new Date(tenant.trial_ends_at)
-    return trialEndsAt >= today && trialEndsAt <= nextSevenDays
-  })
-
   const mrrEstimate = activeTenants.reduce((sum, tenant) => sum + PLAN_PRICES[tenant.plan], 0)
   const planCounts = {
     free: typedTenants.filter((tenant) => tenant.plan === 'free').length,
@@ -168,6 +161,13 @@ export default async function AdminPage() {
   }
 
   const tenantsWithoutPayments = activeTenants.filter((tenant) => !connectedTenantIds.has(tenant.id))
+  const activePaidTenants = activeTenants.filter((tenant) => tenant.plan !== 'free')
+  const basicPlanTenants = activeTenants.filter((tenant) => tenant.plan === 'free')
+  const upgradeCandidates = typedAdminTenants.filter((tenant) => {
+    const isBasicPlan = tenant.plan === 'free' && tenant.status === 'active'
+    const hasPaymentConnection = connectedTenantIds.has(tenant.id)
+    return isBasicPlan && (tenant.total_orders >= 15 || Number(tenant.total_revenue ?? 0) >= 500 || hasPaymentConnection)
+  })
   const attentionTenants = typedAdminTenants.filter((tenant) => {
     const noPaymentConnection = !connectedTenantIds.has(tenant.id)
     const suspended = tenant.status === 'suspended'
@@ -310,25 +310,25 @@ export default async function AdminPage() {
             <div className="rounded-2xl bg-slate-50 p-4">
               <div className="mb-3 flex items-center gap-2 text-slate-700">
                 <CalendarClock className="h-4 w-4" />
-                <p className="text-sm font-medium">Trials e expansão</p>
+                <p className="text-sm font-medium">Conversão e expansão</p>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Trials terminando em 7 dias</span>
-                  <span className={`font-semibold ${trialEndingSoon.length > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
-                    {trialEndingSoon.length}
+                  <span className="text-slate-500">Base no plano Basic</span>
+                  <span className="font-semibold text-slate-900">
+                    {basicPlanTenants.length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Pagantes ativos</span>
                   <span className="font-semibold text-slate-900">
-                    {activeTenants.filter((tenant) => tenant.plan !== 'free').length}
+                    {activePaidTenants.length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Base gratuita</span>
-                  <span className="font-semibold text-slate-900">
-                    {typedTenants.filter((tenant) => tenant.plan === 'free').length}
+                  <span className="text-slate-500">Prontos para upgrade</span>
+                  <span className={`font-semibold ${upgradeCandidates.length > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+                    {upgradeCandidates.length}
                   </span>
                 </div>
               </div>
