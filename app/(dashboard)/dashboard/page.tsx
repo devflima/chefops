@@ -225,164 +225,166 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Operação de delivery</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Acompanhe despacho, rota e arrecadação de taxa de entrega.
-                </p>
-              </div>
-              <Link
-                href="/pedidos"
-                className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
-              >
-                Abrir pedidos
-              </Link>
+      <div className="mt-6 space-y-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Operação de delivery</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Acompanhe despacho, rota e arrecadação de taxa de entrega.
+              </p>
             </div>
+            <Link
+              href="/pedidos"
+              className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+            >
+              Abrir pedidos
+            </Link>
+          </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Taxa de entrega arrecadada</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">
-                  {formatCurrency(deliveryFeeRevenue)}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  Somatório das taxas cobradas nos pedidos de delivery do dia.
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Despacho e rota</p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Aguardando despacho</span>
-                    <span className="font-semibold text-slate-900">{waitingDispatch}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Saiu para entrega</span>
-                    <span className="font-semibold text-slate-900">{outForDelivery}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Top entregador</span>
-                    <span className="font-medium text-slate-900 text-right">{topDriverSummary}</span>
-                  </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Taxa de entrega arrecadada</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">
+                {formatCurrency(deliveryFeeRevenue)}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                Somatório das taxas cobradas nos pedidos de delivery do dia.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Despacho e rota</p>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Aguardando despacho</span>
+                  <span className="font-semibold text-slate-900">{waitingDispatch}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Saiu para entrega</span>
+                  <span className="font-semibold text-slate-900">{outForDelivery}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Top entregador</span>
+                  <span className="font-medium text-slate-900 text-right">{topDriverSummary}</span>
                 </div>
               </div>
             </div>
           </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Pedidos que exigem atenção</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Priorize o que está esperando confirmação, despacho ou finalização.
-                </p>
-              </div>
-              <TriangleAlert className="h-5 w-5 text-amber-500" />
-            </div>
-
-            {attentionOrders.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                Nada crítico no momento. A operação está fluindo bem.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {attentionOrders.map((order) => (
-                  <div key={order.id} className="rounded-xl border border-slate-200 px-4 py-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-slate-900">
-                          #{order.order_number} {order.customer_name ? `· ${order.customer_name}` : ''}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {statusLabels[order.status]}
-                          {order.delivery_status
-                            ? ` · ${deliveryStatusLabels[order.delivery_status]}`
-                            : ''}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900">{formatCurrency(Number(order.total))}</p>
-                        <p className="mt-1 text-xs text-slate-400">
-                          {new Date(order.created_at).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-900">Ações rápidas</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Atalhos para as áreas que você mais usa na operação.
-            </p>
+        <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Pedidos que exigem atenção</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Priorize o que está esperando confirmação, despacho ou finalização.
+                  </p>
+                </div>
+                <TriangleAlert className="h-5 w-5 text-amber-500" />
+              </div>
 
-            <div className="mt-5 grid gap-3">
-              {quickActions.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
-                      <Icon className="h-4 w-4" />
+              {attentionOrders.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                  Nada crítico no momento. A operação está fluindo bem.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {attentionOrders.map((order) => (
+                    <div key={order.id} className="rounded-xl border border-slate-200 px-4 py-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            #{order.order_number} {order.customer_name ? `· ${order.customer_name}` : ''}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {statusLabels[order.status]}
+                            {order.delivery_status
+                              ? ` · ${deliveryStatusLabels[order.delivery_status]}`
+                              : ''}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-slate-900">{formatCurrency(Number(order.total))}</p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            {new Date(order.created_at).toLocaleTimeString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <span className="font-medium text-slate-900">{label}</span>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-slate-400" />
-                </Link>
-              ))}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Estoque e alertas</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Visão rápida dos pontos que podem impactar o atendimento.
+                  </p>
+                </div>
+                <Clock3 className="h-5 w-5 text-slate-400" />
+              </div>
+
+              {!hasStock ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                  O controle de estoque completo está disponível a partir do plano Standard.
+                </div>
+              ) : stockLowItems.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                  Nenhum item com estoque crítico agora.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {stockLowItems.map((item) => (
+                    <div key={item.product_name} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-amber-900">{item.product_name}</p>
+                          <p className="mt-1 text-xs text-amber-700">
+                            Atual: {Number(item.current_stock).toFixed(3)} {item.unit} · Mínimo: {Number(item.min_stock).toFixed(3)} {item.unit}
+                          </p>
+                        </div>
+                        <TriangleAlert className="h-4 w-4 text-amber-600" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Estoque e alertas</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Visão rápida dos pontos que podem impactar o atendimento.
-                </p>
-              </div>
-              <Clock3 className="h-5 w-5 text-slate-400" />
-            </div>
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h2 className="text-lg font-semibold text-slate-900">Ações rápidas</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Atalhos para as áreas que você mais usa na operação.
+              </p>
 
-            {!hasStock ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
-                O controle de estoque completo está disponível a partir do plano Standard.
-              </div>
-            ) : stockLowItems.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                Nenhum item com estoque crítico agora.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {stockLowItems.map((item) => (
-                  <div key={item.product_name} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-amber-900">{item.product_name}</p>
-                        <p className="mt-1 text-xs text-amber-700">
-                          Atual: {Number(item.current_stock).toFixed(3)} {item.unit} · Mínimo: {Number(item.min_stock).toFixed(3)} {item.unit}
-                        </p>
+              <div className="mt-5 grid gap-3">
+                {quickActions.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-slate-100 p-2 text-slate-700">
+                        <Icon className="h-4 w-4" />
                       </div>
-                      <TriangleAlert className="h-4 w-4 text-amber-600" />
+                      <span className="font-medium text-slate-900">{label}</span>
                     </div>
-                  </div>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </Link>
                 ))}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
