@@ -26,6 +26,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.info('[mercado-pago:oauth-callback:received]', {
+      tenantId: parsed.tenant_id,
+      hasCode: Boolean(code),
+      stateLength: state.length,
+      queryKeys: Array.from(request.nextUrl.searchParams.keys()),
+    })
+
     const tokens = await exchangeMercadoPagoAuthorizationCode(code)
     await upsertTenantMercadoPagoAccount({
       tenantId: parsed.tenant_id,
