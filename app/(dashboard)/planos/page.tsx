@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { usePlan } from '@/features/plans/hooks/usePlan'
 import { PLAN_LABELS, PLAN_PRICES, PLAN_FEATURES } from '@/features/plans/types'
 import type { Plan } from '@/features/plans/types'
@@ -7,9 +9,52 @@ import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function PlanosPage() {
+  const searchParams = useSearchParams()
   const { data: currentPlan } = usePlan()
+  const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null)
+  const [currentSubscription, setCurrentSubscription] = useState<{
+    status: string
+    plan: 'basic' | 'pro'
+    next_payment_date: string | null
+  } | null>(null)
 
   const plans: Plan[] = ['free', 'basic', 'pro']
+
+  useEffect(() => {
+    fetch('/api/billing/subscription')
+      .then((res) => res.json())
+      .then((json) => setCurrentSubscription(json.data ?? null))
+      .catch(() => null)
+  }, [])
+
+  useEffect(() => {
+    if (searchParams.get('billing') === 'return') {
+      alert('Retorno da assinatura recebido. Assim que o Mercado Pago confirmar, o plano será atualizado automaticamente.')
+    }
+  }, [searchParams])
+
+  async function handleSubscribe(plan: 'basic' | 'pro') {
+    try {
+      setLoadingPlan(plan)
+      const res = await fetch('/api/billing/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+      const json = await res.json()
+
+      if (!res.ok) throw new Error(json.error)
+      if (!json.data?.checkout_url) {
+        throw new Error('O Mercado Pago não retornou um link de assinatura.')
+      }
+
+      window.location.href = json.data.checkout_url
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao iniciar assinatura.')
+    } finally {
+      setLoadingPlan(null)
+    }
+  }
 
   return (
     <div>
@@ -21,6 +66,20 @@ export default function PlanosPage() {
             {PLAN_LABELS[currentPlan?.plan ?? 'free']}
           </span>
         </p>
+        {currentSubscription && (
+          <p className="mt-2 text-sm text-slate-500">
+            Assinatura atual: <span className="font-medium text-slate-900">{PLAN_LABELS[currentSubscription.plan]}</span>{' '}
+            · status <span className="font-medium capitalize text-slate-900">{currentSubscription.status}</span>
+            {currentSubscription.next_payment_date && (
+              <>
+                {' '}· próxima cobrança em{' '}
+                <span className="font-medium text-slate-900">
+                  {new Date(currentSubscription.next_payment_date).toLocaleDateString('pt-BR')}
+                </span>
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -83,13 +142,22 @@ export default function PlanosPage() {
                 <Button variant="outline" disabled className="w-full">
                   Plano atual
                 </Button>
+              ) : plan === 'free' ? (
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => alert('Downgrade para o plano Basic será tratado manualmente neste primeiro momento.')}
+                >
+                  Usar Basic
+                </Button>
               ) : (
                 <Button
                   className="w-full"
                   variant={isPopular ? 'default' : 'outline'}
-                  onClick={() => alert('Integração com Mercado Pago em breve!')}
+                  disabled={loadingPlan === plan}
+                  onClick={() => handleSubscribe(plan)}
                 >
-                  {PLAN_PRICES[plan] === 0 ? 'Usar grátis' : 'Assinar agora'}
+                  {loadingPlan === plan ? 'Redirecionando...' : 'Assinar agora'}
                 </Button>
               )}
             </div>

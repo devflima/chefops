@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createOrderFromCheckoutSession } from '@/lib/checkout-session'
 import {
+  getPreapprovalById,
   getCheckoutSessionIdFromExternalReference,
   getOrderIdFromExternalReference,
   MercadoPagoApiError,
@@ -8,6 +9,7 @@ import {
   mapMercadoPagoStatusToOrderPaymentStatus,
   verifyMercadoPagoWebhookSignature,
 } from '@/lib/mercadopago'
+import { syncTenantFromSaasSubscription } from '@/lib/saas-billing'
 import { getMercadoPagoAccessTokenBySellerUserId } from '@/lib/tenant-mercadopago'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -40,6 +42,20 @@ export async function POST(request: NextRequest) {
         requestId,
       })
       return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 401 })
+    }
+
+    if (type === 'subscription_preapproval' && dataId) {
+      const preapproval = await getPreapprovalById(dataId)
+      const result = await syncTenantFromSaasSubscription(preapproval)
+
+      console.info('[mercado-pago:webhook:subscription-processed]', {
+        preapprovalId: preapproval.id,
+        status: preapproval.status,
+        tenantId: result.synced ? result.tenantId : null,
+        requestId,
+      })
+
+      return NextResponse.json({ received: true }, { status: 200 })
     }
 
     if (type !== 'payment' || !dataId) {

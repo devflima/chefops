@@ -73,6 +73,18 @@ type PreferenceItem = {
   currency_id?: 'BRL'
 }
 
+type SubscriptionPreapproval = {
+  id: string
+  init_point?: string | null
+  status: string
+  reason?: string | null
+  external_reference?: string | null
+  payer_email?: string | null
+  next_payment_date?: string | null
+  date_created?: string | null
+  last_modified?: string | null
+}
+
 type CreatePreferencePayload = {
   external_reference: string
   items: PreferenceItem[]
@@ -146,6 +158,41 @@ export async function refundPaymentById(params: {
     body: JSON.stringify(
       typeof params.amount === 'number' ? { amount: params.amount } : {}
     ),
+  })
+}
+
+export async function createSaasSubscriptionLink(params: {
+  reason: string
+  payerEmail: string
+  externalReference: string
+  amount: number
+  accessToken?: string
+  backUrl: string
+}) {
+  return mercadoPagoRequest<SubscriptionPreapproval>('/preapproval', {
+    method: 'POST',
+    idempotencyKey: crypto.randomUUID(),
+    accessToken: params.accessToken,
+    body: JSON.stringify({
+      reason: params.reason,
+      payer_email: params.payerEmail,
+      external_reference: params.externalReference,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: params.amount,
+        currency_id: 'BRL',
+      },
+      back_url: params.backUrl,
+      status: 'pending',
+    }),
+  })
+}
+
+export async function getPreapprovalById(preapprovalId: string, accessToken?: string) {
+  return mercadoPagoRequest<SubscriptionPreapproval>(`/preapproval/${preapprovalId}`, {
+    method: 'GET',
+    accessToken,
   })
 }
 
