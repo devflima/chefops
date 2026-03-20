@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Landmark, Link2, ShieldCheck, Unplug } from 'lucide-react'
+import { Landmark, Link2, ShieldCheck, Unplug } from 'lucide-react'
 import {
   useDisconnectMercadoPagoAccount,
   useMercadoPagoAccount,
@@ -109,39 +109,6 @@ export default function IntegracoesPage() {
               </div>
               <p className="mt-1 text-sm text-slate-500">
                 Expiração atual: {account.data.token_expires_at ? new Date(account.data.token_expires_at).toLocaleString('pt-BR') : 'não informado'}
-              </p>
-            </div>
-
-            <div
-              className={`rounded-xl border p-4 ${
-                account.data.live_mode
-                  ? 'border-amber-200 bg-amber-50'
-                  : 'border-blue-200 bg-blue-50'
-              }`}
-            >
-              <div
-                className={`flex items-center gap-2 text-sm font-medium ${
-                  account.data.live_mode ? 'text-amber-900' : 'text-blue-900'
-                }`}
-              >
-                <AlertTriangle className="h-4 w-4" />
-                {account.data.live_mode ? 'Conta conectada em produção' : 'Conta conectada em teste'}
-              </div>
-              <p
-                className={`mt-1 text-sm ${
-                  account.data.live_mode ? 'text-amber-800' : 'text-blue-800'
-                }`}
-              >
-                {account.data.live_mode
-                  ? 'Use pagamentos reais nessa conta. Cartões e compradores de teste do Mercado Pago não funcionam neste modo.'
-                  : 'Use seller, comprador e cartões de teste do Mercado Pago. Se houver inconsistência no sandbox, reconecte a conta e valide em aba anônima.'}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-800">Recuperação operacional</p>
-              <p className="mt-1 text-sm text-slate-500">
-                Se um pagamento aprovar e o pedido não aparecer imediatamente, o retorno do checkout tenta converter a sessão automaticamente. Também já existe um endpoint interno de reprocessamento manual para casos excepcionais.
               </p>
             </div>
 

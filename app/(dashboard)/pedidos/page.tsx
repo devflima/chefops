@@ -6,6 +6,7 @@ import {
   useUpdateOrderStatus,
 } from '@/features/orders/hooks/useOrders'
 import { useDeliveryDrivers } from '@/features/delivery/hooks/useDeliveryDrivers'
+import { useHasFeature } from '@/features/plans/hooks/usePlan'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import PaginationControls from '@/components/shared/PaginationControls'
@@ -112,6 +113,7 @@ export default function PedidosPage() {
   const [chargingOrderId, setChargingOrderId] = useState<string | null>(null)
   const { data, isLoading } = useOrders({ status: statusFilter, page, pageSize })
   const { data: deliveryDrivers } = useDeliveryDrivers()
+  const hasWhatsappNotifications = useHasFeature('whatsapp_notifications')
   const updateStatus = useUpdateOrderStatus()
 
   async function handleAdvance(order: Order) {
@@ -367,7 +369,7 @@ export default function PedidosPage() {
                       </p>
                     )}
 
-                    {latestWhatsapp && (
+                    {hasWhatsappNotifications && latestWhatsapp && (
                       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-medium text-slate-500">WhatsApp</span>
@@ -447,7 +449,7 @@ export default function PedidosPage() {
                           {chargingOrderId === order.id ? 'Gerando...' : 'Cobrar com MP'}
                         </Button>
                       )}
-                      {config.next && (
+                      {config.next && !(address && order.status === 'ready') && (
                         <Button
                           size="sm"
                           onClick={() => handleAdvance(order)}
