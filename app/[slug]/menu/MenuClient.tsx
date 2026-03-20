@@ -151,8 +151,7 @@ export default function MenuClient({
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreateOrder()
-  const paymentOptions = (tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online)
-    .filter((option) => option.value !== 'delivery' || tenant.delivery_settings?.delivery_enabled)
+  const paymentOptions = tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online
 
   // Agrupamento por categoria — sem dependência de joins aninhados
   const grouped: Record<string, { category: Category | null; items: MenuItem[] }> = {}

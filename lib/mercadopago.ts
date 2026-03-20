@@ -92,6 +92,14 @@ type CreatePreferencePayload = {
   payer?: {
     name?: string
     email?: string
+    phone?: {
+      area_code?: string
+      number?: string
+    }
+    identification?: {
+      type: 'CPF'
+      number: string
+    }
   }
   metadata?: Record<string, string>
   notificationUrl?: string
