@@ -105,18 +105,20 @@ export default async function AdminTenantDetailsPage({
 
   const typedTenant = tenant as AdminTenant
   const typedEvents = events as TenantEvent[]
+  const typedCheckoutSessions = checkoutSessions ?? []
+  const typedRecentOrders = recentOrders ?? []
 
   const checkoutSummary = {
-    pending: checkoutSessions.filter((session) => session.status === 'pending').length,
-    approved: checkoutSessions.filter((session) => session.status === 'approved').length,
-    converted: checkoutSessions.filter((session) => session.status === 'converted').length,
-    rejected: checkoutSessions.filter((session) => session.status === 'rejected').length,
+    pending: typedCheckoutSessions.filter((session) => session.status === 'pending').length,
+    approved: typedCheckoutSessions.filter((session) => session.status === 'approved').length,
+    converted: typedCheckoutSessions.filter((session) => session.status === 'converted').length,
+    rejected: typedCheckoutSessions.filter((session) => session.status === 'rejected').length,
   }
 
   const orderSummary = {
-    paid: recentOrders.filter((order) => order.payment_status === 'paid').length,
-    refunded: recentOrders.filter((order) => order.payment_status === 'refunded').length,
-    pending: recentOrders.filter((order) => order.payment_status === 'pending').length,
+    paid: typedRecentOrders.filter((order) => order.payment_status === 'paid').length,
+    refunded: typedRecentOrders.filter((order) => order.payment_status === 'refunded').length,
+    pending: typedRecentOrders.filter((order) => order.payment_status === 'pending').length,
   }
 
   return (
@@ -252,7 +254,7 @@ export default async function AdminTenantDetailsPage({
           </div>
 
           <div className="mt-4 rounded-2xl border border-slate-200 p-4">
-            <TenantCheckoutList checkoutSessions={checkoutSessions} />
+            <TenantCheckoutList checkoutSessions={typedCheckoutSessions} />
           </div>
         </section>
         <TenantHistoryList events={typedEvents} />

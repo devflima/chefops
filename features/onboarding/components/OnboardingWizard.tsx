@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useOnboarding, useCompleteStep } from '../hooks/useOnboarding'
 import { useQueryClient } from '@tanstack/react-query'
 import { Resolver, useForm } from 'react-hook-form'
@@ -8,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Check, ChefHat, Tag, Package, UtensilsCrossed, LayoutGrid } from 'lucide-react'
 
 const steps = [
@@ -58,7 +57,6 @@ export default function OnboardingWizard() {
   const { data: onboarding, isLoading } = useOnboarding()
   const completeStep = useCompleteStep()
   const queryClient = useQueryClient()
-  const [currentStep, setCurrentStep] = useState(0)
 
   const categoryForm = useForm<CategoryForm, unknown, CategoryForm>({
     resolver: zodResolver(categorySchema) as Resolver<CategoryForm>,
