@@ -2,6 +2,18 @@ import crypto from 'node:crypto'
 
 const MERCADO_PAGO_API_BASE = 'https://api.mercadopago.com'
 
+export class MercadoPagoApiError extends Error {
+  status: number
+  details: unknown
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message)
+    this.name = 'MercadoPagoApiError'
+    this.status = status
+    this.details = details
+  }
+}
+
 function getRequiredEnv(name: string) {
   const value = process.env[name]
 
@@ -48,7 +60,7 @@ async function mercadoPagoRequest<T>(
   if (!response.ok) {
     const message =
       json?.message || json?.error || 'Mercado Pago request failed.'
-    throw new Error(message)
+    throw new MercadoPagoApiError(message, response.status, json)
   }
 
   return json as T
@@ -167,11 +179,15 @@ export function verifyMercadoPagoWebhookSignature(params: {
   const parsed = parseSignatureHeader(params.xSignature)
   if (!parsed || !params.xRequestId || !params.dataId) return false
 
-  const manifest = `id:${params.dataId};request-id:${params.xRequestId};ts:${parsed.ts};`
+  const manifest = `id:${params.dataId.toLowerCase()};request-id:${params.xRequestId};ts:${parsed.ts};`
   const expected = crypto
     .createHmac('sha256', secret)
     .update(manifest)
     .digest('hex')
+
+  if (expected.length !== parsed.v1.length) {
+    return false
+  }
 
   return crypto.timingSafeEqual(
     Buffer.from(expected),

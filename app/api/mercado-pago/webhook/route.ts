@@ -3,6 +3,7 @@ import { createOrderFromCheckoutSession } from '@/lib/checkout-session'
 import {
   getCheckoutSessionIdFromExternalReference,
   getOrderIdFromExternalReference,
+  MercadoPagoApiError,
   getPaymentById,
   mapMercadoPagoStatusToOrderPaymentStatus,
   verifyMercadoPagoWebhookSignature,
@@ -17,12 +18,27 @@ export async function POST(request: NextRequest) {
     const dataId = String(
       body?.data?.id || request.nextUrl.searchParams.get('data.id') || body?.id || ''
     )
+    const requestId = request.headers.get('x-request-id')
+
+    console.info('[mercado-pago:webhook:received]', {
+      type,
+      dataId,
+      userId: body?.user_id ?? null,
+      liveMode: body?.live_mode ?? null,
+      action: body?.action ?? null,
+      requestId,
+    })
 
     if (!verifyMercadoPagoWebhookSignature({
       xSignature: request.headers.get('x-signature'),
-      xRequestId: request.headers.get('x-request-id'),
+      xRequestId: requestId,
       dataId,
     })) {
+      console.warn('[mercado-pago:webhook:invalid-signature]', {
+        type,
+        dataId,
+        requestId,
+      })
       return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 401 })
     }
 
@@ -31,7 +47,24 @@ export async function POST(request: NextRequest) {
     }
 
     const sellerAccessToken = await getMercadoPagoAccessTokenBySellerUserId(body?.user_id)
-    const payment = await getPaymentById(dataId, sellerAccessToken)
+    let payment: Awaited<ReturnType<typeof getPaymentById>>
+
+    try {
+      payment = await getPaymentById(dataId, sellerAccessToken)
+    } catch (error) {
+      if (error instanceof MercadoPagoApiError && error.status === 404) {
+        console.warn('[mercado-pago:webhook:payment-not-found]', {
+          dataId,
+          type,
+          requestId,
+          action: body?.action ?? null,
+        })
+        return NextResponse.json({ received: true, ignored: 'payment_not_found' }, { status: 200 })
+      }
+
+      throw error
+    }
+
     const orderId =
       payment.metadata?.order_id || getOrderIdFromExternalReference(payment.external_reference)
     const checkoutSessionId =
@@ -63,7 +96,12 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (checkoutError || !checkoutSession) {
-        throw checkoutError ?? new Error('Sessão de checkout não encontrada.')
+        console.warn('[mercado-pago:webhook:missing-checkout-session]', {
+          checkoutSessionId,
+          paymentId: payment.id,
+          requestId,
+        })
+        return NextResponse.json({ received: true, ignored: 'checkout_session_not_found' }, { status: 200 })
       }
 
       const { error: sessionUpdateError } = await admin
@@ -85,6 +123,14 @@ export async function POST(request: NextRequest) {
         })
       }
     }
+
+    console.info('[mercado-pago:webhook:processed]', {
+      paymentId: payment.id,
+      paymentStatus: payment.status,
+      orderId,
+      checkoutSessionId,
+      requestId,
+    })
 
     return NextResponse.json({ received: true }, { status: 200 })
   } catch (error) {
