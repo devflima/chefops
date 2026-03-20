@@ -49,10 +49,13 @@ export default function EstoquePage() {
   const { data: movements } = useStockMovements()
   const { data: products } = useProducts({ active: true, page: 1, pageSize: 100 })
   const categories = Array.from(
-    new Map(
+    new Map<string, string>(
       (balance ?? [])
-        .filter((item: StockBalance) => item.category_name)
-        .map((item: StockBalance) => [item.category_name, item.category_name])
+        .filter(
+          (item: StockBalance): item is StockBalance & { category_name: string } =>
+            typeof item.category_name === 'string' && item.category_name.length > 0
+        )
+        .map((item: StockBalance & { category_name: string }) => [item.category_name, item.category_name] as const)
     ).values()
   )
   const createMovement = useCreateMovement()

@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
 import './globals.css'
 import Providers from '@/lib/providers'
 import { Toaster } from '@/components/ui/sonner'
-
-const geist = Geist({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ChefOps',
@@ -39,7 +36,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={geist.className}>
+      <body className="antialiased">
         <Providers>
           {children}
           <Toaster position="top-center" richColors />
