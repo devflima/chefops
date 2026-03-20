@@ -47,6 +47,15 @@ type AdminTenantRow = {
   last_order_at: string | null
 }
 
+type SaasBillingSubscriptionRow = {
+  tenant_id: string
+  plan: Plan
+  status: string
+  next_payment_date: string | null
+  cancel_at_period_end: boolean | null
+  scheduled_plan: Plan | null
+}
+
 function startOfDay(date: Date) {
   const next = new Date(date)
   next.setHours(0, 0, 0, 0)
@@ -81,6 +90,31 @@ function formatDelta(current: number, previous: number) {
   return `${sign}${delta.toFixed(0)}%`
 }
 
+function getEnvironmentLabel(appUrl?: string | null) {
+  if (!appUrl) return 'Não configurado'
+
+  try {
+    const hostname = new URL(appUrl).hostname
+    if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+      return 'Desenvolvimento'
+    }
+
+    return 'Produção'
+  } catch {
+    return 'Configuração inválida'
+  }
+}
+
+function getHostname(appUrl?: string | null) {
+  if (!appUrl) return 'URL não configurada'
+
+  try {
+    return new URL(appUrl).hostname
+  } catch {
+    return appUrl
+  }
+}
+
 export default async function AdminPage() {
   const admin = createAdminClient()
   const now = new Date()
@@ -94,6 +128,7 @@ export default async function AdminPage() {
     { data: orders = [] },
     { data: accounts = [] },
     { data: adminTenants = [] },
+    { data: saasSubscriptions = [] },
   ] = await Promise.all([
     admin
       .from('tenants')
@@ -111,12 +146,17 @@ export default async function AdminPage() {
       .select('id, name, slug, plan, status, total_users, total_orders, total_revenue, next_billing_at, last_order_at')
       .order('created_at', { ascending: false })
       .limit(6),
+    admin
+      .from('saas_billing_subscriptions')
+      .select('tenant_id, plan, status, next_payment_date, cancel_at_period_end, scheduled_plan')
+      .order('created_at', { ascending: false }),
   ])
 
   const typedTenants = tenants as TenantRow[]
   const typedOrders = orders as OrderRow[]
   const typedAccounts = accounts as PaymentAccountRow[]
   const typedAdminTenants = adminTenants as AdminTenantRow[]
+  const typedSaasSubscriptions = saasSubscriptions as SaasBillingSubscriptionRow[]
 
   const activeTenants = typedTenants.filter((tenant) => tenant.status === 'active')
   const suspendedTenants = typedTenants.filter((tenant) => tenant.status === 'suspended')
@@ -174,6 +214,31 @@ export default async function AdminPage() {
     const billingDelayed = tenant.next_billing_at ? new Date(tenant.next_billing_at) < today : false
     return noPaymentConnection || suspended || billingDelayed
   })
+  const activeSaasSubscriptions = typedSaasSubscriptions.filter((subscription) => subscription.status === 'authorized')
+  const pendingSaasSubscriptions = typedSaasSubscriptions.filter((subscription) => subscription.status === 'pending')
+  const cancelAtPeriodEndSubscriptions = typedSaasSubscriptions.filter((subscription) => Boolean(subscription.cancel_at_period_end))
+  const scheduledPlanChanges = typedSaasSubscriptions.filter((subscription) => Boolean(subscription.scheduled_plan))
+  const centralBillingConfigured = Boolean(
+    process.env.MERCADO_PAGO_ACCESS_TOKEN &&
+    process.env.MERCADO_PAGO_WEBHOOK_SECRET &&
+    process.env.NEXT_PUBLIC_APP_URL
+  )
+  const centralBillingEnvironment = getEnvironmentLabel(process.env.NEXT_PUBLIC_APP_URL)
+  const billingHostname = getHostname(process.env.NEXT_PUBLIC_APP_URL)
+  const centralBillingReadiness = [
+    {
+      label: 'Token central',
+      ready: Boolean(process.env.MERCADO_PAGO_ACCESS_TOKEN),
+    },
+    {
+      label: 'Webhook assinado',
+      ready: Boolean(process.env.MERCADO_PAGO_WEBHOOK_SECRET),
+    },
+    {
+      label: 'URL pública',
+      ready: Boolean(process.env.NEXT_PUBLIC_APP_URL),
+    },
+  ]
 
   const topCards = [
     {
@@ -253,7 +318,7 @@ export default async function AdminPage() {
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Saúde comercial</h2>
-              <p className="text-sm text-slate-500">Cobrança, trial e conexões de pagamento.</p>
+              <p className="text-sm text-slate-500">Cobrança, assinaturas SaaS e conexões de pagamento.</p>
             </div>
             <ArrowUpRight className="h-5 w-5 text-slate-300" />
           </div>
@@ -280,6 +345,29 @@ export default async function AdminPage() {
                   <span className={`font-semibold ${suspendedTenants.length > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
                     {suspendedTenants.length}
                   </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="mb-3 flex items-center gap-2 text-slate-700">
+                <CheckCircle2 className="h-4 w-4" />
+                <p className="text-sm font-medium">Billing SaaS</p>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Conta central</span>
+                  <span className={`font-semibold ${centralBillingConfigured ? 'text-emerald-700' : 'text-amber-600'}`}>
+                    {centralBillingConfigured ? 'Configurada' : 'Pendente'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Ambiente</span>
+                  <span className="font-semibold text-slate-900">{centralBillingEnvironment}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Assinaturas ativas</span>
+                  <span className="font-semibold text-slate-900">{activeSaasSubscriptions.length}</span>
                 </div>
               </div>
             </div>
@@ -350,6 +438,68 @@ export default async function AdminPage() {
                     <span className="font-semibold text-slate-900">{count}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Conta central de cobrança</h3>
+                  <p className="text-xs text-slate-500">
+                    Standard e Premium são cobrados por uma conta Mercado Pago única da plataforma.
+                  </p>
+                </div>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                  centralBillingConfigured ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                }`}>
+                  {centralBillingConfigured ? 'Pronta para cobrar' : 'Requer configuração'}
+                </span>
+              </div>
+
+              <p className="text-sm text-slate-600">
+                Ambiente atual: <span className="font-medium text-slate-900">{centralBillingEnvironment}</span>
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                Domínio público: <span className="font-medium text-slate-900">{billingHostname}</span>
+              </p>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                {centralBillingReadiness.map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                    <p className="text-xs text-slate-500">{item.label}</p>
+                    <p className={`mt-1 text-sm font-semibold ${item.ready ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      {item.ready ? 'OK' : 'Pendente'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3 flex items-center gap-2 text-slate-700">
+                <CreditCard className="h-4 w-4" />
+                <h3 className="text-sm font-semibold text-slate-900">Assinaturas SaaS</h3>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Autorizadas</span>
+                  <span className="font-semibold text-slate-900">{activeSaasSubscriptions.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Pendentes</span>
+                  <span className="font-semibold text-slate-900">{pendingSaasSubscriptions.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Cancelam no próximo ciclo</span>
+                  <span className="font-semibold text-slate-900">{cancelAtPeriodEndSubscriptions.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Trocas programadas</span>
+                  <span className="font-semibold text-slate-900">{scheduledPlanChanges.length}</span>
+                </div>
               </div>
             </div>
           </div>
