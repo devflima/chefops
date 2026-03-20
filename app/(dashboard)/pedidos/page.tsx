@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import PaginationControls from '@/components/shared/PaginationControls'
 import { ClipboardList, Plus } from 'lucide-react'
-import type { Order, OrderStatus } from '@/features/orders/types'
+import type { DeliveryStatus, Order, OrderStatus } from '@/features/orders/types'
 import ManualOrderDialog from '@/features/orders/components/ManualOrderDialog'
 
 const statusConfig: Record<
@@ -57,8 +57,16 @@ const whatsappEventLabels: Record<string, string> = {
   order_confirmed: 'Pedido confirmado',
   order_preparing: 'Em preparo',
   order_ready: 'Pedido pronto',
+  order_out_for_delivery: 'Saiu para entrega',
   order_delivered: 'Pedido entregue',
   order_cancelled: 'Pedido cancelado',
+}
+
+const deliveryStatusLabels: Record<DeliveryStatus, string> = {
+  waiting_dispatch: 'Aguardando despacho',
+  assigned: 'Entregador atribuído',
+  out_for_delivery: 'Saiu para entrega',
+  delivered: 'Entrega concluída',
 }
 
 const whatsappStatusStyles: Record<string, string> = {
@@ -157,6 +165,25 @@ export default function PedidosPage() {
       id: order.id,
       status: order.status,
       delivery_driver_id: deliveryDriverId || null,
+    })
+  }
+
+  async function handleAdvanceDelivery(order: Order) {
+    if (order.status !== 'ready') return
+
+    if (order.delivery_status === 'out_for_delivery') {
+      await updateStatus.mutateAsync({
+        id: order.id,
+        status: 'delivered',
+        delivery_status: 'delivered',
+      })
+      return
+    }
+
+    await updateStatus.mutateAsync({
+      id: order.id,
+      status: order.status,
+      delivery_status: 'out_for_delivery',
     })
   }
 
@@ -284,7 +311,7 @@ export default function PedidosPage() {
                       </div>
                     )}
 
-                    {order.payment_method === 'delivery' && (
+                    {address && (
                       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div>
@@ -293,6 +320,9 @@ export default function PedidosPage() {
                             </p>
                             <p className="text-sm text-slate-700">
                               {order.delivery_driver?.name ?? 'Aguardando atribuição'}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {deliveryStatusLabels[(order.delivery_status ?? 'waiting_dispatch') as DeliveryStatus]}
                             </p>
                           </div>
                           <select
@@ -424,6 +454,18 @@ export default function PedidosPage() {
                           disabled={updateStatus.isPending}
                         >
                           {config.nextLabel}
+                        </Button>
+                      )}
+                      {address && order.status === 'ready' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={updateStatus.isPending}
+                          onClick={() => handleAdvanceDelivery(order)}
+                        >
+                          {order.delivery_status === 'out_for_delivery'
+                            ? 'Confirmar entrega'
+                            : 'Saiu para entrega'}
                         </Button>
                       )}
                       {order.status === 'delivered' && order.payment_status === 'pending' && (

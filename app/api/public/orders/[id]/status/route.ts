@@ -11,7 +11,7 @@ export async function GET(
 
     const { data, error } = await admin
       .from('orders')
-      .select('id, order_number, status, payment_status, cancelled_reason, refunded_at, created_at, updated_at')
+      .select('id, order_number, status, payment_status, payment_method, delivery_status, cancelled_reason, refunded_at, created_at, updated_at, delivery_driver:delivery_drivers(name)')
       .eq('id', id)
       .single()
 

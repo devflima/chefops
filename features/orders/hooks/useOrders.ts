@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { CreateOrderPayload, OrderStatus } from '../types'
+import type { CreateOrderPayload, DeliveryStatus, OrderStatus } from '../types'
 
 export function useOrders(params?: {
   status?: string
@@ -36,17 +36,19 @@ export function useUpdateOrderStatus() {
       id,
       status,
       delivery_driver_id,
+      delivery_status,
       cancelled_reason,
     }: {
       id: string
       status: OrderStatus
       delivery_driver_id?: string | null
+      delivery_status?: DeliveryStatus | null
       cancelled_reason?: string
     }) => {
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, cancelled_reason, delivery_driver_id }),
+        body: JSON.stringify({ status, cancelled_reason, delivery_driver_id, delivery_status }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)

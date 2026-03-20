@@ -20,6 +20,10 @@ const updateSchema = z.object({
     .optional(),
   payment_status: z.enum(['pending', 'paid', 'refunded']).optional(),
   delivery_driver_id: z.string().uuid().nullable().optional(),
+  delivery_status: z
+    .enum(['waiting_dispatch', 'assigned', 'out_for_delivery', 'delivered'])
+    .nullable()
+    .optional(),
   cancelled_reason: z.string().optional(),
 })
 
@@ -79,7 +83,7 @@ export async function PATCH(
 
     const { data: existingOrder, error: existingOrderError } = await supabase
       .from('orders')
-      .select('id, tenant_id, status, payment_status, payment_method')
+      .select('id, tenant_id, status, payment_status, payment_method, delivery_status, delivery_driver_id, delivery_address')
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
       .single()
@@ -101,10 +105,23 @@ export async function PATCH(
       existingOrder.status === 'pending' &&
       hasPlanFeature(profile.tenant?.plan ?? 'free', 'stock_automation')
 
+    const isDeliveryOrder = !!existingOrder.delivery_address || existingOrder.payment_method === 'delivery'
+    const nextDeliveryStatus =
+      parsed.data.status === 'delivered'
+        ? 'delivered'
+        : parsed.data.delivery_status !== undefined
+          ? parsed.data.delivery_status
+          : parsed.data.delivery_driver_id !== undefined
+            ? (parsed.data.delivery_driver_id ? 'assigned' : 'waiting_dispatch')
+            : undefined
+
     const updatePayload = {
       ...parsed.data,
-      ...(parsed.data.delivery_driver_id !== undefined && existingOrder.payment_method !== 'delivery'
+      ...(parsed.data.delivery_driver_id !== undefined && !isDeliveryOrder
         ? { delivery_driver_id: null }
+        : {}),
+      ...(isDeliveryOrder && nextDeliveryStatus !== undefined
+        ? { delivery_status: nextDeliveryStatus }
         : {}),
       ...(parsed.data.status === 'cancelled' && !parsed.data.cancelled_reason
         ? { cancelled_reason: 'Cancelado pelo estabelecimento' }
@@ -174,6 +191,19 @@ export async function PATCH(
           console.error('[order-whatsapp:status-change]', error)
         })
       }
+    }
+
+    if (
+      isDeliveryOrder &&
+      parsed.data.delivery_status === 'out_for_delivery' &&
+      existingOrder.delivery_status !== 'out_for_delivery'
+    ) {
+      await sendOrderWhatsappNotification({
+        orderId: id,
+        eventKey: 'order_out_for_delivery',
+      }).catch((error) => {
+        console.error('[order-whatsapp:out-for-delivery]', error)
+      })
     }
 
     return NextResponse.json({ data })

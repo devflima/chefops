@@ -55,6 +55,9 @@ type PublicOrderStatus = {
   order_number: number
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
   payment_status: 'pending' | 'paid' | 'refunded'
+  payment_method?: 'online' | 'table' | 'counter' | 'delivery'
+  delivery_status?: 'waiting_dispatch' | 'assigned' | 'out_for_delivery' | 'delivered' | null
+  delivery_driver?: { name: string } | null
   cancelled_reason?: string | null
   refunded_at?: string | null
   created_at: string
@@ -316,6 +319,8 @@ export default function MenuClient({
             order_number: json.data.order_number,
             status: json.data.order_status ?? 'pending',
             payment_status: json.data.payment_status ?? 'paid',
+            payment_method: 'online',
+            delivery_status: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           } : null)
@@ -571,6 +576,8 @@ export default function MenuClient({
     { key: 'ready', label: 'Pronto', description: tableInfo ? 'Seu pedido está pronto para servir.' : 'Seu pedido está pronto para sair.' },
     { key: 'delivered', label: 'Entregue', description: 'Pedido finalizado com sucesso.' },
   ]
+
+  const isDeliveryOrder = publicOrderStatus?.payment_method === 'delivery'
 
   function getStepState(stepKey: PublicOrderStatus['status']) {
     if (!publicOrderStatus) return 'upcoming'
@@ -1130,6 +1137,28 @@ export default function MenuClient({
                           </div>
                         )
                       })}
+
+                      {isDeliveryOrder && publicOrderStatus?.status === 'ready' && (
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
+                              publicOrderStatus.delivery_status === 'out_for_delivery' || publicOrderStatus.delivery_status === 'delivered'
+                                ? 'border-slate-900 bg-slate-900 text-white'
+                                : 'border-slate-300 bg-white text-slate-400'
+                            }`}
+                          >
+                            {publicOrderStatus.delivery_status === 'out_for_delivery' || publicOrderStatus.delivery_status === 'delivered' ? '✓' : ''}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">Saiu para entrega</p>
+                            <p className="text-xs text-slate-500">
+                              {publicOrderStatus.delivery_status === 'out_for_delivery' || publicOrderStatus.delivery_status === 'delivered'
+                                ? `Seu pedido saiu para entrega${publicOrderStatus.delivery_driver?.name ? ` com ${publicOrderStatus.delivery_driver.name}` : ''}.`
+                                : 'Seu pedido vai aparecer aqui quando sair para entrega.'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs text-slate-500">

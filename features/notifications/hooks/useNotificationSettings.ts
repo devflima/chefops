@@ -8,6 +8,7 @@ export type NotificationSettings = {
   whatsapp_order_confirmed: boolean
   whatsapp_order_preparing: boolean
   whatsapp_order_ready: boolean
+  whatsapp_order_out_for_delivery: boolean
   whatsapp_order_delivered: boolean
   whatsapp_order_cancelled: boolean
 }

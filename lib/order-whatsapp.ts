@@ -6,6 +6,7 @@ type OrderWhatsappEventKey =
   | 'order_confirmed'
   | 'order_preparing'
   | 'order_ready'
+  | 'order_out_for_delivery'
   | 'order_delivered'
   | 'order_cancelled'
 
@@ -17,6 +18,7 @@ type OrderForNotification = {
   customer_phone: string | null
   status: string
   payment_status: string
+  delivery_status?: string | null
   refunded_at: string | null
   cancelled_reason: string | null
   total: number
@@ -27,6 +29,7 @@ type NotificationSettings = {
   whatsapp_order_confirmed: boolean
   whatsapp_order_preparing: boolean
   whatsapp_order_ready: boolean
+  whatsapp_order_out_for_delivery: boolean
   whatsapp_order_delivered: boolean
   whatsapp_order_cancelled: boolean
 }
@@ -85,6 +88,8 @@ function buildOrderWhatsappMessage(params: {
       return `${greeting} Seu pedido ${orderRef} está em preparo na ${params.tenantName}.`
     case 'order_ready':
       return `${greeting} Seu pedido ${orderRef} está pronto na ${params.tenantName}.`
+    case 'order_out_for_delivery':
+      return `${greeting} Seu pedido ${orderRef} saiu para entrega e já está a caminho.`
     case 'order_delivered':
       return `${greeting} Seu pedido ${orderRef} foi finalizado pela ${params.tenantName}. Bom apetite!`
     case 'order_cancelled': {
@@ -106,6 +111,7 @@ function isEventEnabled(eventKey: OrderWhatsappEventKey, settings: NotificationS
     order_confirmed: 'whatsapp_order_confirmed',
     order_preparing: 'whatsapp_order_preparing',
     order_ready: 'whatsapp_order_ready',
+    order_out_for_delivery: 'whatsapp_order_out_for_delivery',
     order_delivered: 'whatsapp_order_delivered',
     order_cancelled: 'whatsapp_order_cancelled',
   }
@@ -164,7 +170,7 @@ export async function sendOrderWhatsappNotification(params: {
 
   const { data: order, error: orderError } = await admin
     .from('orders')
-    .select('id, tenant_id, order_number, customer_name, customer_phone, status, payment_status, refunded_at, cancelled_reason, total')
+    .select('id, tenant_id, order_number, customer_name, customer_phone, status, payment_status, delivery_status, refunded_at, cancelled_reason, total')
     .eq('id', params.orderId)
     .single()
 
@@ -225,6 +231,7 @@ export async function sendOrderWhatsappNotification(params: {
     whatsapp_order_confirmed: true,
     whatsapp_order_preparing: true,
     whatsapp_order_ready: true,
+    whatsapp_order_out_for_delivery: true,
     whatsapp_order_delivered: false,
     whatsapp_order_cancelled: true,
     ...(settings ?? {}),

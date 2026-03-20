@@ -79,6 +79,7 @@ export async function createOrderFromCheckoutSession(params: {
       payment_status: 'paid',
       payment_provider: paymentId ? 'mercado_pago' : null,
       payment_transaction_id: paymentId ?? null,
+      delivery_status: payload.delivery_address ? 'waiting_dispatch' : null,
       notes: payload.notes ?? null,
       subtotal,
       delivery_fee: deliveryFee,

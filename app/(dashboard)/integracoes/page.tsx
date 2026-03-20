@@ -52,6 +52,7 @@ export default function IntegracoesPage() {
         { key: 'whatsapp_order_confirmed', label: 'Pedido confirmado' },
         { key: 'whatsapp_order_preparing', label: 'Em preparo' },
         { key: 'whatsapp_order_ready', label: 'Pedido pronto' },
+        { key: 'whatsapp_order_out_for_delivery', label: 'Saiu para entrega' },
         { key: 'whatsapp_order_delivered', label: 'Pedido entregue' },
         { key: 'whatsapp_order_cancelled', label: 'Pedido cancelado' },
       ] as const

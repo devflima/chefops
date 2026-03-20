@@ -8,6 +8,7 @@ const settingsSchema = z.object({
   whatsapp_order_confirmed: z.boolean(),
   whatsapp_order_preparing: z.boolean(),
   whatsapp_order_ready: z.boolean(),
+  whatsapp_order_out_for_delivery: z.boolean(),
   whatsapp_order_delivered: z.boolean(),
   whatsapp_order_cancelled: z.boolean(),
 })
@@ -17,6 +18,7 @@ const defaultSettings = {
   whatsapp_order_confirmed: true,
   whatsapp_order_preparing: true,
   whatsapp_order_ready: true,
+  whatsapp_order_out_for_delivery: true,
   whatsapp_order_delivered: false,
   whatsapp_order_cancelled: true,
 }

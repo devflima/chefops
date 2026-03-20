@@ -82,6 +82,11 @@ export type OrderStatus =
 
 export type PaymentMethod = 'online' | 'table' | 'counter' | 'delivery'
 export type PaymentStatus = 'pending' | 'paid' | 'refunded'
+export type DeliveryStatus =
+  | 'waiting_dispatch'
+  | 'assigned'
+  | 'out_for_delivery'
+  | 'delivered'
 
 export type OrderItemExtra = {
   id: string
@@ -119,6 +124,7 @@ export type Order = {
   status: OrderStatus
   payment_method: PaymentMethod
   payment_status: PaymentStatus
+  delivery_status?: DeliveryStatus | null
   delivery_driver_id?: string | null
   delivery_driver?: {
     id: string

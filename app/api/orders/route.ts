@@ -218,6 +218,7 @@ export async function POST(request: NextRequest) {
     const tabId = tab_id
       ? await resolveTabId(admin, tab_id, tenant_id)
       : null
+    const isDeliveryOrder = !!delivery_address
 
     if (table_id && !tableSessionId) {
       return NextResponse.json(
@@ -241,6 +242,7 @@ export async function POST(request: NextRequest) {
         subtotal,
         delivery_fee: deliveryFee,
         total: subtotal + deliveryFee,
+        delivery_status: isDeliveryOrder ? 'waiting_dispatch' : null,
         table_session_id: tableSessionId,
         tab_id: tabId,
         delivery_address: delivery_address ?? null,
