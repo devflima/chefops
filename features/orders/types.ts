@@ -127,6 +127,15 @@ export type Order = {
   notes: string | null
   cancelled_reason: string | null
   stock_deducted_at?: string | null
+  notifications?: {
+    id: string
+    channel: 'whatsapp'
+    event_key: string
+    status: 'sent' | 'failed' | 'skipped'
+    recipient: string | null
+    error_message?: string | null
+    created_at: string
+  }[]
   delivery_address: CustomerAddress | null
   created_at: string
   updated_at: string

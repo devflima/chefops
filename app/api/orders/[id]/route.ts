@@ -34,7 +34,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from('orders')
-      .select('*, items:order_items(*, extras:order_item_extras(*))')
+      .select('*, items:order_items(*, extras:order_item_extras(*)), notifications:order_notifications(id, channel, event_key, status, recipient, error_message, created_at)')
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
       .single()

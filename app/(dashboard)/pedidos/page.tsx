@@ -51,6 +51,21 @@ const paymentLabels = {
   delivery: 'Na entrega',
 }
 
+const whatsappEventLabels: Record<string, string> = {
+  order_received: 'Pedido recebido',
+  order_confirmed: 'Pedido confirmado',
+  order_preparing: 'Em preparo',
+  order_ready: 'Pedido pronto',
+  order_delivered: 'Pedido entregue',
+  order_cancelled: 'Pedido cancelado',
+}
+
+const whatsappStatusStyles: Record<string, string> = {
+  sent: 'bg-green-100 text-green-700',
+  failed: 'bg-red-100 text-red-700',
+  skipped: 'bg-slate-100 text-slate-600',
+}
+
 type DeliveryAddress = {
   street?: string | null
   number?: string | null
@@ -191,6 +206,10 @@ export default function PedidosPage() {
           {data?.data?.map((order: Order) => {
             const config = statusConfig[order.status]
             const address = normalizeDeliveryAddress(order.delivery_address)
+            const notifications = [...(order.notifications ?? [])].sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )
+            const latestWhatsapp = notifications[0]
             return (
               <div
                 key={order.id}
@@ -276,6 +295,54 @@ export default function PedidosPage() {
                       <p className="mt-2 rounded bg-slate-50 px-2 py-1 text-xs text-slate-400">
                         Obs: {order.notes}
                       </p>
+                    )}
+
+                    {latestWhatsapp && (
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-medium text-slate-500">WhatsApp</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${whatsappStatusStyles[latestWhatsapp.status]}`}>
+                            {latestWhatsapp.status === 'sent'
+                              ? 'Enviado'
+                              : latestWhatsapp.status === 'failed'
+                                ? 'Falhou'
+                                : 'Ignorado'}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {whatsappEventLabels[latestWhatsapp.event_key] ?? latestWhatsapp.event_key}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          {new Date(latestWhatsapp.created_at).toLocaleDateString('pt-BR')} às{' '}
+                          {new Date(latestWhatsapp.created_at).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          {latestWhatsapp.recipient ? ` · ${latestWhatsapp.recipient}` : ''}
+                        </p>
+
+                        {latestWhatsapp.error_message && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Motivo: {latestWhatsapp.error_message}
+                          </p>
+                        )}
+
+                        {notifications.length > 1 && (
+                          <div className="mt-2 space-y-1 border-t border-slate-200 pt-2">
+                            {notifications.slice(1, 3).map((notification) => (
+                              <p key={notification.id} className="text-[11px] text-slate-400">
+                                {whatsappEventLabels[notification.event_key] ?? notification.event_key} ·{' '}
+                                {notification.status === 'sent'
+                                  ? 'enviado'
+                                  : notification.status === 'failed'
+                                    ? 'falhou'
+                                    : 'ignorado'}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex-shrink-0 text-right">
