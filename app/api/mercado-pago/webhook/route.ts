@@ -13,7 +13,23 @@ import { syncTenantFromSaasSubscription } from '@/lib/saas-billing'
 import { getMercadoPagoAccessTokenBySellerUserId } from '@/lib/tenant-mercadopago'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: NextRequest) {
+type MercadoPagoWebhookDeps = {
+  verifyMercadoPagoWebhookSignature: typeof verifyMercadoPagoWebhookSignature
+  getPreapprovalById: typeof getPreapprovalById
+  syncTenantFromSaasSubscription: typeof syncTenantFromSaasSubscription
+  getMercadoPagoAccessTokenBySellerUserId: typeof getMercadoPagoAccessTokenBySellerUserId
+  getPaymentById: typeof getPaymentById
+  getOrderIdFromExternalReference: typeof getOrderIdFromExternalReference
+  getCheckoutSessionIdFromExternalReference: typeof getCheckoutSessionIdFromExternalReference
+  mapMercadoPagoStatusToOrderPaymentStatus: typeof mapMercadoPagoStatusToOrderPaymentStatus
+  createAdminClient: typeof createAdminClient
+  createOrderFromCheckoutSession: typeof createOrderFromCheckoutSession
+}
+
+export async function handleMercadoPagoWebhook(
+  request: Pick<NextRequest, 'json' | 'headers' | 'nextUrl'>,
+  deps: MercadoPagoWebhookDeps
+) {
   try {
     const body = await request.json().catch(() => null)
     const type = body?.type || request.nextUrl.searchParams.get('topic')
@@ -31,7 +47,7 @@ export async function POST(request: NextRequest) {
       requestId,
     })
 
-    if (!verifyMercadoPagoWebhookSignature({
+    if (!deps.verifyMercadoPagoWebhookSignature({
       xSignature: request.headers.get('x-signature'),
       xRequestId: requestId,
       dataId,
@@ -45,8 +61,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === 'subscription_preapproval' && dataId) {
-      const preapproval = await getPreapprovalById(dataId)
-      const result = await syncTenantFromSaasSubscription(preapproval)
+      const preapproval = await deps.getPreapprovalById(dataId)
+      const result = await deps.syncTenantFromSaasSubscription(preapproval)
 
       console.info('[mercado-pago:webhook:subscription-processed]', {
         preapprovalId: preapproval.id,
@@ -62,11 +78,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 })
     }
 
-    const sellerAccessToken = await getMercadoPagoAccessTokenBySellerUserId(body?.user_id)
+    const sellerAccessToken = await deps.getMercadoPagoAccessTokenBySellerUserId(body?.user_id)
     let payment: Awaited<ReturnType<typeof getPaymentById>>
 
     try {
-      payment = await getPaymentById(dataId, sellerAccessToken)
+      payment = await deps.getPaymentById(dataId, sellerAccessToken)
     } catch (error) {
       if (error instanceof MercadoPagoApiError && error.status === 404) {
         console.warn('[mercado-pago:webhook:payment-not-found]', {
@@ -82,13 +98,13 @@ export async function POST(request: NextRequest) {
     }
 
     const orderId =
-      payment.metadata?.order_id || getOrderIdFromExternalReference(payment.external_reference)
+      payment.metadata?.order_id || deps.getOrderIdFromExternalReference(payment.external_reference)
     const checkoutSessionId =
       payment.metadata?.checkout_session_id ||
-      getCheckoutSessionIdFromExternalReference(payment.external_reference)
+      deps.getCheckoutSessionIdFromExternalReference(payment.external_reference)
 
-    const admin = createAdminClient()
-    const paymentStatus = mapMercadoPagoStatusToOrderPaymentStatus(payment.status)
+    const admin = deps.createAdminClient()
+    const paymentStatus = deps.mapMercadoPagoStatusToOrderPaymentStatus(payment.status)
 
     if (orderId) {
       const { error } = await admin
@@ -132,7 +148,7 @@ export async function POST(request: NextRequest) {
       if (sessionUpdateError) throw sessionUpdateError
 
       if (payment.status === 'approved' && !checkoutSession.created_order_id) {
-        await createOrderFromCheckoutSession({
+        await deps.createOrderFromCheckoutSession({
           checkoutSessionId,
           payload: checkoutSession.payload,
           paymentId: String(payment.id),
@@ -156,4 +172,19 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function POST(request: NextRequest) {
+  return handleMercadoPagoWebhook(request, {
+    verifyMercadoPagoWebhookSignature,
+    getPreapprovalById,
+    syncTenantFromSaasSubscription,
+    getMercadoPagoAccessTokenBySellerUserId,
+    getPaymentById,
+    getOrderIdFromExternalReference,
+    getCheckoutSessionIdFromExternalReference,
+    mapMercadoPagoStatusToOrderPaymentStatus,
+    createAdminClient,
+    createOrderFromCheckoutSession,
+  })
 }

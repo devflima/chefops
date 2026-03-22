@@ -5,8 +5,13 @@ type IngredientRow = {
   quantity: number
 }
 
-export async function deductOrderStockIfNeeded(orderId: string, userId: string) {
-  const admin = createAdminClient()
+type AdminClient = ReturnType<typeof createAdminClient>
+
+export async function deductOrderStockIfNeededWithAdmin(
+  admin: AdminClient,
+  orderId: string,
+  userId: string
+) {
 
   const { data: order, error: orderError } = await admin
     .from('orders')
@@ -140,4 +145,8 @@ export async function deductOrderStockIfNeeded(orderId: string, userId: string) 
   if (updateError) throw updateError
 
   return { deducted: true }
+}
+
+export async function deductOrderStockIfNeeded(orderId: string, userId: string) {
+  return deductOrderStockIfNeededWithAdmin(createAdminClient(), orderId, userId)
 }

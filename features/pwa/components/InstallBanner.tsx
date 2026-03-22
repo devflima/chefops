@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, X } from 'lucide-react'
+import {
+  shouldDismissAfterInstall,
+  shouldRenderInstallBanner,
+  shouldSkipInstallBanner,
+} from '@/features/pwa/install-banner'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -16,12 +21,8 @@ export default function InstallBanner() {
   useEffect(() => {
     // Verifica se já instalou ou dispensou
     const isDismissed = localStorage.getItem('pwa-dismissed')
-    if (isDismissed) return
-
-    // Verifica se já está instalado
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      return
-    }
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    if (shouldSkipInstallBanner(isDismissed, isStandalone)) return
 
     const handler = (e: Event) => {
       e.preventDefault()
@@ -36,7 +37,7 @@ export default function InstallBanner() {
     if (!prompt) return
     await prompt.prompt()
     const { outcome } = await prompt.userChoice
-    if (outcome === 'accepted') setDismissed(true)
+    if (shouldDismissAfterInstall(outcome)) setDismissed(true)
     setPrompt(null)
   }
 
@@ -45,7 +46,7 @@ export default function InstallBanner() {
     setDismissed(true)
   }
 
-  if (dismissed || !prompt) return null
+  if (!shouldRenderInstallBanner(prompt, dismissed)) return null
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 max-w-sm mx-auto">

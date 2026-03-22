@@ -3,13 +3,19 @@ import { refundOrderIfNeeded } from '@/lib/order-refunds'
 import { sendOrderWhatsappNotification } from '@/lib/order-whatsapp'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+type CancelOrderDeps = {
+  createAdminClient: typeof createAdminClient
+  refundOrderIfNeeded: typeof refundOrderIfNeeded
+  sendOrderWhatsappNotification: typeof sendOrderWhatsappNotification
+}
+
+export async function cancelPublicOrder(
+  request: Pick<NextRequest, 'json'>,
+  orderId: string,
+  deps: CancelOrderDeps
 ) {
   try {
-    const admin = createAdminClient()
-    const { id } = await params
+    const admin = deps.createAdminClient()
     const body = await request.json().catch(() => ({}))
     const cancelledReason =
       typeof body?.cancelled_reason === 'string' && body.cancelled_reason.trim()
@@ -19,7 +25,7 @@ export async function POST(
     const { data: order, error } = await admin
       .from('orders')
       .select('id, status')
-      .eq('id', id)
+      .eq('id', orderId)
       .single()
 
     if (error || !order) {
@@ -42,16 +48,16 @@ export async function POST(
         status: 'cancelled',
         cancelled_reason: cancelledReason,
       })
-      .eq('id', id)
+      .eq('id', orderId)
 
     if (updateError) {
       throw updateError
     }
 
-    await refundOrderIfNeeded(id)
+    await deps.refundOrderIfNeeded(orderId)
 
-    await sendOrderWhatsappNotification({
-      orderId: id,
+    await deps.sendOrderWhatsappNotification({
+      orderId: orderId,
       eventKey: 'order_cancelled',
     }).catch((error) => {
       console.error('[order-whatsapp:public-cancel]', error)
@@ -60,7 +66,7 @@ export async function POST(
     const { data: updatedOrder, error: updatedOrderError } = await admin
       .from('orders')
       .select('id, order_number, status, payment_status, refunded_at, created_at, updated_at')
-      .eq('id', id)
+      .eq('id', orderId)
       .single()
 
     if (updatedOrderError || !updatedOrder) {
@@ -75,4 +81,17 @@ export async function POST(
       { status: 500 }
     )
   }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  return cancelPublicOrder(request, id, {
+    createAdminClient,
+    refundOrderIfNeeded,
+    sendOrderWhatsappNotification,
+  })
 }

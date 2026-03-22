@@ -6,10 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { LoginPageContent } from '@/features/auth/components/LoginPageContent'
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -46,64 +43,5 @@ export default function LoginPage() {
     router.refresh()
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Entrar</CardTitle>
-        <CardDescription>Acesse o painel do seu estabelecimento</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>E-mail</FormLabel>
-                  <FormControl>
-                    <Input placeholder="voce@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-        </Form>
-
-        <p className="text-center text-sm text-slate-500 mt-4">
-          Não tem conta?{' '}
-          <Link href="/register" className="text-slate-900 font-medium hover:underline">
-            Cadastre seu estabelecimento
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
-  )
+  return <LoginPageContent form={form} error={error} onSubmit={onSubmit} />
 }

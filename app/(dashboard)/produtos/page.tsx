@@ -15,6 +15,17 @@ import PaginationControls from '@/components/shared/PaginationControls'
 import { Plus, Package } from 'lucide-react'
 import type { Product } from '@/features/products/types'
 import { useCanAddMore, usePlan } from '@/features/plans/hooks/usePlan'
+import {
+  getDefaultProductFormValues,
+  getProductActiveFilter,
+  getProductCategoryFilterValue,
+  getProductFormValues,
+  getProductsPlanUsageText,
+  getProductsTotalPages,
+  isProductLimitReached,
+  unitLabels,
+  type ProductStatusFilter,
+} from '@/features/products/products-page'
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
@@ -27,15 +38,10 @@ const productSchema = z.object({
 
 type ProductForm = z.infer<typeof productSchema>
 
-const unitLabels: Record<string, string> = {
-  un: 'Unidade', kg: 'Kg', g: 'Grama',
-  l: 'Litro', ml: 'mL', cx: 'Caixa', pct: 'Pacote',
-}
-
 export default function ProdutosPage() {
   const [page, setPage] = useState(1)
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active')
+  const [statusFilter, setStatusFilter] = useState<ProductStatusFilter>('active')
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const pageSize = 10
@@ -43,37 +49,30 @@ export default function ProdutosPage() {
   const { data, isLoading } = useProducts({
     page,
     pageSize,
-    category_id: categoryFilter === 'all' ? undefined : categoryFilter,
-    active: statusFilter === 'all' ? undefined : statusFilter === 'active',
+    category_id: getProductCategoryFilterValue(categoryFilter),
+    active: getProductActiveFilter(statusFilter),
   })
   const { data: categories } = useCategories()
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
   const { data: plan } = usePlan()
   const canAddMoreProducts = useCanAddMore('products', data?.count ?? 0)
-  const productLimitReached = !!plan && !canAddMoreProducts
+  const productLimitReached = isProductLimitReached(plan, canAddMoreProducts)
 
   const form = useForm<ProductForm, unknown, ProductForm>({
     resolver: zodResolver(productSchema) as Resolver<ProductForm>,
-    defaultValues: { name: '', sku: '', unit: 'un', cost_price: 0, min_stock: 0 },
+    defaultValues: getDefaultProductFormValues(),
   })
 
   function openCreate() {
     setEditing(null)
-    form.reset({ name: '', sku: '', unit: 'un', cost_price: 0, min_stock: 0 })
+    form.reset(getDefaultProductFormValues())
     setOpen(true)
   }
 
   function openEdit(product: Product) {
     setEditing(product)
-    form.reset({
-      name: product.name,
-      sku: product.sku || '',
-      category_id: product.category_id || '',
-      unit: product.unit,
-      cost_price: product.cost_price,
-      min_stock: product.min_stock,
-    })
+    form.reset(getProductFormValues(product))
     setOpen(true)
   }
 
@@ -99,7 +98,7 @@ export default function ProdutosPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Produtos</h1>
           <p className="text-slate-500 text-sm mt-1">
             {data?.count ?? 0} produtos cadastrados
-            {plan && plan.max_products !== -1 ? ` · ${data?.count ?? 0}/${plan.max_products} no plano` : ''}
+            {getProductsPlanUsageText(plan, data?.count ?? 0)}
           </p>
         </div>
         <Button onClick={openCreate} disabled={productLimitReached}>
@@ -207,7 +206,7 @@ export default function ProdutosPage() {
 
       <PaginationControls
         page={page}
-        totalPages={Math.max(1, Math.ceil((data?.count ?? 0) / pageSize))}
+        totalPages={getProductsTotalPages(data?.count ?? 0, pageSize)}
         onPageChange={setPage}
       />
 

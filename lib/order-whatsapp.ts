@@ -46,7 +46,7 @@ function getTwilioWhatsappConfig() {
   return { accountSid, authToken, from: normalizeWhatsappChannelAddress(from) }
 }
 
-function normalizeBrazilPhone(rawPhone: string | null | undefined) {
+export function normalizeBrazilPhone(rawPhone: string | null | undefined) {
   if (!rawPhone) return null
 
   const trimmed = rawPhone.trim()
@@ -70,7 +70,7 @@ function normalizeBrazilPhone(rawPhone: string | null | undefined) {
   return `+${digits}`
 }
 
-function normalizeWhatsappChannelAddress(value: string) {
+export function normalizeWhatsappChannelAddress(value: string) {
   const trimmed = value.trim()
   if (!trimmed) return trimmed
 
@@ -86,7 +86,7 @@ function normalizeWhatsappChannelAddress(value: string) {
   return digits ? `whatsapp:+${digits}` : trimmed
 }
 
-function buildOrderWhatsappMessage(params: {
+export function buildOrderWhatsappMessage(params: {
   eventKey: OrderWhatsappEventKey
   order: OrderForNotification
   tenantName: string

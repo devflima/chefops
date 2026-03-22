@@ -9,33 +9,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Check, ChefHat, Tag, Package, UtensilsCrossed, LayoutGrid } from 'lucide-react'
+import {
+  buildCategoryPayload,
+  buildMenuItemPayload,
+  buildProductPayload,
+  buildTableCompletionPayload,
+  buildTablePayload,
+  getOnboardingActiveStep,
+  getOnboardingCompletedCount,
+  getOnboardingProgress,
+  onboardingSteps,
+  shouldRenderOnboardingWizard,
+} from '@/features/onboarding/onboarding-wizard'
 
-const steps = [
-  {
-    key: 'has_category' as const,
-    title: 'Crie sua primeira categoria',
-    description: 'Categorias organizam seu cardápio. Ex: Pizzas, Bebidas, Entradas.',
-    icon: Tag,
-  },
-  {
-    key: 'has_product' as const,
-    title: 'Cadastre um produto',
-    description: 'Produtos são seus insumos para controle de estoque.',
-    icon: Package,
-  },
-  {
-    key: 'has_menu_item' as const,
-    title: 'Adicione um item ao cardápio',
-    description: 'Itens do cardápio são o que seus clientes vão pedir.',
-    icon: UtensilsCrossed,
-  },
-  {
-    key: 'has_table' as const,
-    title: 'Cadastre uma mesa',
-    description: 'Mesas permitem abrir comandas e receber pedidos via QR Code.',
-    icon: LayoutGrid,
-  },
-]
+const steps = onboardingSteps.map((step, index) => ({
+  ...step,
+  icon: [Tag, Package, UtensilsCrossed, LayoutGrid][index],
+}))
 
 const categorySchema = z.object({ name: z.string().min(1, 'Nome obrigatório') })
 const productSchema = z.object({
@@ -75,21 +65,18 @@ export default function OnboardingWizard() {
     defaultValues: { number: '' },
   })
 
-  if (isLoading || !onboarding || onboarding.completed_at) return null
+  if (!shouldRenderOnboardingWizard(onboarding ?? null, isLoading)) return null
 
-  const completedCount = steps.filter((s) => onboarding[s.key]).length
-  const progress = (completedCount / steps.length) * 100
-
-  // Avança para o primeiro passo incompleto
-  const firstIncomplete = steps.findIndex((s) => !onboarding[s.key])
-  const activeStep = firstIncomplete === -1 ? steps.length - 1 : firstIncomplete
+  const completedCount = getOnboardingCompletedCount(onboarding)
+  const progress = getOnboardingProgress(onboarding)
+  const activeStep = getOnboardingActiveStep(onboarding)
 
   async function handleCategorySubmit(values: { name: string }) {
     try {
       await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: values.name, display_order: 0 }),
+        body: JSON.stringify(buildCategoryPayload(values)),
       })
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       await completeStep.mutateAsync({ has_category: true })
@@ -101,7 +88,7 @@ export default function OnboardingWizard() {
       await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: values.name, unit: values.unit, cost_price: 0, min_stock: 0 }),
+        body: JSON.stringify(buildProductPayload(values)),
       })
       queryClient.invalidateQueries({ queryKey: ['products'] })
       await completeStep.mutateAsync({ has_product: true })
@@ -113,7 +100,7 @@ export default function OnboardingWizard() {
       await fetch('/api/menu-items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: values.name, price: values.price }),
+        body: JSON.stringify(buildMenuItemPayload(values)),
       })
       queryClient.invalidateQueries({ queryKey: ['menu-items'] })
       await completeStep.mutateAsync({ has_menu_item: true })
@@ -126,15 +113,10 @@ export default function OnboardingWizard() {
       await fetch('/api/tables', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number: values.number, capacity: 4 }),
+        body: JSON.stringify(buildTablePayload(values)),
       })
       queryClient.invalidateQueries({ queryKey: ['tables'] })
-      await completeStep.mutateAsync({
-        has_category: onboarding.has_category,
-        has_product: onboarding.has_product,
-        has_menu_item: onboarding.has_menu_item,
-        has_table: true,
-      })
+      await completeStep.mutateAsync(buildTableCompletionPayload(onboarding))
     } catch { /* empty */ }
   }
 

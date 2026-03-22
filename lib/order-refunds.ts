@@ -2,8 +2,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { refundPaymentById } from '@/lib/mercadopago'
 import { getTenantMercadoPagoAccessToken } from '@/lib/tenant-mercadopago'
 
-export async function refundOrderIfNeeded(orderId: string) {
-  const admin = createAdminClient()
+type RefundDeps = {
+  admin: ReturnType<typeof createAdminClient>
+  refundPaymentById: typeof refundPaymentById
+  getTenantMercadoPagoAccessToken: typeof getTenantMercadoPagoAccessToken
+}
+
+export async function refundOrderIfNeededWithDeps(orderId: string, deps: RefundDeps) {
+  const { admin } = deps
 
   const { data: order, error } = await admin
     .from('orders')
@@ -23,13 +29,13 @@ export async function refundOrderIfNeeded(orderId: string) {
     return { refunded: false, reason: 'unsupported-provider' }
   }
 
-  const accessToken = await getTenantMercadoPagoAccessToken(order.tenant_id)
+  const accessToken = await deps.getTenantMercadoPagoAccessToken(order.tenant_id)
 
   if (!accessToken) {
     throw new Error('Mercado Pago não conectado para este estabelecimento.')
   }
 
-  await refundPaymentById({
+  await deps.refundPaymentById({
     paymentId: order.payment_transaction_id,
     accessToken,
   })
@@ -45,4 +51,12 @@ export async function refundOrderIfNeeded(orderId: string) {
   if (updateError) throw updateError
 
   return { refunded: true }
+}
+
+export async function refundOrderIfNeeded(orderId: string) {
+  return refundOrderIfNeededWithDeps(orderId, {
+    admin: createAdminClient(),
+    refundPaymentById,
+    getTenantMercadoPagoAccessToken,
+  })
 }
