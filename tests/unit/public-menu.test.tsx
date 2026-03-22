@@ -1,0 +1,642 @@
+import React from 'react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
+
+import {
+  buildPublicOrderCancelPayload,
+  buildPublicCheckoutPayload,
+  buildPublicOrderPayload,
+  createCartItem,
+  createPublicOrderStatusFromOrder,
+  createPublicOrderStatusFromCheckout,
+  decrementCartItem,
+  filterGroupsByCategory,
+  formatCEP,
+  formatCPF,
+  formatPhone,
+  getAddressFlowTarget,
+  getAddressSubmitLabel,
+  getActiveOrderStorageKey,
+  getBorders,
+  getCancelSuccessNotice,
+  getCancelOrderErrorMessage,
+  getCartDrawerState,
+  getCartItemLineTotal,
+  getCancelledOrderMessage,
+  getCartTotals,
+  getCheckoutConvertedNotice,
+  getCheckoutPollingErrorNotice,
+  getCheckoutStepTitle,
+  getCheckoutNoticeFromResult,
+  getContinueFlowTarget,
+  getCustomerBannerState,
+  getConvertedCheckoutState,
+  getDeliveryStepMessage,
+  getHalfFlavorOptions,
+  getInfoContinueLabel,
+  getOrderStepState,
+  getOrderSteps,
+  getOpenCartState,
+  getPaymentStatusLabel,
+  getPhoneChangeState,
+  getPublicOrderHeadline,
+  getLookupCustomerFoundState,
+  getLookupCustomerMissingState,
+  getOnlineCheckoutErrorMessage,
+  getPublicOrderPlacementErrorMessage,
+  getSuccessfulPublicOrderState,
+  getPublicCheckoutProcessingState,
+  getTrackOrderState,
+  groupMenuItems,
+  incrementCartItem,
+  isDeliveryStepCompleted,
+  normalizePublicMenuItems,
+  parseStoredActiveOrder,
+  normalizeTenantDeliverySettings,
+  paymentOptionsByContext,
+  removeCartItem,
+  resolvePublicCheckoutUrl,
+  serializeStoredActiveOrder,
+  shouldShowCancelOrderButton,
+  shouldShowDeliveryStep,
+  shouldContinueCheckoutPolling,
+  shouldContinueOrderPolling,
+  shouldPersistActiveOrder,
+  validateCPF,
+  validateCustomerAddress,
+  validateCustomerInfo,
+} from '@/features/menu/public-menu'
+
+const createOrderMock = vi.fn()
+const supabaseFromMock = vi.fn()
+const notFoundMock = vi.fn()
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+  },
+}))
+
+vi.mock('@/features/orders/hooks/useOrders', () => ({
+  useCreateOrder: () => ({
+    isPending: false,
+    mutateAsync: createOrderMock,
+  }),
+}))
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    from: (...args: Parameters<typeof supabaseFromMock>) => supabaseFromMock(...args),
+  }),
+}))
+
+vi.mock('next/navigation', async () => {
+  const actual = await vi.importActual('next/navigation')
+  return {
+    ...actual,
+    notFound: () => notFoundMock(),
+  }
+})
+
+describe('public menu helpers', () => {
+  it('formata dados e valida cpf', () => {
+    expect(getActiveOrderStorageKey('chefops', 'table-1')).toBe('chefops:active-order:chefops:table-1')
+    expect(formatPhone('11999999999')).toBe('(11) 99999-9999')
+    expect(formatCPF('12345678909')).toBe('123.456.789-09')
+    expect(formatCEP('12345678')).toBe('12345-678')
+    expect(validateCPF('123.456.789-09')).toBe(true)
+    expect(validateCPF('111.111.111-11')).toBe(false)
+    expect(getPhoneChangeState('11999999999')).toEqual({
+      phone: '(11) 99999-9999',
+      phoneVerified: false,
+      existingCustomer: null,
+      isNewCustomer: false,
+      customerName: '',
+    })
+  })
+
+  it('agrupa cardapio, calcula totais e filtra categorias', () => {
+    const groups = groupMenuItems([
+      {
+        id: 'item-1',
+        tenant_id: 'tenant-1',
+        category_id: 'cat-1',
+        name: 'Pizza',
+        description: null,
+        price: 30,
+        available: true,
+        display_order: 1,
+        category: { id: 'cat-1', name: 'Pizzas' },
+        extras: [{ extra: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' } }],
+      },
+      {
+        id: 'item-2',
+        tenant_id: 'tenant-1',
+        category_id: null,
+        name: 'Suco',
+        description: null,
+        price: 8,
+        available: true,
+        display_order: 2,
+        category: null,
+        extras: [],
+      },
+    ])
+
+    expect(groups).toHaveLength(2)
+    expect(filterGroupsByCategory(groups, 'cat-1')).toHaveLength(1)
+    expect(getBorders(groups[0].items[0]).map((item) => item.name)).toEqual(['Catupiry'])
+
+    expect(getCartTotals(
+      [
+        {
+          menu_item_id: 'item-1',
+          name: 'Pizza',
+          price: 30,
+          quantity: 2,
+          extras: [{ name: 'Catupiry', price: 5 }],
+        },
+      ],
+      null,
+      { delivery_enabled: true, flat_fee: 8 },
+    )).toEqual({
+      cartTotal: 70,
+      deliveryFee: 8,
+      orderTotal: 78,
+      cartCount: 2,
+    })
+  })
+
+  it('valida dados do cliente, endereco, steps e normalizacao de joins', () => {
+    expect(validateCustomerInfo('', '1199', '', { id: 'table-1', number: '10' })).toEqual({
+      name: 'Nome obrigatório',
+      phone: 'Telefone inválido',
+      cpf: 'CPF inválido',
+    })
+
+    expect(validateCustomerAddress({ street: 'Rua A' })).toEqual({
+      zip_code: 'CEP obrigatório',
+      number: 'Número obrigatório',
+      city: 'Cidade obrigatória',
+    })
+
+    expect(getOrderStepState('preparing', ['pending', 'confirmed', 'preparing', 'ready'], 'confirmed')).toBe('done')
+    expect(getOrderStepState('preparing', ['pending', 'confirmed', 'preparing', 'ready'], 'preparing')).toBe('current')
+    expect(getOrderStepState('cancelled', ['pending', 'confirmed'], 'pending')).toBe('upcoming')
+
+    expect(paymentOptionsByContext.table).toHaveLength(3)
+    expect(normalizeTenantDeliverySettings([{ delivery_enabled: true, flat_fee: 8 }])).toEqual({
+      delivery_enabled: true,
+      flat_fee: 8,
+    })
+
+    expect(normalizePublicMenuItems([
+      {
+        id: 'item-1',
+        tenant_id: 'tenant-1',
+        category_id: 'cat-1',
+        name: 'Pizza',
+        description: null,
+        price: 30,
+        available: true,
+        display_order: 1,
+        category: [{ id: 'cat-1', name: 'Pizzas' }],
+        extras: [{ extra: [{ id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' }] }],
+      },
+    ] as never)).toMatchObject([
+      {
+        category: { id: 'cat-1', name: 'Pizzas' },
+        extras: [{ extra: { id: 'extra-1', name: 'Catupiry' } }],
+      },
+    ])
+  })
+
+  it('controla mutacoes do carrinho e fluxo de persistencia do pedido', () => {
+    const item = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: 'cat-1',
+      name: 'Pizza',
+      description: null,
+      price: 30,
+      available: true,
+      display_order: 1,
+      category: { id: 'cat-1', name: 'Pizzas' },
+      extras: [],
+    }
+
+    const cartItem = createCartItem(item, { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' }, {
+      ...item,
+      id: 'item-2',
+      name: 'Calabresa',
+      price: 32,
+    })
+
+    expect(cartItem).toEqual({
+      menu_item_id: 'item-1',
+      name: 'Pizza / Calabresa',
+      price: 32,
+      quantity: 1,
+      extras: [{ name: 'Catupiry', price: 5 }],
+      half_flavor: { menu_item_id: 'item-2', name: 'Calabresa' },
+    })
+
+    expect(incrementCartItem([cartItem], 0)[0].quantity).toBe(2)
+    expect(decrementCartItem([{ ...cartItem, quantity: 2 }], 0)[0].quantity).toBe(1)
+    expect(decrementCartItem([cartItem], 0)).toEqual([])
+    expect(removeCartItem([cartItem, { ...cartItem, menu_item_id: 'item-3' }], 0)).toHaveLength(1)
+
+    expect(serializeStoredActiveOrder('order-1', 42)).toBe('{"id":"order-1","order_number":42}')
+    expect(parseStoredActiveOrder('{"id":"order-1","order_number":42}')).toEqual({
+      id: 'order-1',
+      order_number: 42,
+    })
+    expect(parseStoredActiveOrder('{"id":"order-1"}')).toBeNull()
+    expect(parseStoredActiveOrder('{invalid')).toBeNull()
+    expect(parseStoredActiveOrder(null)).toBeNull()
+    expect(shouldPersistActiveOrder('pending')).toBe(true)
+    expect(shouldPersistActiveOrder('delivered')).toBe(false)
+    expect(shouldContinueOrderPolling('confirmed')).toBe(true)
+    expect(shouldContinueOrderPolling('cancelled')).toBe(false)
+  })
+
+  it('controla notices e polling do checkout online', () => {
+    expect(getCheckoutNoticeFromResult('pending')).toContain('Pagamento pendente')
+    expect(getCheckoutNoticeFromResult('failure')).toContain('nao foi concluido')
+    expect(getCheckoutNoticeFromResult(null)).toBeNull()
+    expect(getCheckoutConvertedNotice()).toContain('Pagamento confirmado')
+    expect(getCheckoutPollingErrorNotice()).toContain('status do pagamento')
+
+    expect(shouldContinueCheckoutPolling('approved', 1)).toBe(true)
+    expect(shouldContinueCheckoutPolling('converted', 1)).toBe(false)
+    expect(shouldContinueCheckoutPolling('approved', 10)).toBe(false)
+
+    const publicStatus = createPublicOrderStatusFromCheckout({
+      created_order_id: 'order-1',
+      order_number: 42,
+      order_status: 'confirmed',
+      payment_status: 'paid',
+    })
+
+    expect(publicStatus).toMatchObject({
+      id: 'order-1',
+      order_number: 42,
+      status: 'confirmed',
+      payment_status: 'paid',
+      payment_method: 'online',
+    })
+    expect(createPublicOrderStatusFromCheckout({ created_order_id: null, order_number: 42 })).toBeNull()
+    expect(createPublicOrderStatusFromOrder({
+      id: 'order-2',
+      order_number: 43,
+      status: 'pending',
+      payment_status: 'pending',
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })).toEqual({
+      id: 'order-2',
+      order_number: 43,
+      status: 'pending',
+      payment_status: 'pending',
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })
+    expect(getSuccessfulPublicOrderState({
+      orderId: 'order-1',
+      orderNumber: 42,
+      publicOrderStatus: publicStatus!,
+    })).toEqual({
+      orderId: 'order-1',
+      orderNumber: 42,
+      publicOrderStatus: publicStatus,
+      checkoutStep: 'done',
+      cart: [],
+    })
+    expect(getCartDrawerState('cart')).toEqual({ cartOpen: true, checkoutStep: 'cart' })
+    expect(getOpenCartState()).toEqual({ cartOpen: true, checkoutStep: 'cart' })
+    expect(getTrackOrderState()).toEqual({ cartOpen: true, checkoutStep: 'done' })
+    expect(getConvertedCheckoutState({
+      orderId: 'order-1',
+      orderNumber: 42,
+      publicOrderStatus: publicStatus!,
+    })).toEqual({
+      orderId: 'order-1',
+      orderNumber: 42,
+      publicOrderStatus: publicStatus!,
+      checkoutStep: 'done',
+      cart: [],
+      cartOpen: true,
+      checkoutNotice: 'Pagamento confirmado. Pedido enviado para o estabelecimento.',
+    })
+    expect(getPublicCheckoutProcessingState(true, false)).toBe(true)
+    expect(getPublicCheckoutProcessingState(false, true)).toBe(true)
+    expect(getPublicCheckoutProcessingState(false, false)).toBe(false)
+  })
+
+  it('monta steps do pedido conforme contexto de mesa', () => {
+    expect(getOrderSteps({ id: 'table-1', number: '10' })[3]).toEqual({
+      key: 'ready',
+      label: 'Pronto',
+      description: 'Seu pedido está pronto para servir.',
+    })
+
+    expect(getOrderSteps(null)[3]).toEqual({
+      key: 'ready',
+      label: 'Pronto',
+      description: 'Seu pedido está pronto para sair.',
+    })
+  })
+
+  it('resume checkout, cancelamento, pagamento e entrega do pedido público', () => {
+    const orderSteps = getOrderSteps(null)
+    const publicOrderStatus = {
+      id: 'order-1',
+      order_number: 42,
+      status: 'ready',
+      payment_status: 'paid',
+      payment_method: 'delivery',
+      delivery_status: 'out_for_delivery',
+      delivery_driver: { name: 'Carlos' },
+      cancelled_reason: 'Cliente desistiu',
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    } as const
+
+    expect(getCheckoutStepTitle('cart')).toBe('Seu pedido')
+    expect(getCheckoutStepTitle('info')).toBe('Seus dados')
+    expect(getCheckoutStepTitle('address')).toBe('Endereço de entrega')
+    expect(getCheckoutStepTitle('done')).toBe('Pedido realizado!')
+
+    expect(getPublicOrderHeadline(publicOrderStatus, orderSteps)).toBe('pronto')
+    expect(getCancelledOrderMessage(publicOrderStatus)).toBe('Cliente desistiu')
+    expect(getCancelledOrderMessage(null)).toBe('O pedido foi cancelado.')
+    expect(getCancelSuccessNotice('refunded')).toContain('reembolso')
+    expect(getCancelSuccessNotice('paid')).toBe('Pedido cancelado com sucesso.')
+    expect(buildPublicOrderCancelPayload(' Motivo teste ')).toEqual({
+      cancelled_reason: 'Motivo teste',
+    })
+    expect(buildPublicOrderCancelPayload('   ')).toEqual({
+      cancelled_reason: 'Cancelado pelo cliente',
+    })
+    expect(getPaymentStatusLabel('paid')).toBe('Aprovado')
+    expect(getPaymentStatusLabel('refunded')).toBe('Reembolsado')
+    expect(getPaymentStatusLabel('pending')).toBe('Pendente')
+    expect(getOnlineCheckoutErrorMessage(new Error('mp error'))).toBe('mp error')
+    expect(getOnlineCheckoutErrorMessage(null)).toBe('Erro ao iniciar pagamento online.')
+    expect(getPublicOrderPlacementErrorMessage(new Error('order error'))).toBe('order error')
+    expect(getPublicOrderPlacementErrorMessage(null)).toBe('Erro ao fazer pedido.')
+    expect(getCancelOrderErrorMessage(new Error('cancel error'))).toBe('cancel error')
+    expect(getCancelOrderErrorMessage(null)).toBe('Erro ao cancelar pedido.')
+    expect(shouldShowCancelOrderButton('pending')).toBe(true)
+    expect(shouldShowCancelOrderButton('ready')).toBe(false)
+    expect(shouldShowDeliveryStep(publicOrderStatus)).toBe(true)
+    expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
+    expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
+    expect(getDeliveryStepMessage({
+      ...publicOrderStatus,
+      delivery_status: 'assigned',
+    })).toContain('vai aparecer aqui')
+  })
+
+  it('monta payloads e decide o fluxo do checkout público', () => {
+    const item = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: 'cat-1',
+      name: 'Pizza',
+      description: null,
+      price: 30,
+      available: true,
+      display_order: 1,
+      category: { id: 'cat-1', name: 'Pizzas' },
+      extras: [],
+    }
+
+    const cart = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza',
+        price: 30,
+        quantity: 2,
+        extras: [{ name: 'Borda', price: 5 }],
+      },
+    ]
+
+    expect(getContinueFlowTarget('online', { id: 'table-1', number: '10' })).toBe('online-checkout')
+    expect(getContinueFlowTarget('counter', null)).toBe('address')
+    expect(getAddressFlowTarget('online')).toBe('online-checkout')
+    expect(getAddressFlowTarget('delivery')).toBe('place-order')
+
+    expect(buildPublicCheckoutPayload({
+      tenantId: 'tenant-1',
+      tenantSlug: 'chefops',
+      customerName: 'Maria',
+      phone: '(11) 99999-9999',
+      customerCpf: '123.456.789-09',
+      tableInfo: { id: 'table-1', number: '10' },
+      notes: 'Sem cebola',
+      deliveryFee: 8,
+      deliveryAddress: {
+        zip_code: '12345678',
+        street: 'Rua A',
+        number: '10',
+        city: 'Sao Paulo',
+        state: 'SP',
+        label: 'Casa',
+        is_default: false,
+      },
+      items: cart,
+    })).toMatchObject({
+      tenant_id: 'tenant-1',
+      tenant_slug: 'chefops',
+      customer_phone: '11999999999',
+      customer_cpf: '123.456.789-09',
+      table_number: '10',
+      delivery_fee: 8,
+    })
+
+    expect(buildPublicOrderPayload({
+      tenantId: 'tenant-1',
+      customerName: 'Maria',
+      customerCpf: '',
+      phone: '(11) 99999-9999',
+      customerId: 'customer-1',
+      tableInfo: null,
+      paymentMethod: 'delivery',
+      notes: '',
+      deliveryFee: 8,
+      deliveryAddress: {},
+      items: cart,
+    })).toMatchObject({
+      tenant_id: 'tenant-1',
+      customer_phone: '11999999999',
+      customer_id: 'customer-1',
+      payment_method: 'delivery',
+      delivery_address: undefined,
+    })
+
+    expect(resolvePublicCheckoutUrl({ checkout_url: 'https://checkout.test' })).toBe('https://checkout.test')
+    expect(resolvePublicCheckoutUrl({ sandbox_init_point: 'https://sandbox.test' })).toBe('https://sandbox.test')
+    expect(resolvePublicCheckoutUrl({ init_point: 'https://init.test' })).toBe('https://init.test')
+    expect(resolvePublicCheckoutUrl(null)).toBeNull()
+
+    expect(getHalfFlavorOptions([
+      item,
+      { ...item, id: 'item-2', name: 'Calabresa' },
+      { ...item, id: 'item-3', category: { id: 'cat-2', name: 'Massas' } },
+    ], item)).toMatchObject([{ id: 'item-2', name: 'Calabresa' }])
+
+    expect(getCartItemLineTotal(cart[0])).toBe(70)
+    expect(getCustomerBannerState(true, { id: 'customer-1' }, false)).toBe('existing')
+    expect(getCustomerBannerState(true, null, true)).toBe('new')
+    expect(getCustomerBannerState(false, null, true)).toBeNull()
+    expect(getInfoContinueLabel(true)).toBe('Processando...')
+    expect(getInfoContinueLabel(false)).toBe('Continuar')
+    expect(getAddressSubmitLabel('online', false)).toBe('Ir para pagamento')
+    expect(getAddressSubmitLabel('delivery', false)).toBe('Fazer pedido')
+  })
+
+  it('resume estado da busca de cliente no checkout público', () => {
+    expect(getLookupCustomerFoundState({
+      id: 'cust-1',
+      name: 'Maria',
+      phone: '11999999999',
+    })).toEqual({
+      existingCustomer: {
+        id: 'cust-1',
+        name: 'Maria',
+        phone: '11999999999',
+      },
+      customerName: 'Maria',
+      isNewCustomer: false,
+      phoneVerified: true,
+    })
+
+    expect(getLookupCustomerMissingState()).toEqual({
+      existingCustomer: null,
+      customerName: '',
+      isNewCustomer: true,
+      phoneVerified: true,
+    })
+  })
+})
+
+describe('public menu smoke', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    notFoundMock.mockImplementation(() => {
+      throw new Error('not-found')
+    })
+
+    supabaseFromMock.mockImplementation((table: string) => {
+      if (table === 'tenants') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'tenant-1',
+              name: 'ChefOps House',
+              slug: 'chefops-house',
+              plan: 'pro',
+              tenant_delivery_settings: [{ delivery_enabled: true, flat_fee: 8 }],
+            },
+          }),
+        }
+      }
+
+      if (table === 'menu_items') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn()
+            .mockReturnThis()
+            .mockImplementationOnce(function () { return this })
+            .mockResolvedValueOnce({
+              data: [
+                {
+                  id: 'item-1',
+                  tenant_id: 'tenant-1',
+                  category_id: 'cat-1',
+                  name: 'Pizza',
+                  description: 'Grande',
+                  price: 30,
+                  image_url: null,
+                  available: true,
+                  display_order: 1,
+                  created_at: '2026-03-21T00:00:00.000Z',
+                  updated_at: '2026-03-21T00:00:00.000Z',
+                  category: [{ id: 'cat-1', name: 'Pizzas' }],
+                  extras: [{ extra: [{ id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' }] }],
+                },
+              ],
+            }),
+        }
+      }
+
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { table_id: 'table-1', table: { id: 'table-1', number: '10' } },
+        }),
+      }
+    })
+  })
+
+  it('renderiza MenuClient com cardapio e checkout drawer fechado', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'ChefOps House',
+          slug: 'chefops-house',
+          plan: 'pro',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [
+          {
+            id: 'item-1',
+            tenant_id: 'tenant-1',
+            category_id: 'cat-1',
+            name: 'Pizza',
+            description: 'Grande',
+            price: 30,
+            available: true,
+            display_order: 1,
+            category: { id: 'cat-1', name: 'Pizzas' },
+            extras: [{ extra: { id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' } }],
+          },
+        ],
+        tableInfo: { id: 'table-1', number: '10' },
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    expect(markup).toContain('ChefOps House')
+    expect(markup).toContain('Carrinho')
+    expect(markup).toContain('Pizza')
+    expect(markup).toContain('Mesa 10')
+  }, 20000)
+
+  it('renderiza MenuPage com dados normalizados do supabase', async () => {
+    const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+    const element = await MenuPage({
+      params: Promise.resolve({ slug: 'chefops-house' }),
+      searchParams: Promise.resolve({
+        table: 'table-token',
+        checkout_session: 'chk-1',
+        checkout_result: 'success',
+      }),
+    })
+
+    const markup = renderToStaticMarkup(element)
+    expect(markup).toContain('ChefOps House')
+    expect(markup).toContain('Pizza')
+    expect(markup).toContain('Mesa 10')
+  }, 15000)
+})

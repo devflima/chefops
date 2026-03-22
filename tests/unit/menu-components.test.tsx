@@ -1,0 +1,3196 @@
+import React from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
+
+vi.mock('lucide-react', () => {
+  const Icon = (props: Record<string, unknown>) => React.createElement('svg', props)
+  return {
+    X: Icon,
+    Minus: Icon,
+    Plus: Icon,
+    Trash2: Icon,
+    ChefHat: Icon,
+    ShoppingCart: Icon,
+    Pencil: Icon,
+    RotateCcw: Icon,
+    UtensilsCrossed: Icon,
+    Clock3: Icon,
+    ClipboardList: Icon,
+    Users: Icon,
+    Clock: Icon,
+    QrCode: Icon,
+  }
+})
+
+vi.mock('@/components/ui/button', () => ({
+  Button: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+    React.createElement('button', props, children),
+}))
+
+vi.mock('@/components/ui/input', () => ({
+  Input: (props: Record<string, unknown>) => React.createElement('input', props),
+}))
+
+vi.mock('@/components/ui/badge', () => ({
+  Badge: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+    React.createElement('span', props, children),
+}))
+
+vi.mock('@/components/ui/dialog', () => ({
+  Dialog: ({ children }: React.PropsWithChildren) => React.createElement('div', null, children),
+  DialogContent: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+    React.createElement('section', props, children),
+  DialogHeader: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+    React.createElement('header', props, children),
+  DialogTitle: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+    React.createElement('h2', props, children),
+}))
+
+vi.mock('@/features/orders/components/ManualOrderDialog', () => ({
+  default: ({ open }: { open: boolean }) =>
+    React.createElement('div', null, open ? 'Novo pedido manual' : null),
+}))
+
+vi.mock('@/features/menu/MenuItemDialog', () => ({
+  MenuItemDialog: ({ open, editing }: { open: boolean; editing?: { id?: string } | null }) =>
+    React.createElement('div', null, open ? (editing ? 'Editar item' : 'Novo item do cardápio') : null),
+}))
+
+function flattenElements(node: React.ReactNode): React.ReactElement[] {
+  if (node == null || typeof node === 'boolean' || typeof node === 'string' || typeof node === 'number') {
+    return []
+  }
+
+  if (Array.isArray(node)) {
+    return node.flatMap((child) => flattenElements(child))
+  }
+
+  if (!React.isValidElement(node)) {
+    return []
+  }
+
+  if (typeof node.type === 'function') {
+    return flattenElements(node.type(node.props))
+  }
+
+  return [node, ...flattenElements(node.props.children)]
+}
+
+function getTextContent(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map((child) => getTextContent(child)).join('')
+  if (!React.isValidElement(node)) return ''
+  return getTextContent(node.props.children)
+}
+
+describe('menu components', () => {
+  it('renderiza card de status do pedido em andamento', async () => {
+    const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicOrderStatusCard, {
+        publicOrderStatus: {
+          id: 'order-1',
+          order_number: 42,
+          status: 'preparing',
+          payment_status: 'paid',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        headline: 'em preparo',
+        onTrack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido em andamento #42')
+    expect(markup).toContain('Seu pedido está em em preparo.')
+    expect(markup).toContain('Acompanhar')
+  })
+
+  it('renderiza modal de meia a meia com sabores elegíveis', async () => {
+    const { HalfFlavorModal } = await import('@/features/menu/HalfFlavorModal')
+
+    const item = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: 'cat-1',
+      name: 'Margherita',
+      description: 'Clássica',
+      price: 30,
+      available: true,
+      display_order: 1,
+      category: { id: 'cat-1', name: 'Pizzas' },
+      extras: [],
+    }
+
+    const markup = renderToStaticMarkup(
+      React.createElement(HalfFlavorModal, {
+        item,
+        options: [
+          { ...item, id: 'item-2', name: 'Calabresa', price: 32, description: 'Picante' },
+        ],
+        onClose: vi.fn(),
+        onSelect: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Escolha o segundo sabor')
+    expect(markup).toContain('Primeiro:')
+    expect(markup).toContain('Calabresa')
+    expect(markup).toContain('(maior preço)')
+  })
+
+  it('renderiza passo do carrinho com totais e ações', async () => {
+    const { MenuCartStep } = await import('@/features/menu/MenuCartStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuCartStep, {
+        cart: [
+          {
+            menu_item_id: 'item-1',
+            name: 'Pizza Margherita',
+            price: 30,
+            quantity: 2,
+            extras: [{ name: 'Borda', price: 5 }],
+          },
+        ],
+        cartTotal: 70,
+        deliveryFee: 8,
+        orderTotal: 78,
+        onIncrement: vi.fn(),
+        onDecrement: vi.fn(),
+        onRemove: vi.fn(),
+        onContinue: vi.fn(),
+        onClear: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pizza Margherita')
+    expect(markup).toContain('Subtotal')
+    expect(markup).toContain('Taxa de entrega')
+    expect(markup).toContain('Limpar carrinho')
+  })
+
+  it('renderiza passo do carrinho vazio', async () => {
+    const { MenuCartStep } = await import('@/features/menu/MenuCartStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuCartStep, {
+        cart: [],
+        cartTotal: 0,
+        deliveryFee: 0,
+        orderTotal: 0,
+        onIncrement: vi.fn(),
+        onDecrement: vi.fn(),
+        onRemove: vi.fn(),
+        onContinue: vi.fn(),
+        onClear: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Nenhum item adicionado.')
+  })
+
+  it('aciona handlers do passo do carrinho', async () => {
+    const { MenuCartStep } = await import('@/features/menu/MenuCartStep')
+
+    const onIncrement = vi.fn()
+    const onDecrement = vi.fn()
+    const onRemove = vi.fn()
+    const onContinue = vi.fn()
+    const onClear = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuCartStep, {
+        cart: [
+          {
+            menu_item_id: 'item-1',
+            name: 'Pizza Pepperoni',
+            price: 35,
+            quantity: 1,
+            extras: [],
+          },
+        ],
+        cartTotal: 35,
+        deliveryFee: 0,
+        orderTotal: 35,
+        onIncrement,
+        onDecrement,
+        onRemove,
+        onContinue,
+        onClear,
+      })
+    )
+
+    const actionButtons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+
+    expect(actionButtons).toHaveLength(5)
+    expect(getTextContent(elements)).not.toContain('Taxa de entrega')
+
+    actionButtons[0].props.onClick()
+    actionButtons[1].props.onClick()
+    actionButtons[2].props.onClick()
+    actionButtons[3].props.onClick()
+    actionButtons[4].props.onClick()
+
+    expect(onDecrement).toHaveBeenCalledWith(0)
+    expect(onIncrement).toHaveBeenCalledWith(0)
+    expect(onRemove).toHaveBeenCalledWith(0)
+    expect(onContinue).toHaveBeenCalledOnce()
+    expect(onClear).toHaveBeenCalledOnce()
+  })
+
+  it('renderiza dialogo de abertura de comanda e aciona cancelamento', async () => {
+    const { OpenSessionDialog } = await import('@/features/tables/OpenSessionDialog')
+
+    const onOpenChange = vi.fn()
+    const elements = flattenElements(
+      React.createElement(OpenSessionDialog, {
+        table: { id: 'table-1', number: '12', capacity: 4, status: 'available' },
+        open: true,
+        errorMessage: 'Erro ao abrir comanda.',
+        isSubmitting: true,
+        onOpenChange,
+        children: React.createElement('form', null, 'Session form'),
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Abrir comanda - Mesa 12')
+    expect(getTextContent(elements)).toContain('Erro ao abrir comanda.')
+    expect(getTextContent(elements)).toContain('Abrindo...')
+
+    const cancelButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element.props.children) === 'Cancelar',
+    )
+
+    cancelButton?.props.onClick()
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('renderiza dialogo de mesa e aciona cancelamento', async () => {
+    const { TableFormDialog } = await import('@/features/tables/TableFormDialog')
+
+    const onOpenChange = vi.fn()
+    const elements = flattenElements(
+      React.createElement(TableFormDialog, {
+        open: true,
+        editingTable: { id: 'table-1', number: '7', capacity: 4, status: 'available' },
+        errorMessage: 'Erro ao salvar mesa.',
+        isSubmitting: false,
+        onOpenChange,
+        children: React.createElement('form', null, 'Table form'),
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Editar Mesa 7')
+    expect(getTextContent(elements)).toContain('Erro ao salvar mesa.')
+    expect(getTextContent(elements)).toContain('Criar mesa')
+
+    const cancelButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element.props.children) === 'Cancelar',
+    )
+
+    cancelButton?.props.onClick()
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('aciona filtros do dashboard de cardapio', async () => {
+    const { MenuDashboardFilters } = await import('@/features/menu/MenuDashboardFilters')
+
+    const onCategoryFilterChange = vi.fn()
+    const onStatusFilterChange = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDashboardFilters, {
+        categoryFilter: 'all',
+        onCategoryFilterChange,
+        categories: [{ id: 'cat-1', name: 'Pizzas' }],
+        statusFilter: 'all',
+        onStatusFilterChange,
+      }),
+    )
+
+    const selects = elements.filter((element) => element.type === 'select')
+    expect(selects).toHaveLength(2)
+
+    selects[0].props.onChange({ target: { value: 'cat-1' } })
+    selects[1].props.onChange({ target: { value: 'inactive' } })
+
+    expect(onCategoryFilterChange).toHaveBeenCalledWith('cat-1')
+    expect(onStatusFilterChange).toHaveBeenCalledWith('inactive')
+  })
+
+  it('aciona acoes da tabela do dashboard de cardapio', async () => {
+    const { MenuDashboardTable } = await import('@/features/menu/MenuDashboardTable')
+
+    const onEdit = vi.fn()
+    const onToggleAvailable = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDashboardTable, {
+        deletingId: null,
+        onEdit,
+        onToggleAvailable,
+        items: [
+          {
+            id: 'item-1',
+            tenant_id: 'tenant-1',
+            category_id: 'cat-1',
+            name: 'Pizza Pepperoni',
+            description: 'Picante',
+            price: 35,
+            available: true,
+            display_order: 1,
+            category: { id: 'cat-1', name: 'Pizzas' },
+          },
+          {
+            id: 'item-2',
+            tenant_id: 'tenant-1',
+            category_id: 'cat-1',
+            name: 'Pizza Quatro Queijos',
+            description: null,
+            price: 38,
+            available: false,
+            display_order: 2,
+            category: { id: 'cat-1', name: 'Pizzas' },
+          },
+        ],
+      }),
+    )
+
+    const actionButtons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(getTextContent(elements)).toContain('Disponível')
+    expect(getTextContent(elements)).toContain('Indisponível')
+    expect(getTextContent(elements)).toContain('Reativar')
+
+    actionButtons[0].props.onClick()
+    actionButtons[1].props.onClick()
+    actionButtons[2].props.onClick()
+
+    expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 'item-1' }))
+    expect(onToggleAvailable).toHaveBeenCalledWith(expect.objectContaining({ id: 'item-1' }))
+    expect(onToggleAvailable).toHaveBeenCalledWith(expect.objectContaining({ id: 'item-2' }))
+  })
+
+  it('aciona acoes da grade de comandas', async () => {
+    const { TabsDashboardGrid } = await import('@/features/tabs/TabsDashboardGrid')
+
+    const onSelect = vi.fn()
+    const onClose = vi.fn()
+    const stopPropagation = vi.fn()
+    const elements = flattenElements(
+      React.createElement(TabsDashboardGrid, {
+        closeTabPending: false,
+        onSelect,
+        onClose,
+        tabs: [
+          {
+            id: 'tab-1',
+            label: 'Mesa 10',
+            status: 'open',
+            notes: 'Cliente VIP',
+            created_at: '2026-03-22T12:00:00.000Z',
+            orders: [{ id: 'order-1', total: 40 }],
+          },
+          {
+            id: 'tab-2',
+            label: 'Balcao',
+            status: 'closed',
+            notes: null,
+            created_at: '2026-03-22T13:00:00.000Z',
+            orders: [],
+          },
+        ],
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Mesa 10')
+    expect(getTextContent(elements)).toContain('Cliente VIP')
+    expect(getTextContent(elements)).toContain('Fechar comanda')
+
+    const clickableCards = elements.filter(
+      (element) => element.type === 'div' && typeof element.props.onClick === 'function',
+    )
+    const actionButtons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    clickableCards[0].props.onClick()
+    actionButtons[0].props.onClick({ stopPropagation })
+    actionButtons[1].props.onClick({ stopPropagation })
+
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'tab-1' }))
+    expect(onClose).toHaveBeenCalledWith(expect.objectContaining({ id: 'tab-1' }))
+    expect(stopPropagation).toHaveBeenCalledTimes(2)
+  })
+
+  it('renderiza passo de dados com cliente existente e pagamento', async () => {
+    const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuInfoStep, {
+        tableInfo: { id: 'table-1', number: '12' },
+        phone: '(11) 99999-9999',
+        onPhoneChange: vi.fn(),
+        phoneVerified: true,
+        onPhoneLookup: vi.fn(),
+        lookingUpPhone: false,
+        errors: {},
+        isPaidPlan: true,
+        existingCustomer: { id: 'cust-1', name: 'Maria', phone: '11999999999' },
+        isNewCustomer: false,
+        customerName: 'Maria',
+        onCustomerNameChange: vi.fn(),
+        customerCpf: '123.456.789-09',
+        onCustomerCpfChange: vi.fn(),
+        paymentOptions: [{ value: 'online', label: 'Pagar online' }],
+        paymentMethod: 'online',
+        onPaymentMethodChange: vi.fn(),
+        notes: 'Sem cebola',
+        onNotesChange: vi.fn(),
+        cartTotal: 50,
+        deliveryFee: 0,
+        orderTotal: 50,
+        isProcessing: false,
+        onContinue: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Mesa 12')
+    expect(markup).toContain('Maria')
+    expect(markup).toContain('Forma de pagamento')
+    expect(markup).toContain('Continuar')
+  })
+
+  it('renderiza passo de dados para novo cliente sem plano pago e com erro de telefone', async () => {
+    const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuInfoStep, {
+        tableInfo: null,
+        phone: '11999999999',
+        onPhoneChange: vi.fn(),
+        phoneVerified: false,
+        onPhoneLookup: vi.fn(),
+        lookingUpPhone: false,
+        errors: { phone: 'Telefone inválido', name: 'Nome obrigatório' },
+        isPaidPlan: false,
+        existingCustomer: null,
+        isNewCustomer: true,
+        customerName: '',
+        onCustomerNameChange: vi.fn(),
+        customerCpf: '',
+        onCustomerCpfChange: vi.fn(),
+        paymentOptions: [
+          { value: 'pix', label: 'Pix' },
+          { value: 'cash', label: 'Dinheiro' },
+        ],
+        paymentMethod: 'cash',
+        onPaymentMethodChange: vi.fn(),
+        notes: '',
+        onNotesChange: vi.fn(),
+        cartTotal: 25,
+        deliveryFee: 0,
+        orderTotal: 25,
+        isProcessing: false,
+        onContinue: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Telefone inválido')
+    expect(markup).toContain('Nome obrigatório')
+    expect(markup).toContain('Pix')
+    expect(markup).toContain('Dinheiro')
+    expect(markup).not.toContain('Taxa de entrega')
+    expect(markup).not.toContain('Primeiro pedido? Preencha seus dados.')
+  })
+
+  it('aciona handlers e estados do passo de dados', async () => {
+    const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
+
+    const onPhoneChange = vi.fn()
+    const onPhoneLookup = vi.fn()
+    const onCustomerNameChange = vi.fn()
+    const onCustomerCpfChange = vi.fn()
+    const onPaymentMethodChange = vi.fn()
+    const onNotesChange = vi.fn()
+    const onContinue = vi.fn()
+    const onBack = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuInfoStep, {
+        tableInfo: { id: 'table-1', number: '4' },
+        phone: '1199999',
+        onPhoneChange,
+        phoneVerified: false,
+        onPhoneLookup,
+        lookingUpPhone: true,
+        errors: { cpf: 'CPF obrigatório' },
+        isPaidPlan: true,
+        existingCustomer: null,
+        isNewCustomer: true,
+        customerName: '',
+        onCustomerNameChange,
+        customerCpf: '',
+        onCustomerCpfChange,
+        paymentOptions: [
+          { value: 'online', label: 'Online' },
+          { value: 'cash', label: 'Dinheiro' },
+        ],
+        paymentMethod: 'online',
+        onPaymentMethodChange,
+        notes: '',
+        onNotesChange,
+        cartTotal: 20,
+        deliveryFee: 7,
+        orderTotal: 27,
+        isProcessing: false,
+        onContinue,
+        onBack,
+      })
+    )
+
+    const inputs = elements.filter((element) => element.type === 'input')
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+
+    expect(getTextContent(elements)).toContain('Primeiro pedido? Preencha seus dados.')
+    expect(getTextContent(elements)).toContain('CPF obrigatório')
+    expect(getTextContent(elements)).toContain('Taxa de entrega')
+    expect(buttons[0].props.disabled).toBe(true)
+    expect(getTextContent(buttons[0])).toContain('...')
+
+    inputs[0].props.onChange({ target: { value: '(11) 98888-7777' } })
+    inputs[1].props.onChange({ target: { value: 'Cliente Teste' } })
+    inputs[2].props.onChange({ target: { value: '123.456.789-00' } })
+    inputs[3].props.onChange({ target: { value: 'Sem gelo' } })
+    buttons[0].props.onClick()
+    buttons[1].props.onClick()
+    buttons[2].props.onClick()
+    buttons[3].props.onClick()
+    buttons[4].props.onClick()
+
+    expect(onPhoneChange).toHaveBeenCalledWith('(11) 98888-7777')
+    expect(onCustomerNameChange).toHaveBeenCalledWith('Cliente Teste')
+    expect(onCustomerCpfChange).toHaveBeenCalledWith('123.456.789-00')
+    expect(onNotesChange).toHaveBeenCalledWith('Sem gelo')
+    expect(onPhoneLookup).toHaveBeenCalledOnce()
+    expect(onPaymentMethodChange).toHaveBeenNthCalledWith(1, 'online')
+    expect(onPaymentMethodChange).toHaveBeenNthCalledWith(2, 'cash')
+    expect(onContinue).toHaveBeenCalledOnce()
+    expect(onBack).toHaveBeenCalledOnce()
+    expect(buttons[3].props.disabled).toBe(true)
+  })
+
+  it('renderiza passo de endereço com loading de CEP', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuAddressStep, {
+        address: {
+          zip_code: '01001000',
+          street: 'Praça da Sé',
+          number: '100',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+        onAddressChange: vi.fn(),
+        onCepLookup: vi.fn(),
+        loadingCep: true,
+        errors: {},
+        paymentMethod: 'online',
+        isProcessing: false,
+        onSubmit: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Informe o endereço de entrega.')
+    expect(markup).toContain('Buscando...')
+    expect(markup).toContain('Ir para pagamento')
+  })
+
+  it('renderiza passo de endereço com erros e envio em processamento', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuAddressStep, {
+        address: {
+          zip_code: '01001000',
+          street: '',
+          number: '',
+          city: '',
+          state: 'sp',
+        },
+        onAddressChange: vi.fn(),
+        onCepLookup: vi.fn(),
+        loadingCep: false,
+        errors: {
+          zip_code: 'CEP inválido',
+          street: 'Rua obrigatória',
+          number: 'Número obrigatório',
+          city: 'Cidade obrigatória',
+        },
+        paymentMethod: 'delivery',
+        isProcessing: true,
+        onSubmit: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('CEP inválido')
+    expect(markup).toContain('Rua obrigatória')
+    expect(markup).toContain('Número obrigatório')
+    expect(markup).toContain('Cidade obrigatória')
+    expect(markup).toContain('Processando...')
+    expect(markup).toContain('Voltar')
+  })
+
+  it('aciona handlers e normaliza campos do passo de endereço', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const onAddressChange = vi.fn()
+    const onCepLookup = vi.fn()
+    const onSubmit = vi.fn()
+    const onBack = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuAddressStep, {
+        address: {
+          zip_code: '',
+          street: '',
+          number: '',
+          complement: '',
+          neighborhood: '',
+          city: '',
+          state: '',
+        },
+        onAddressChange,
+        onCepLookup,
+        loadingCep: false,
+        errors: {},
+        paymentMethod: 'cash',
+        isProcessing: false,
+        onSubmit,
+        onBack,
+      })
+    )
+
+    const inputs = elements.filter((element) => element.type === 'input')
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+
+    inputs[0].props.onChange({ target: { value: '01001-000' } })
+    inputs[1].props.onChange({ target: { value: 'Praça da Sé' } })
+    inputs[2].props.onChange({ target: { value: '10' } })
+    inputs[3].props.onChange({ target: { value: 'Apto 2' } })
+    inputs[4].props.onChange({ target: { value: 'Centro' } })
+    inputs[5].props.onChange({ target: { value: 'São Paulo' } })
+    inputs[6].props.onChange({ target: { value: 'sp' } })
+    buttons[0].props.onClick()
+    buttons[1].props.onClick()
+
+    expect(onAddressChange).toHaveBeenCalledTimes(7)
+    expect(onCepLookup).toHaveBeenCalledWith('01001000')
+    expect(onAddressChange.mock.calls[0][0]({})).toEqual({ zip_code: '01001000' })
+    expect(onAddressChange.mock.calls[1][0]({})).toEqual({ street: 'Praça da Sé' })
+    expect(onAddressChange.mock.calls[2][0]({})).toEqual({ number: '10' })
+    expect(onAddressChange.mock.calls[3][0]({})).toEqual({ complement: 'Apto 2' })
+    expect(onAddressChange.mock.calls[4][0]({})).toEqual({ neighborhood: 'Centro' })
+    expect(onAddressChange.mock.calls[5][0]({})).toEqual({ city: 'São Paulo' })
+    expect(onAddressChange.mock.calls[6][0]({})).toEqual({ state: 'SP' })
+    expect(getTextContent(buttons[0])).toContain('Fazer pedido')
+    expect(onSubmit).toHaveBeenCalledOnce()
+    expect(onBack).toHaveBeenCalledOnce()
+  })
+
+  it('renderiza passo final com status em andamento e cancelamento disponível', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 42,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-1',
+          order_number: 42,
+          status: 'confirmed',
+          payment_status: 'paid',
+          payment_method: 'delivery',
+          delivery_status: 'waiting_dispatch',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [
+          { key: 'pending', label: 'Recebido', description: 'Entrou na fila.' },
+          { key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' },
+        ],
+        getStepState: (key: 'pending' | 'confirmed') => (key === 'pending' ? 'done' : 'current'),
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido realizado!')
+    expect(markup).toContain('#42')
+    expect(markup).toContain('Acompanhe o status do pedido')
+    expect(markup).toContain('Cancelar pedido')
+    expect(markup).toContain('Aprovado')
+  })
+
+  it('renderiza passo final cancelado com mensagem de reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 99,
+        tableInfo: { id: 'table-1', number: '8' },
+        publicOrderStatus: {
+          id: 'order-2',
+          order_number: 99,
+          status: 'cancelled',
+          payment_status: 'refunded',
+          cancelled_reason: 'Estoque indisponível',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido cancelado')
+    expect(markup).toContain('Estoque indisponível')
+    expect(markup).toContain('Reembolso solicitado com sucesso')
+    expect(markup).toContain('Mesa 8')
+  })
+
+  it('renderiza filtro de categorias com estado ativo', async () => {
+    const { MenuCategoryFilter } = await import('@/features/menu/MenuCategoryFilter')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuCategoryFilter, {
+        groups: [
+          {
+            category: { id: 'cat-1', name: 'Pizzas' },
+            items: [],
+          },
+          {
+            category: { id: 'cat-2', name: 'Bebidas' },
+            items: [],
+          },
+        ],
+        activeCategory: 'cat-2',
+        onChange: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Todos')
+    expect(markup).toContain('Pizzas')
+    expect(markup).toContain('Bebidas')
+  })
+
+  it('renderiza card de item com borda e meia a meia', async () => {
+    const { MenuItemCard } = await import('@/features/menu/MenuItemCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuItemCard, {
+        item: {
+          id: 'item-1',
+          tenant_id: 'tenant-1',
+          category_id: 'cat-1',
+          name: 'Margherita',
+          description: 'Clássica',
+          price: 30,
+          available: true,
+          display_order: 1,
+          category: { id: 'cat-1', name: 'Pizzas' },
+          extras: [{ extra: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' } }],
+        },
+        selectedBorder: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' },
+        onAdd: vi.fn(),
+        onBorderToggle: vi.fn(),
+        onHalfFlavor: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Margherita')
+    expect(markup).toContain('Clássica')
+    expect(markup).toContain('Borda')
+    expect(markup).toContain('Catupiry')
+    expect(markup).toContain('Pedir meia a meia')
+  })
+
+  it('renderiza topo do menu com tenant, mesa e badge do carrinho', async () => {
+    const { MenuTopBar } = await import('@/features/menu/MenuTopBar')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuTopBar, {
+        tenantName: 'ChefOps Pizza',
+        tableInfo: { id: 'table-1', number: '15' },
+        cartCount: 3,
+        onCartOpen: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('ChefOps Pizza')
+    expect(markup).toContain('Mesa 15')
+    expect(markup).toContain('Carrinho')
+    expect(markup).toContain('3')
+  })
+
+  it('renderiza painel de status com aviso, pedido e banner de mesa', async () => {
+    const { MenuStatusPanel } = await import('@/features/menu/MenuStatusPanel')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuStatusPanel, {
+        checkoutNotice: 'Pagamento pendente.',
+        publicOrderStatus: {
+          id: 'order-1',
+          order_number: 42,
+          status: 'preparing',
+          payment_status: 'paid',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        cartOpen: false,
+        headline: 'em preparo',
+        onTrackOrder: vi.fn(),
+        tableInfo: { id: 'table-2', number: '9' },
+      })
+    )
+
+    expect(markup).toContain('Pagamento pendente.')
+    expect(markup).toContain('Pedido em andamento #42')
+    expect(markup).toContain('Mesa 9')
+  })
+
+  it('renderiza casca da página pública do menu com modal e drawer', async () => {
+    const { PublicMenuPageShell } = await import('@/features/menu/PublicMenuPageShell')
+
+    const item = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: 'cat-1',
+      name: 'Margherita',
+      description: 'Clássica',
+      price: 30,
+      available: true,
+      display_order: 1,
+      category: { id: 'cat-1', name: 'Pizzas' },
+      extras: [],
+    }
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicMenuPageShell, {
+        tenantName: 'ChefOps Pizza',
+        tableInfo: { id: 'table-1', number: '7' },
+        cartCount: 2,
+        onCartOpen: vi.fn(),
+        checkoutNotice: 'Pagamento aprovado.',
+        publicOrderStatus: {
+          id: 'order-1',
+          order_number: 42,
+          status: 'preparing',
+          payment_status: 'paid',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        cartOpen: false,
+        headline: 'em preparo',
+        onTrackOrder: vi.fn(),
+        groups: [
+          { category: item.category, items: [item] },
+          {
+            category: { id: 'cat-2', name: 'Bebidas' },
+            items: [
+              {
+                ...item,
+                id: 'item-2',
+                category_id: 'cat-2',
+                category: { id: 'cat-2', name: 'Bebidas' },
+                name: 'Suco',
+              },
+            ],
+          },
+        ],
+        activeCategory: 'cat-1',
+        onCategoryChange: vi.fn(),
+        items: [item],
+        filteredGroups: [{ category: item.category, items: [item] }],
+        selectedBorders: {},
+        onAdd: vi.fn(),
+        onBorderToggle: vi.fn(),
+        onHalfFlavor: vi.fn(),
+        halfFlavorModal: { item },
+        halfFlavorOptions: [item],
+        onCloseHalfFlavor: vi.fn(),
+        onSelectHalfFlavor: vi.fn(),
+        drawerProps: {
+          open: true,
+          title: 'Seu pedido',
+          checkoutStep: 'cart',
+          onClose: vi.fn(),
+          onStepChange: vi.fn(),
+          cartStepProps: {
+            cart: [{ menu_item_id: 'item-1', name: 'Margherita', price: 30, quantity: 1, extras: [] }],
+            cartTotal: 30,
+            deliveryFee: 0,
+            orderTotal: 30,
+            onIncrement: vi.fn(),
+            onDecrement: vi.fn(),
+            onRemove: vi.fn(),
+            onContinue: vi.fn(),
+            onClear: vi.fn(),
+          },
+          infoStepProps: {
+            tableInfo: { id: 'table-1', number: '7' },
+            phone: '',
+            onPhoneChange: vi.fn(),
+            phoneVerified: false,
+            onPhoneLookup: vi.fn(),
+            lookingUpPhone: false,
+            errors: {},
+            isPaidPlan: true,
+            existingCustomer: null,
+            isNewCustomer: false,
+            customerName: '',
+            onCustomerNameChange: vi.fn(),
+            customerCpf: '',
+            onCustomerCpfChange: vi.fn(),
+            paymentOptions: [{ value: 'online', label: 'Online' }],
+            paymentMethod: 'online',
+            onPaymentMethodChange: vi.fn(),
+            notes: '',
+            onNotesChange: vi.fn(),
+            cartTotal: 30,
+            deliveryFee: 0,
+            orderTotal: 30,
+            isProcessing: false,
+            onContinue: vi.fn(),
+            onBack: vi.fn(),
+          },
+          addressStepProps: {
+            address: {},
+            onAddressChange: vi.fn(),
+            onCepLookup: vi.fn(),
+            loadingCep: false,
+            errors: {},
+            paymentMethod: 'online',
+            isProcessing: false,
+            onSubmit: vi.fn(),
+            onBack: vi.fn(),
+          },
+          doneStepProps: {
+            orderNumber: 42,
+            tableInfo: { id: 'table-1', number: '7' },
+            publicOrderStatus: null,
+            orderSteps: [],
+            getStepState: () => 'upcoming',
+            cancelOrderLoading: false,
+            onCancelOrder: vi.fn(),
+            onClose: vi.fn(),
+          },
+        },
+      })
+    )
+
+    expect(markup).toContain('ChefOps Pizza')
+    expect(markup).toContain('Pagamento aprovado.')
+    expect(markup).toContain('Pizzas')
+    expect(markup).toContain('Escolha o segundo sabor')
+    expect(markup).toContain('Seu pedido')
+  })
+
+  it('aciona callbacks da casca pública do menu', async () => {
+    const { PublicMenuPageShell } = await import('@/features/menu/PublicMenuPageShell')
+
+    const item = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: 'cat-1',
+      name: 'Margherita',
+      description: 'Clássica',
+      price: 30,
+      available: true,
+      display_order: 1,
+      category: { id: 'cat-1', name: 'Pizzas' },
+      extras: [],
+    }
+
+    const onCartOpen = vi.fn()
+    const onCategoryChange = vi.fn()
+    const onSelectHalfFlavor = vi.fn()
+    const onCloseDrawer = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(PublicMenuPageShell, {
+        tenantName: 'ChefOps Pizza',
+        tableInfo: { id: 'table-1', number: '7' },
+        cartCount: 2,
+        onCartOpen,
+        checkoutNotice: 'Pagamento aprovado.',
+        publicOrderStatus: {
+          id: 'order-1',
+          order_number: 42,
+          status: 'preparing',
+          payment_status: 'paid',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        cartOpen: true,
+        headline: 'em preparo',
+        onTrackOrder: vi.fn(),
+        groups: [
+          { category: item.category, items: [item] },
+          {
+            category: { id: 'cat-2', name: 'Bebidas' },
+            items: [{ ...item, id: 'item-2', category_id: 'cat-2', category: { id: 'cat-2', name: 'Bebidas' }, name: 'Suco' }],
+          },
+        ],
+        activeCategory: 'cat-1',
+        onCategoryChange,
+        items: [item],
+        filteredGroups: [{ category: item.category, items: [item] }],
+        selectedBorders: {},
+        onAdd: vi.fn(),
+        onBorderToggle: vi.fn(),
+        onHalfFlavor: vi.fn(),
+        halfFlavorModal: { item },
+        halfFlavorOptions: [item],
+        onCloseHalfFlavor: vi.fn(),
+        onSelectHalfFlavor,
+        drawerProps: {
+          open: true,
+          title: 'Pedido realizado!',
+          checkoutStep: 'done',
+          onClose: onCloseDrawer,
+          onStepChange: vi.fn(),
+          cartStepProps: {
+            cart: [],
+            cartTotal: 0,
+            deliveryFee: 0,
+            orderTotal: 0,
+            onIncrement: vi.fn(),
+            onDecrement: vi.fn(),
+            onRemove: vi.fn(),
+            onContinue: vi.fn(),
+            onClear: vi.fn(),
+          },
+          infoStepProps: {
+            tableInfo: null,
+            phone: '',
+            onPhoneChange: vi.fn(),
+            phoneVerified: false,
+            onPhoneLookup: vi.fn(),
+            lookingUpPhone: false,
+            errors: {},
+            isPaidPlan: true,
+            existingCustomer: null,
+            isNewCustomer: false,
+            customerName: '',
+            onCustomerNameChange: vi.fn(),
+            customerCpf: '',
+            onCustomerCpfChange: vi.fn(),
+            paymentOptions: [{ value: 'online', label: 'Online' }],
+            paymentMethod: 'online',
+            onPaymentMethodChange: vi.fn(),
+            notes: '',
+            onNotesChange: vi.fn(),
+            cartTotal: 0,
+            deliveryFee: 0,
+            orderTotal: 0,
+            isProcessing: false,
+            onContinue: vi.fn(),
+            onBack: vi.fn(),
+          },
+          addressStepProps: {
+            address: {},
+            onAddressChange: vi.fn(),
+            onCepLookup: vi.fn(),
+            loadingCep: false,
+            errors: {},
+            paymentMethod: 'online',
+            isProcessing: false,
+            onSubmit: vi.fn(),
+            onBack: vi.fn(),
+          },
+          doneStepProps: {
+            orderNumber: 42,
+            tableInfo: null,
+            publicOrderStatus: {
+              id: 'order-1',
+              order_number: 42,
+              status: 'preparing',
+              payment_status: 'paid',
+              created_at: '2026-03-21T00:00:00.000Z',
+              updated_at: '2026-03-21T00:00:00.000Z',
+            },
+            orderSteps: [],
+            getStepState: () => 'upcoming',
+            cancelOrderLoading: false,
+            onCancelOrder: vi.fn(),
+            onClose: onCloseDrawer,
+          },
+        },
+      })
+    )
+
+    const cartButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element).includes('Carrinho')
+    )
+    const categoryButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Pizzas'
+    )
+    const chooseFlavorButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element).includes('Margherita')
+    )
+
+    cartButton?.props.onClick()
+    categoryButton?.props.onClick()
+    chooseFlavorButton?.props.onClick()
+
+    expect(onCartOpen).toHaveBeenCalledOnce()
+    expect(onCategoryChange).toHaveBeenCalledWith('cat-1')
+    expect(onSelectHalfFlavor).toHaveBeenCalledWith(item)
+  })
+
+  it('renderiza seções públicas do cardápio e estado vazio', async () => {
+    const { PublicMenuSections } = await import('@/features/menu/PublicMenuSections')
+
+    const emptyMarkup = renderToStaticMarkup(
+      React.createElement(PublicMenuSections, {
+        items: [],
+        filteredGroups: [],
+        selectedBorders: {},
+        onAdd: vi.fn(),
+        onBorderToggle: vi.fn(),
+        onHalfFlavor: vi.fn(),
+      })
+    )
+
+    const groupedMarkup = renderToStaticMarkup(
+      React.createElement(PublicMenuSections, {
+        items: [
+          {
+            id: 'item-1',
+            tenant_id: 'tenant-1',
+            category_id: 'cat-1',
+            name: 'Margherita',
+            description: 'Clássica',
+            price: 30,
+            available: true,
+            display_order: 1,
+            category: { id: 'cat-1', name: 'Pizzas' },
+            extras: [],
+          },
+        ],
+        filteredGroups: [
+          {
+            category: { id: 'cat-1', name: 'Pizzas' },
+            items: [
+              {
+                id: 'item-1',
+                tenant_id: 'tenant-1',
+                category_id: 'cat-1',
+                name: 'Margherita',
+                description: 'Clássica',
+                price: 30,
+                available: true,
+                display_order: 1,
+                category: { id: 'cat-1', name: 'Pizzas' },
+                extras: [],
+              },
+            ],
+          },
+        ],
+        selectedBorders: {},
+        onAdd: vi.fn(),
+        onBorderToggle: vi.fn(),
+        onHalfFlavor: vi.fn(),
+      })
+    )
+
+    expect(emptyMarkup).toContain('Cardápio em breve.')
+    expect(groupedMarkup).toContain('Pizzas')
+    expect(groupedMarkup).toContain('Margherita')
+  })
+
+  it('aciona handlers das seções públicas do cardápio', async () => {
+    const { PublicMenuSections } = await import('@/features/menu/PublicMenuSections')
+
+    const onAdd = vi.fn()
+    const onBorderToggle = vi.fn()
+    const onHalfFlavor = vi.fn()
+
+    const item = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: 'cat-1',
+      name: 'Margherita',
+      description: 'Clássica',
+      price: 30,
+      available: true,
+      display_order: 1,
+      category: { id: 'cat-1', name: 'Pizzas' },
+      extras: [{ extra: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' } }],
+    }
+
+    const elements = flattenElements(
+      React.createElement(PublicMenuSections, {
+        items: [item],
+        filteredGroups: [{ category: item.category, items: [item] }],
+        selectedBorders: { 'item-1': null },
+        onAdd,
+        onBorderToggle,
+        onHalfFlavor,
+      })
+    )
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+
+    buttons.forEach((button) => button.props.onClick())
+
+    expect(onBorderToggle).toHaveBeenCalledWith(item, {
+      id: 'border-1',
+      name: 'Catupiry',
+      price: 5,
+      category: 'border',
+    })
+    expect(onHalfFlavor).toHaveBeenCalledWith(item)
+    expect(onAdd).toHaveBeenCalledWith(item)
+  })
+
+  it('renderiza drawer do checkout e aciona fechamento', async () => {
+    const { MenuCheckoutDrawer } = await import('@/features/menu/MenuCheckoutDrawer')
+
+    const onClose = vi.fn()
+    const onStepChange = vi.fn()
+    const onContinue = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuCheckoutDrawer, {
+        open: true,
+        title: 'Seu pedido',
+        checkoutStep: 'cart',
+        onClose,
+        onStepChange,
+        cartStepProps: {
+          cart: [
+            {
+              menu_item_id: 'item-1',
+              name: 'Pizza',
+              price: 30,
+              quantity: 1,
+              extras: [],
+            },
+          ],
+          cartTotal: 30,
+          deliveryFee: 0,
+          orderTotal: 30,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue,
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: null,
+          phone: '',
+          onPhoneChange: vi.fn(),
+          phoneVerified: false,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: true,
+          existingCustomer: null,
+          isNewCustomer: false,
+          customerName: '',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'online', label: 'Online' }],
+          paymentMethod: 'online',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 30,
+          deliveryFee: 0,
+          orderTotal: 30,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: {},
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'online',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: 42,
+          tableInfo: null,
+          publicOrderStatus: null,
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: vi.fn(),
+        },
+      })
+    )
+
+    expect(getTextContent(elements)).toContain('Seu pedido')
+    expect(getTextContent(elements)).toContain('Pizza')
+
+    const clickable = elements.filter((element) =>
+      typeof element.props.onClick === 'function' && (element.type === 'button' || element.type === 'div')
+    )
+
+    clickable[0].props.onClick()
+    clickable[1].props.onClick()
+    clickable[5].props.onClick()
+
+    expect(onClose).toHaveBeenCalledTimes(2)
+    expect(onStepChange).toHaveBeenCalledWith('info')
+    expect(onContinue).not.toHaveBeenCalled()
+  })
+
+  it('aciona navegação e fechamento nos outros steps do drawer', async () => {
+    const { MenuCheckoutDrawer } = await import('@/features/menu/MenuCheckoutDrawer')
+
+    const onClose = vi.fn()
+    const onStepChange = vi.fn()
+    const onDoneClose = vi.fn()
+
+    const infoElements = flattenElements(
+      React.createElement(MenuCheckoutDrawer, {
+        open: true,
+        title: 'Seus dados',
+        checkoutStep: 'info',
+        onClose,
+        onStepChange,
+        cartStepProps: {
+          cart: [],
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue: vi.fn(),
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: null,
+          phone: '(11) 99999-9999',
+          onPhoneChange: vi.fn(),
+          phoneVerified: true,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: true,
+          existingCustomer: null,
+          isNewCustomer: false,
+          customerName: 'Maria',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'online', label: 'Online' }],
+          paymentMethod: 'online',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 30,
+          deliveryFee: 0,
+          orderTotal: 30,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: {},
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'online',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: 42,
+          tableInfo: null,
+          publicOrderStatus: null,
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: onDoneClose,
+        },
+      })
+    )
+
+    const addressElements = flattenElements(
+      React.createElement(MenuCheckoutDrawer, {
+        open: true,
+        title: 'Endereço de entrega',
+        checkoutStep: 'address',
+        onClose,
+        onStepChange,
+        cartStepProps: {
+          cart: [],
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue: vi.fn(),
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: null,
+          phone: '',
+          onPhoneChange: vi.fn(),
+          phoneVerified: false,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: false,
+          existingCustomer: null,
+          isNewCustomer: false,
+          customerName: '',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'delivery', label: 'Entrega' }],
+          paymentMethod: 'delivery',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: { zip_code: '12345-678' },
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'delivery',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: 42,
+          tableInfo: null,
+          publicOrderStatus: null,
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: onDoneClose,
+        },
+      })
+    )
+
+    const doneElements = flattenElements(
+      React.createElement(MenuCheckoutDrawer, {
+        open: true,
+        title: 'Pedido realizado!',
+        checkoutStep: 'done',
+        onClose,
+        onStepChange,
+        cartStepProps: {
+          cart: [],
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue: vi.fn(),
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: null,
+          phone: '',
+          onPhoneChange: vi.fn(),
+          phoneVerified: false,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: false,
+          existingCustomer: null,
+          isNewCustomer: false,
+          customerName: '',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'delivery', label: 'Entrega' }],
+          paymentMethod: 'delivery',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: {},
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'delivery',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: 42,
+          tableInfo: null,
+          publicOrderStatus: {
+            id: 'order-1',
+            order_number: 42,
+            status: 'pending',
+            payment_status: 'paid',
+            created_at: '2026-03-21T00:00:00.000Z',
+            updated_at: '2026-03-21T00:00:00.000Z',
+          },
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: onDoneClose,
+        },
+      })
+    )
+
+    const infoBackButton = infoElements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Voltar'
+    )
+    const addressBackButton = addressElements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Voltar'
+    )
+    const doneCloseButton = doneElements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Fechar'
+    )
+    const doneDrawerCloseButton = doneElements.find(
+      (element) => element.type === 'button' && getTextContent(element) === ''
+    )
+
+    infoBackButton?.props.onClick()
+    addressBackButton?.props.onClick()
+    doneCloseButton?.props.onClick()
+    doneDrawerCloseButton?.props.onClick()
+
+    expect(onStepChange).toHaveBeenCalledWith('cart')
+    expect(onStepChange).toHaveBeenCalledWith('info')
+    expect(onDoneClose).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(2)
+  })
+
+  it('renderiza casca da página de pedidos', async () => {
+    const { OrdersPageContent } = await import('@/features/orders/OrdersPageContent')
+
+    const order = {
+      id: 'order-1',
+      tenant_id: 'tenant-1',
+      customer_name: 'Maria',
+      customer_phone: '11999999999',
+      items: [{ menu_item_id: 'item-1', name: 'Pizza', price: 30, quantity: 1 }],
+      total: 30,
+      status: 'pending',
+      payment_status: 'pending',
+      payment_method: 'online',
+      table_number: null,
+      tab_id: null,
+      delivery_address: null,
+      delivery_fee: 0,
+      delivery_status: null,
+      notifications: [],
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    }
+
+    const markup = renderToStaticMarkup(
+      React.createElement(OrdersPageContent, {
+        manualOrderOpen: true,
+        onManualOrderOpenChange: vi.fn(),
+        filters: [{ label: 'Todos', value: '' }],
+        statusFilter: '',
+        onStatusFilterChange: vi.fn(),
+        isLoading: false,
+        orders: [order] as never,
+        totalCount: 1,
+        page: 1,
+        pageSize: 10,
+        onPageChange: vi.fn(),
+        deliveryDrivers: [],
+        hasWhatsappNotifications: true,
+        updatePending: false,
+        chargingOrderId: null,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onMercadoPagoCheckout: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedidos')
+    expect(markup).toContain('Maria')
+    expect(markup).toContain('Novo pedido manual')
+  })
+
+  it('encaminha ações da casca da página de pedidos', async () => {
+    const { OrdersPageContent } = await import('@/features/orders/OrdersPageContent')
+
+    const onManualOrderOpenChange = vi.fn()
+    const onStatusFilterChange = vi.fn()
+    const onPageChange = vi.fn()
+    const onAssignDriver = vi.fn()
+    const onAdvance = vi.fn()
+    const onAdvanceDelivery = vi.fn()
+    const onMercadoPagoCheckout = vi.fn()
+    const onConfirmPayment = vi.fn()
+    const onCancel = vi.fn()
+
+    const order = {
+      id: 'order-1',
+      order_number: 42,
+      tenant_id: 'tenant-1',
+      customer_name: 'Maria',
+      customer_phone: '11999999999',
+      customer_cpf: null,
+      items: [{ id: 'item-1', menu_item_id: 'item-1', name: 'Pizza', price: 30, quantity: 1, extras: [] }],
+      subtotal: 30,
+      total: 38,
+      status: 'ready',
+      payment_status: 'pending',
+      payment_method: 'delivery',
+      table_number: null,
+      tab: null,
+      tab_id: null,
+      delivery_address: { street: 'Rua A' },
+      delivery_fee: 8,
+      delivery_status: 'assigned',
+      delivery_driver: { id: 'driver-1', name: 'João', vehicle_type: 'bike', active: true },
+      delivery_driver_id: 'driver-1',
+      notifications: [],
+      notes: null,
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    }
+
+    const elements = flattenElements(
+      React.createElement(OrdersPageContent, {
+        manualOrderOpen: false,
+        onManualOrderOpenChange,
+        filters: [
+          { label: 'Todos', value: '' },
+          { label: 'Pronto', value: 'ready' },
+        ],
+        statusFilter: '',
+        onStatusFilterChange,
+        isLoading: false,
+        orders: [order] as never,
+        totalCount: 30,
+        page: 2,
+        pageSize: 10,
+        onPageChange,
+        deliveryDrivers: [{ id: 'driver-1', name: 'João', vehicle_type: 'bike', active: true }],
+        hasWhatsappNotifications: false,
+        updatePending: false,
+        chargingOrderId: null,
+        onAssignDriver,
+        onAdvance,
+        onAdvanceDelivery,
+        onMercadoPagoCheckout,
+        onConfirmPayment,
+        onCancel,
+      })
+    )
+
+    const createButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element).includes('Novo pedido')
+    )
+    const readyFilter = elements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Pronto'
+    )
+    const previousButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Anterior'
+    )
+    const nextButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Próxima'
+    )
+    const mpButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Cobrar com MP'
+    )
+    const deliveryButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Saiu para entrega'
+    )
+    const cancelButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element) === 'Cancelar'
+    )
+    const select = elements.find(
+      (element) => element.type === 'select' && typeof element.props.onChange === 'function'
+    )
+
+    expect(createButton).toBeTruthy()
+    expect(readyFilter).toBeTruthy()
+    expect(previousButton).toBeTruthy()
+    expect(nextButton).toBeTruthy()
+    expect(mpButton).toBeTruthy()
+    expect(deliveryButton).toBeTruthy()
+    expect(cancelButton).toBeTruthy()
+    expect(select).toBeTruthy()
+
+    createButton!.props.onClick()
+    readyFilter!.props.onClick()
+    previousButton!.props.onClick()
+    nextButton!.props.onClick()
+    mpButton!.props.onClick()
+    deliveryButton!.props.onClick()
+    cancelButton!.props.onClick()
+    select!.props.onChange({ target: { value: '' } })
+
+    expect(onManualOrderOpenChange).toHaveBeenCalledWith(true)
+    expect(onStatusFilterChange).toHaveBeenCalledWith('ready')
+    expect(onPageChange).toHaveBeenCalledWith(1)
+    expect(onPageChange).toHaveBeenCalledWith(3)
+    expect(onMercadoPagoCheckout).toHaveBeenCalledWith(order)
+    expect(onAdvanceDelivery).toHaveBeenCalledWith(order)
+    expect(onCancel).toHaveBeenCalledWith(order)
+    expect(onAssignDriver).toHaveBeenCalledWith(order, '')
+    expect(onAdvance).not.toHaveBeenCalled()
+    expect(onConfirmPayment).not.toHaveBeenCalled()
+  })
+
+  it('renderiza casca da página de cardápio', async () => {
+    const { MenuDashboardPageContent } = await import('@/features/menu/MenuDashboardPageContent')
+
+    const item = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: 'cat-1',
+      name: 'Pizza Margherita',
+      description: 'Clássica',
+      price: 30,
+      available: true,
+      display_order: 1,
+      category: { id: 'cat-1', name: 'Pizzas' },
+      extras: [],
+    }
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuDashboardPageContent, {
+        availableCount: 3,
+        inactiveCount: 1,
+        limitLabel: '4/10 no plano',
+        menuItemLimitReached: true,
+        onCreate: vi.fn(),
+        planName: 'free',
+        menuItemLimit: 10,
+        categoryFilter: 'all',
+        onCategoryFilterChange: vi.fn(),
+        categories: [{ id: 'cat-1', name: 'Pizzas' }],
+        statusFilter: 'available',
+        onStatusFilterChange: vi.fn(),
+        isLoading: false,
+        items: [item] as never,
+        paginatedItems: [item] as never,
+        deletingId: null,
+        onEdit: vi.fn(),
+        onToggleAvailable: vi.fn(),
+        page: 1,
+        totalPages: 1,
+        onPageChange: vi.fn(),
+        dialogProps: {
+          open: true,
+          onOpenChange: vi.fn(),
+          editing: item,
+          form: {
+            control: {},
+            formState: { isSubmitting: false, errors: {} },
+            handleSubmit: (callback: (values: unknown) => void) => () => callback({}),
+          } as never,
+          categories: [{ id: 'cat-1', name: 'Pizzas' }],
+          hasStockAutomation: false,
+          linkedProductId: 'none',
+          onLinkedProductChange: vi.fn(),
+          products: { data: [] },
+          ingredients: [],
+          onAddIngredient: vi.fn(),
+          onUpdateIngredient: vi.fn(),
+          onRemoveIngredient: vi.fn(),
+          allExtras: [],
+          selectedExtras: [],
+          onSelectedExtrasChange: vi.fn(),
+          onSubmit: vi.fn(),
+        },
+      })
+    )
+
+    expect(markup).toContain('Cardápio')
+    expect(markup).toContain('Pizza Margherita')
+    expect(markup).toContain('limite de 10 itens')
+    expect(markup).toContain('Editar item')
+  })
+
+  it('nao renderiza drawer fechado e mostra step final quando aberto', async () => {
+    const { MenuCheckoutDrawer } = await import('@/features/menu/MenuCheckoutDrawer')
+
+    const closedMarkup = renderToStaticMarkup(
+      React.createElement(MenuCheckoutDrawer, {
+        open: false,
+        title: 'Fechado',
+        checkoutStep: 'done',
+        onClose: vi.fn(),
+        onStepChange: vi.fn(),
+        cartStepProps: {
+          cart: [],
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue: vi.fn(),
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: null,
+          phone: '',
+          onPhoneChange: vi.fn(),
+          phoneVerified: false,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: false,
+          existingCustomer: null,
+          isNewCustomer: false,
+          customerName: '',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'delivery', label: 'Entrega' }],
+          paymentMethod: 'delivery',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: {},
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'delivery',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: 9,
+          tableInfo: { id: 'table-1', number: '7' },
+          publicOrderStatus: {
+            id: 'order-9',
+            order_number: 9,
+            status: 'cancelled',
+            payment_status: 'refunded',
+            cancelled_reason: 'Cliente desistiu',
+            created_at: '2026-03-21T00:00:00.000Z',
+            updated_at: '2026-03-21T00:00:00.000Z',
+          },
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: vi.fn(),
+        },
+      })
+    )
+
+    const openMarkup = renderToStaticMarkup(
+      React.createElement(MenuCheckoutDrawer, {
+        open: true,
+        title: 'Pedido realizado!',
+        checkoutStep: 'done',
+        onClose: vi.fn(),
+        onStepChange: vi.fn(),
+        cartStepProps: {
+          cart: [],
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue: vi.fn(),
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: null,
+          phone: '',
+          onPhoneChange: vi.fn(),
+          phoneVerified: false,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: false,
+          existingCustomer: null,
+          isNewCustomer: false,
+          customerName: '',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'delivery', label: 'Entrega' }],
+          paymentMethod: 'delivery',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: {},
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'delivery',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: 9,
+          tableInfo: { id: 'table-1', number: '7' },
+          publicOrderStatus: {
+            id: 'order-9',
+            order_number: 9,
+            status: 'cancelled',
+            payment_status: 'refunded',
+            cancelled_reason: 'Cliente desistiu',
+            created_at: '2026-03-21T00:00:00.000Z',
+            updated_at: '2026-03-21T00:00:00.000Z',
+          },
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: vi.fn(),
+        },
+      })
+    )
+
+    expect(closedMarkup).toBe('')
+    expect(openMarkup).toContain('Pedido realizado!')
+    expect(openMarkup).toContain('Pedido cancelado')
+    expect(openMarkup).toContain('Mesa 7')
+  })
+
+  it('renderiza os steps de dados e endereço no drawer', async () => {
+    const { MenuCheckoutDrawer } = await import('@/features/menu/MenuCheckoutDrawer')
+
+    const infoMarkup = renderToStaticMarkup(
+      React.createElement(MenuCheckoutDrawer, {
+        open: true,
+        title: 'Seus dados',
+        checkoutStep: 'info',
+        onClose: vi.fn(),
+        onStepChange: vi.fn(),
+        cartStepProps: {
+          cart: [],
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue: vi.fn(),
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: { id: 'table-1', number: '12' },
+          phone: '(11) 99999-9999',
+          onPhoneChange: vi.fn(),
+          phoneVerified: true,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: true,
+          existingCustomer: { id: 'cust-1', name: 'Maria', phone: '11999999999' },
+          isNewCustomer: false,
+          customerName: 'Maria',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '123.456.789-09',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'online', label: 'Online' }],
+          paymentMethod: 'online',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 30,
+          deliveryFee: 0,
+          orderTotal: 30,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: {},
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'online',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: null,
+          tableInfo: null,
+          publicOrderStatus: null,
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: vi.fn(),
+        },
+      })
+    )
+
+    const addressMarkup = renderToStaticMarkup(
+      React.createElement(MenuCheckoutDrawer, {
+        open: true,
+        title: 'Endereço de entrega',
+        checkoutStep: 'address',
+        onClose: vi.fn(),
+        onStepChange: vi.fn(),
+        cartStepProps: {
+          cart: [],
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          onIncrement: vi.fn(),
+          onDecrement: vi.fn(),
+          onRemove: vi.fn(),
+          onContinue: vi.fn(),
+          onClear: vi.fn(),
+        },
+        infoStepProps: {
+          tableInfo: null,
+          phone: '',
+          onPhoneChange: vi.fn(),
+          phoneVerified: false,
+          onPhoneLookup: vi.fn(),
+          lookingUpPhone: false,
+          errors: {},
+          isPaidPlan: false,
+          existingCustomer: null,
+          isNewCustomer: false,
+          customerName: '',
+          onCustomerNameChange: vi.fn(),
+          customerCpf: '',
+          onCustomerCpfChange: vi.fn(),
+          paymentOptions: [{ value: 'delivery', label: 'Entrega' }],
+          paymentMethod: 'delivery',
+          onPaymentMethodChange: vi.fn(),
+          notes: '',
+          onNotesChange: vi.fn(),
+          cartTotal: 0,
+          deliveryFee: 0,
+          orderTotal: 0,
+          isProcessing: false,
+          onContinue: vi.fn(),
+          onBack: vi.fn(),
+        },
+        addressStepProps: {
+          address: {
+            zip_code: '01001000',
+            street: 'Praça da Sé',
+            number: '100',
+            city: 'São Paulo',
+            state: 'SP',
+          },
+          onAddressChange: vi.fn(),
+          onCepLookup: vi.fn(),
+          loadingCep: false,
+          errors: {},
+          paymentMethod: 'online',
+          isProcessing: false,
+          onSubmit: vi.fn(),
+          onBack: vi.fn(),
+        },
+        doneStepProps: {
+          orderNumber: null,
+          tableInfo: null,
+          publicOrderStatus: null,
+          orderSteps: [],
+          getStepState: () => 'upcoming',
+          cancelOrderLoading: false,
+          onCancelOrder: vi.fn(),
+          onClose: vi.fn(),
+        },
+      })
+    )
+
+    expect(infoMarkup).toContain('Mesa 12')
+    expect(infoMarkup).toContain('Forma de pagamento')
+    expect(addressMarkup).toContain('Praça da Sé')
+    expect(addressMarkup).toContain('Ir para pagamento')
+  })
+
+  it('renderiza estado vazio do cardápio', async () => {
+    const { MenuEmptyState } = await import('@/features/menu/MenuEmptyState')
+
+    const markup = renderToStaticMarkup(React.createElement(MenuEmptyState))
+
+    expect(markup).toContain('Cardápio em breve.')
+  })
+
+  it('renderiza header e filtros do dashboard do cardápio', async () => {
+    const { MenuDashboardHeader } = await import('@/features/menu/MenuDashboardHeader')
+    const { MenuDashboardFilters } = await import('@/features/menu/MenuDashboardFilters')
+
+    const headerMarkup = renderToStaticMarkup(
+      React.createElement(MenuDashboardHeader, {
+        availableCount: 12,
+        inactiveCount: 2,
+        limitLabel: '12/20 no plano',
+        menuItemLimitReached: false,
+        onCreate: vi.fn(),
+      })
+    )
+
+    const filtersMarkup = renderToStaticMarkup(
+      React.createElement(MenuDashboardFilters, {
+        categoryFilter: 'cat-1',
+        onCategoryFilterChange: vi.fn(),
+        categories: [
+          { id: 'cat-1', name: 'Pizzas' },
+          { id: 'cat-2', name: 'Bebidas' },
+        ],
+        statusFilter: 'available',
+        onStatusFilterChange: vi.fn(),
+      })
+    )
+
+    expect(headerMarkup).toContain('Cardápio')
+    expect(headerMarkup).toContain('12 itens disponíveis')
+    expect(headerMarkup).toContain('12/20 no plano')
+    expect(filtersMarkup).toContain('Todas as categorias')
+    expect(filtersMarkup).toContain('Pizzas')
+    expect(filtersMarkup).toContain('Somente disponíveis')
+  })
+
+  it('renderiza estado vazio e tabela do dashboard do cardápio', async () => {
+    const { MenuDashboardEmptyState } = await import('@/features/menu/MenuDashboardEmptyState')
+    const { MenuDashboardTable } = await import('@/features/menu/MenuDashboardTable')
+
+    const emptyMarkup = renderToStaticMarkup(
+      React.createElement(MenuDashboardEmptyState, {
+        menuItemLimitReached: false,
+        onCreate: vi.fn(),
+      })
+    )
+
+    const tableMarkup = renderToStaticMarkup(
+      React.createElement(MenuDashboardTable, {
+        items: [
+          {
+            id: 'menu-1',
+            name: 'Pizza Margherita',
+            description: 'Clássica',
+            price: 32,
+            available: true,
+            category: { id: 'cat-1', name: 'Pizzas' },
+          },
+          {
+            id: 'menu-2',
+            name: 'Suco',
+            description: null,
+            price: 8,
+            available: false,
+            category: null,
+          },
+        ] as never,
+        deletingId: null,
+        onEdit: vi.fn(),
+        onToggleAvailable: vi.fn(),
+      })
+    )
+
+    expect(emptyMarkup).toContain('Nenhum item encontrado para os filtros atuais.')
+    expect(emptyMarkup).toContain('Adicionar primeiro item')
+    expect(tableMarkup).toContain('Pizza Margherita')
+    expect(tableMarkup).toContain('Disponível')
+    expect(tableMarkup).toContain('Reativar')
+  })
+
+  it('renderiza header e estado vazio do dashboard de comandas', async () => {
+    const { TabsDashboardHeader } = await import('@/features/tabs/TabsDashboardHeader')
+    const { TabsDashboardEmptyState } = await import('@/features/tabs/TabsDashboardEmptyState')
+
+    const headerMarkup = renderToStaticMarkup(
+      React.createElement(TabsDashboardHeader, {
+        openCount: 3,
+        closedCount: 1,
+        onCreate: vi.fn(),
+      })
+    )
+
+    const emptyMarkup = renderToStaticMarkup(
+      React.createElement(TabsDashboardEmptyState, {
+        onCreate: vi.fn(),
+      })
+    )
+
+    expect(headerMarkup).toContain('Comandas')
+    expect(headerMarkup).toContain('3 abertas')
+    expect(headerMarkup).toContain('Nova comanda')
+    expect(emptyMarkup).toContain('Nenhuma comanda avulsa aberta no momento.')
+    expect(emptyMarkup).toContain('Criar primeira comanda')
+  })
+
+  it('renderiza diálogo de detalhes e diálogo de nova comanda', async () => {
+    const { TabDetailsDialog } = await import('@/features/tabs/TabDetailsDialog')
+    const { NewTabDialog } = await import('@/features/tabs/NewTabDialog')
+
+    const detailsMarkup = renderToStaticMarkup(
+      React.createElement(TabDetailsDialog, {
+        selectedTab: {
+          id: 'tab-1',
+          label: 'C-10',
+          status: 'open',
+          notes: 'Mesa da janela',
+          total: 12,
+          created_at: '2026-03-21T00:00:00.000Z',
+          orders: [
+            {
+              id: 'order-1',
+              status: 'pending',
+              total: 32,
+              payment_status: 'paid',
+            },
+          ],
+        } as never,
+        onOpenChange: vi.fn(),
+        onCloseTab: vi.fn(),
+      })
+    )
+
+    const newTabMarkup = renderToStaticMarkup(
+      React.createElement(NewTabDialog, {
+        open: true,
+        newTabLabel: 'Balcao 3',
+        newTabNotes: 'Cliente VIP',
+        formError: 'Erro ao criar',
+        isCreating: true,
+        onOpenChange: vi.fn(),
+        onLabelChange: vi.fn(),
+        onNotesChange: vi.fn(),
+        onSubmit: vi.fn(),
+      })
+    )
+
+    expect(detailsMarkup).toContain('Comanda C-10')
+    expect(detailsMarkup).toContain('Mesa da janela')
+    expect(detailsMarkup).toContain('Pagamento: paid')
+    expect(detailsMarkup).toContain('Fechar comanda')
+    expect(newTabMarkup).toContain('Nova comanda')
+    expect(newTabMarkup).toContain('Balcao 3')
+    expect(newTabMarkup).toContain('Cliente VIP')
+    expect(newTabMarkup).toContain('Erro ao criar')
+    expect(newTabMarkup).toContain('Criando...')
+  })
+
+  it('aciona ações dos diálogos de comanda', async () => {
+    const { TabDetailsDialog } = await import('@/features/tabs/TabDetailsDialog')
+    const { NewTabDialog } = await import('@/features/tabs/NewTabDialog')
+
+    const onOpenChange = vi.fn()
+    const onCloseTab = vi.fn()
+    const onLabelChange = vi.fn()
+    const onNotesChange = vi.fn()
+    const onSubmit = vi.fn()
+
+    const detailsElements = flattenElements(
+      React.createElement(TabDetailsDialog, {
+        selectedTab: {
+          id: 'tab-1',
+          label: 'C-10',
+          status: 'open',
+          notes: null,
+          total: 10,
+          created_at: '2026-03-21T00:00:00.000Z',
+          orders: [],
+        } as never,
+        onOpenChange,
+        onCloseTab,
+      })
+    )
+
+    const newTabElements = flattenElements(
+      React.createElement(NewTabDialog, {
+        open: true,
+        newTabLabel: '',
+        newTabNotes: '',
+        formError: '',
+        isCreating: false,
+        onOpenChange,
+        onLabelChange,
+        onNotesChange,
+        onSubmit,
+      })
+    )
+
+    const detailButtons = detailsElements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+    const newTabInputs = newTabElements.filter((element) => element.type === 'input')
+    const newTabTextarea = newTabElements.find((element) => element.type === 'textarea')
+    const newTabButtons = newTabElements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+
+    await detailButtons[0].props.onClick()
+    newTabInputs[0].props.onChange({ target: { value: 'C-11' } })
+    newTabTextarea?.props.onChange({ target: { value: 'Sem taxa' } })
+    newTabButtons[0].props.onClick()
+    newTabButtons[1].props.onClick()
+
+    expect(onCloseTab).toHaveBeenCalledWith(expect.objectContaining({ id: 'tab-1' }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onLabelChange).toHaveBeenCalledWith('C-11')
+    expect(onNotesChange).toHaveBeenCalledWith('Sem taxa')
+    expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('renderiza grade do dashboard de comandas com totais e ações', async () => {
+    const { TabsDashboardGrid } = await import('@/features/tabs/TabsDashboardGrid')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(TabsDashboardGrid, {
+        tabs: [
+          {
+            id: 'tab-1',
+            label: 'C-10',
+            status: 'open',
+            created_at: '2026-03-21T12:00:00.000Z',
+            notes: 'Mesa da janela',
+            total: 0,
+            orders: [
+              { id: 'order-1', total: 42, status: 'confirmed' },
+            ],
+          },
+          {
+            id: 'tab-2',
+            label: 'C-11',
+            status: 'closed',
+            created_at: '2026-03-21T12:05:00.000Z',
+            total: 18,
+            orders: [],
+          },
+        ] as never,
+        closeTabPending: false,
+        onSelect: vi.fn(),
+        onClose: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('C-10')
+    expect(markup).toContain('Aberta')
+    expect(markup).toContain('Fechar comanda')
+    expect(markup).toContain('Mesa da janela')
+    expect(markup).toContain('R$ 42.00')
+    expect(markup).toContain('C-11')
+    expect(markup).toContain('Fechada')
+  })
+
+  it('renderiza lista de pedidos em loading, vazio e com paginação', async () => {
+    const { OrdersListSection } = await import('@/features/orders/OrdersListSection')
+
+    const loadingMarkup = renderToStaticMarkup(
+      React.createElement(OrdersListSection, {
+        isLoading: true,
+        orders: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 10,
+        onPageChange: vi.fn(),
+        deliveryDrivers: [],
+        hasWhatsappNotifications: false,
+        updatePending: false,
+        chargingOrderId: null,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onMercadoPagoCheckout: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    const emptyMarkup = renderToStaticMarkup(
+      React.createElement(OrdersListSection, {
+        isLoading: false,
+        orders: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 10,
+        onPageChange: vi.fn(),
+        deliveryDrivers: [],
+        hasWhatsappNotifications: false,
+        updatePending: false,
+        chargingOrderId: null,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onMercadoPagoCheckout: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    const listMarkup = renderToStaticMarkup(
+      React.createElement(OrdersListSection, {
+        isLoading: false,
+        orders: [
+          {
+            id: 'order-1',
+            order_number: 42,
+            status: 'confirmed',
+            payment_method: 'delivery',
+            payment_status: 'paid',
+            subtotal: 32,
+            delivery_fee: 8,
+            total: 40,
+            created_at: '2026-03-21T12:00:00.000Z',
+            customer_name: 'Maria',
+            customer_phone: '11999999999',
+            customer_cpf: null,
+            table_number: null,
+            tab: null,
+            delivery_address: { street: 'Rua A' },
+            delivery_status: 'assigned',
+            delivery_driver: { id: 'driver-1', name: 'João', vehicle_type: 'bike', active: true },
+            delivery_driver_id: 'driver-1',
+            notes: null,
+            notifications: [],
+            items: [{ id: 'item-1', name: 'Pizza', quantity: 1, notes: null, extras: [] }],
+          },
+        ] as never,
+        totalCount: 21,
+        page: 2,
+        pageSize: 10,
+        onPageChange: vi.fn(),
+        deliveryDrivers: [{ id: 'driver-1', name: 'João', vehicle_type: 'bike', active: true }],
+        hasWhatsappNotifications: false,
+        updatePending: false,
+        chargingOrderId: null,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onMercadoPagoCheckout: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    expect(loadingMarkup).toContain('Carregando...')
+    expect(emptyMarkup).toContain('Nenhum pedido encontrado')
+    expect(listMarkup).toContain('#42')
+    expect(listMarkup).toContain('Maria')
+    expect(listMarkup).toContain('R$ 40.00')
+  })
+
+  it('renderiza grade de comandas fechadas sem botão de fechar e com total salvo', async () => {
+    const { TabsDashboardGrid } = await import('@/features/tabs/TabsDashboardGrid')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(TabsDashboardGrid, {
+        tabs: [
+          {
+            id: 'tab-3',
+            tenant_id: 'tenant-1',
+            label: 'C-20',
+            status: 'closed',
+            notes: null,
+            opened_by: null,
+            closed_by: null,
+            total: 33,
+            created_at: '2026-03-21T13:00:00.000Z',
+            closed_at: '2026-03-21T14:00:00.000Z',
+            orders: [],
+          },
+        ],
+        closeTabPending: true,
+        onSelect: vi.fn(),
+        onClose: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('C-20')
+    expect(markup).toContain('Fechada')
+    expect(markup).toContain('R$ 33.00')
+    expect(markup).toContain('0 pedidos')
+    expect(markup).toContain('Ver detalhes')
+    expect(markup).not.toContain('Fechar comanda')
+  })
+
+  it('renderiza header, filtros e vazio do dashboard de pedidos', async () => {
+    const { OrdersDashboardHeader } = await import('@/features/orders/OrdersDashboardHeader')
+    const { OrdersFilters } = await import('@/features/orders/OrdersFilters')
+    const { OrdersEmptyState } = await import('@/features/orders/OrdersEmptyState')
+
+    const headerMarkup = renderToStaticMarkup(
+      React.createElement(OrdersDashboardHeader, {
+        onCreate: vi.fn(),
+      })
+    )
+
+    const filtersMarkup = renderToStaticMarkup(
+      React.createElement(OrdersFilters, {
+        filters: [
+          { label: 'Todos', value: '' },
+          { label: 'Aguardando', value: 'pending' },
+        ],
+        statusFilter: 'pending',
+        onChange: vi.fn(),
+      })
+    )
+
+    const emptyMarkup = renderToStaticMarkup(React.createElement(OrdersEmptyState))
+
+    expect(headerMarkup).toContain('Pedidos')
+    expect(headerMarkup).toContain('Novo pedido')
+    expect(filtersMarkup).toContain('Todos')
+    expect(filtersMarkup).toContain('Aguardando')
+    expect(emptyMarkup).toContain('Nenhum pedido encontrado.')
+  })
+
+  it('renderiza card de pedido com entrega, whatsapp e ações', async () => {
+    const { OrderCard } = await import('@/features/orders/OrderCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(OrderCard, {
+        order: {
+          id: 'order-1',
+          order_number: 42,
+          customer_name: 'Maria',
+          customer_phone: '11999999999',
+          customer_cpf: null,
+          customer_id: null,
+          table_number: null,
+          status: 'ready',
+          payment_method: 'delivery',
+          payment_status: 'pending',
+          delivery_status: 'waiting_dispatch',
+          delivery_driver_id: 'driver-1',
+          delivery_driver: {
+            id: 'driver-1',
+            name: 'João',
+            phone: null,
+            vehicle_type: 'moto',
+            active: true,
+          },
+          subtotal: 40,
+          delivery_fee: 8,
+          total: 48,
+          notes: 'Sem cebola',
+          cancelled_reason: null,
+          delivery_address: {
+            street: 'Rua A',
+            number: '123',
+            neighborhood: 'Centro',
+            city: 'São Paulo',
+            state: 'SP',
+            zip_code: '01000-000',
+          },
+          created_at: '2026-03-21T12:00:00.000Z',
+          updated_at: '2026-03-21T12:00:00.000Z',
+          items: [
+            {
+              id: 'item-1',
+              order_id: 'order-1',
+              menu_item_id: 'menu-1',
+              name: 'Pizza',
+              price: 40,
+              quantity: 1,
+              notes: 'Sem cebola',
+              extras: [{ id: 'extra-1', order_item_id: 'item-1', name: 'Borda', price: 5 }],
+            },
+          ],
+          notifications: [
+            {
+              id: 'notif-1',
+              channel: 'whatsapp',
+              event_key: 'order_ready',
+              status: 'sent',
+              recipient: '11999999999',
+              created_at: '2026-03-21T12:05:00.000Z',
+            },
+          ],
+          tab: null,
+        } as never,
+        config: { label: 'Pronto', color: 'bg-green-100 text-green-800', nextLabel: 'Entregar' },
+        deliveryDrivers: [{ id: 'driver-1', name: 'João', vehicle_type: 'moto', active: true }],
+        hasWhatsappNotifications: true,
+        updatePending: false,
+        chargingOrderId: null,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onMercadoPagoCheckout: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('#42')
+    expect(markup).toContain('Maria')
+    expect(markup).toContain('Endereço de entrega')
+    expect(markup).toContain('WhatsApp')
+    expect(markup).toContain('Saiu para entrega')
+    expect(markup).toContain('Cobrar com MP')
+    expect(markup).toContain('Cancelar')
+  })
+
+  it('renderiza card de pedido entregue com confirmacao de pagamento e sem whatsapp', async () => {
+    const { OrderCard } = await import('@/features/orders/OrderCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(OrderCard, {
+        order: {
+          id: 'order-2',
+          tenant_id: 'tenant-1',
+          order_number: 77,
+          customer_name: null,
+          customer_phone: null,
+          customer_cpf: null,
+          customer_id: null,
+          table_number: null,
+          tab: { id: 'tab-1', label: 'C-15', status: 'open' },
+          status: 'delivered',
+          payment_method: 'counter',
+          payment_status: 'pending',
+          subtotal: 25,
+          total: 25,
+          notes: null,
+          cancelled_reason: null,
+          delivery_address: null,
+          created_at: '2026-03-21T13:20:00.000Z',
+          updated_at: '2026-03-21T13:20:00.000Z',
+          items: [
+            {
+              id: 'item-2',
+              order_id: 'order-2',
+              menu_item_id: 'menu-2',
+              name: 'Suco',
+              price: 25,
+              quantity: 1,
+              notes: null,
+            },
+          ],
+          notifications: [],
+        } as never,
+        config: { label: 'Entregue', color: 'bg-slate-100 text-slate-600' },
+        deliveryDrivers: [],
+        hasWhatsappNotifications: false,
+        updatePending: false,
+        chargingOrderId: null,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onMercadoPagoCheckout: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('#77')
+    expect(markup).toContain('Comanda:')
+    expect(markup).toContain('C-15')
+    expect(markup).toContain('No caixa')
+    expect(markup).toContain('Confirmar pagamento')
+    expect(markup).not.toContain('WhatsApp')
+    expect(markup).not.toContain('Cancelar')
+  })
+
+  it('renderiza card de pedido com whatsapp falho, historico e cobranca em andamento', async () => {
+    const { OrderCard } = await import('@/features/orders/OrderCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(OrderCard, {
+        order: {
+          id: 'order-3',
+          tenant_id: 'tenant-1',
+          order_number: 120,
+          customer_name: 'Ana',
+          customer_phone: '11911112222',
+          customer_cpf: null,
+          customer_id: null,
+          table_number: null,
+          tab: null,
+          status: 'confirmed',
+          payment_method: 'online',
+          payment_status: 'pending',
+          subtotal: 32,
+          total: 32,
+          notes: null,
+          cancelled_reason: null,
+          delivery_address: null,
+          created_at: '2026-03-21T15:00:00.000Z',
+          updated_at: '2026-03-21T15:00:00.000Z',
+          items: [
+            {
+              id: 'item-3',
+              order_id: 'order-3',
+              menu_item_id: 'menu-3',
+              name: 'Lasanha',
+              price: 32,
+              quantity: 1,
+              notes: null,
+            },
+          ],
+          notifications: [
+            {
+              id: 'notif-2',
+              channel: 'whatsapp',
+              event_key: 'order_confirmed',
+              status: 'failed',
+              recipient: '11911112222',
+              error_message: 'Número inválido',
+              created_at: '2026-03-21T15:10:00.000Z',
+            },
+            {
+              id: 'notif-1',
+              channel: 'whatsapp',
+              event_key: 'order_received',
+              status: 'sent',
+              recipient: '11911112222',
+              created_at: '2026-03-21T15:05:00.000Z',
+            },
+          ],
+        } as never,
+        config: { label: 'Confirmado', color: 'bg-blue-100 text-blue-800', nextLabel: 'Iniciar preparo' },
+        deliveryDrivers: [],
+        hasWhatsappNotifications: true,
+        updatePending: false,
+        chargingOrderId: 'order-3',
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onMercadoPagoCheckout: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('WhatsApp')
+    expect(markup).toContain('Falhou')
+    expect(markup).toContain('Motivo: Número inválido')
+    expect(markup).toContain('Pedido recebido')
+    expect(markup).toContain('Gerando...')
+    expect(markup).toContain('Iniciar preparo')
+  })
+
+  it('renderiza header e vazio do dashboard de mesas', async () => {
+    const { TablesDashboardHeader } = await import('@/features/tables/TablesDashboardHeader')
+    const { TablesDashboardEmptyState } = await import('@/features/tables/TablesDashboardEmptyState')
+
+    const headerMarkup = renderToStaticMarkup(
+      React.createElement(TablesDashboardHeader, {
+        occupied: 2,
+        available: 5,
+        tableCount: 7,
+        maxTables: 10,
+        tableLimitReached: false,
+        onCreate: vi.fn(),
+      })
+    )
+
+    const emptyMarkup = renderToStaticMarkup(
+      React.createElement(TablesDashboardEmptyState, {
+        tableLimitReached: false,
+        onCreate: vi.fn(),
+      })
+    )
+
+    expect(headerMarkup).toContain('Mesas')
+    expect(headerMarkup).toContain('2 ocupadas')
+    expect(headerMarkup).toContain('7/10 mesas')
+    expect(headerMarkup).toContain('Nova mesa')
+    expect(emptyMarkup).toContain('Nenhuma mesa cadastrada.')
+    expect(emptyMarkup).toContain('Cadastrar primeira mesa')
+  })
+
+  it('renderiza grade do dashboard de mesas com estados e ações', async () => {
+    const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(TablesDashboardGrid, {
+        tables: [
+          {
+            id: 'table-1',
+            number: '10',
+            capacity: 4,
+            status: 'available',
+            active_session: null,
+          },
+          {
+            id: 'table-2',
+            number: '12',
+            capacity: 6,
+            status: 'occupied',
+            active_session: {
+              id: 'session-1',
+              table_id: 'table-2',
+              customer_count: 3,
+              total: 54,
+              opened_at: '2026-03-21T12:00:00.000Z',
+              orders: [{ id: 'order-1' }],
+            },
+          },
+        ] as never,
+        onSelect: vi.fn(),
+        onEdit: vi.fn(),
+        onDelete: vi.fn(),
+        onOpenSession: vi.fn(),
+        onCopyQr: vi.fn(),
+        onCloseSession: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('10')
+    expect(markup).toContain('Livre')
+    expect(markup).toContain('Abrir comanda')
+    expect(markup).toContain('Copiar link QR')
+    expect(markup).toContain('12')
+    expect(markup).toContain('Ocupada')
+    expect(markup).toContain('Ver comanda')
+    expect(markup).toContain('Fechar comanda')
+  })
+
+  it('renderiza grade de mesas reservada e em manutencao sem acoes de comanda', async () => {
+    const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(TablesDashboardGrid, {
+        tables: [
+          {
+            id: 'table-3',
+            tenant_id: 'tenant-1',
+            number: '20',
+            capacity: 2,
+            status: 'reserved',
+            created_at: '2026-03-21T12:00:00.000Z',
+            updated_at: '2026-03-21T12:00:00.000Z',
+            active_session: null,
+          },
+          {
+            id: 'table-4',
+            tenant_id: 'tenant-1',
+            number: '21',
+            capacity: 8,
+            status: 'maintenance',
+            created_at: '2026-03-21T12:00:00.000Z',
+            updated_at: '2026-03-21T12:00:00.000Z',
+            active_session: null,
+          },
+        ],
+        onSelect: vi.fn(),
+        onEdit: vi.fn(),
+        onDelete: vi.fn(),
+        onOpenSession: vi.fn(),
+        onCopyQr: vi.fn(),
+        onCloseSession: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('20')
+    expect(markup).toContain('Reservada')
+    expect(markup).toContain('21')
+    expect(markup).toContain('Manutenção')
+    expect(markup).not.toContain('Abrir comanda')
+    expect(markup).not.toContain('Copiar link QR')
+    expect(markup).not.toContain('Fechar comanda')
+  })
+
+  it('dispara ações da grade de mesas para seleção, edição, QR e fechamento', async () => {
+    const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
+    const onSelect = vi.fn()
+    const onEdit = vi.fn()
+    const onDelete = vi.fn()
+    const onOpenSession = vi.fn()
+    const onCopyQr = vi.fn()
+    const onCloseSession = vi.fn()
+
+    const tree = TablesDashboardGrid({
+      tables: [
+        {
+          id: 'table-1',
+          tenant_id: 'tenant-1',
+          number: '10',
+          capacity: 4,
+          status: 'available',
+          created_at: '2026-03-21T12:00:00.000Z',
+          updated_at: '2026-03-21T12:00:00.000Z',
+          active_session: null,
+        },
+        {
+          id: 'table-2',
+          tenant_id: 'tenant-1',
+          number: '12',
+          capacity: 6,
+          status: 'occupied',
+          created_at: '2026-03-21T12:00:00.000Z',
+          updated_at: '2026-03-21T12:00:00.000Z',
+          active_session: {
+            id: 'session-1',
+            tenant_id: 'tenant-1',
+            table_id: 'table-2',
+            opened_by: null,
+            closed_by: null,
+            status: 'open',
+            customer_count: 3,
+            total: 54,
+            opened_at: '2026-03-21T12:00:00.000Z',
+            closed_at: null,
+            orders: [{ id: 'order-1' }],
+          },
+        },
+      ],
+      onSelect,
+      onEdit,
+      onDelete,
+      onOpenSession,
+      onCopyQr,
+      onCloseSession,
+    })
+
+    const elements = flattenElements(tree)
+    const clickableCards = elements.filter(
+      (element) =>
+        element.type === 'div' &&
+        typeof element.props.onClick === 'function' &&
+        String(element.props.className ?? '').includes('cursor-pointer')
+    )
+    const buttons = elements.filter((element) => element.type === 'button')
+    const stopPropagation = vi.fn()
+
+    clickableCards[0]?.props.onClick()
+    clickableCards[1]?.props.onClick()
+
+    buttons.find((button) => getTextContent(button).includes('Abrir comanda'))?.props.onClick({ stopPropagation })
+    buttons.find((button) => getTextContent(button).includes('Copiar link QR'))?.props.onClick({ stopPropagation })
+    buttons.find((button) => getTextContent(button).includes('Ver comanda'))?.props.onClick({ stopPropagation })
+    buttons.find((button) => getTextContent(button).includes('Fechar comanda'))?.props.onClick({ stopPropagation })
+    buttons.find((button) => String(button.props.className ?? '').includes('hover:text-red-500'))?.props.onClick({ stopPropagation })
+    buttons.find((button) => String(button.props.className ?? '').includes('hover:text-slate-700'))?.props.onClick({ stopPropagation })
+
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'table-1' }))
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'table-2' }))
+    expect(onOpenSession).toHaveBeenCalledWith(expect.objectContaining({ id: 'table-1' }))
+    expect(onCopyQr).toHaveBeenCalledWith(expect.objectContaining({ id: 'table-1' }))
+    expect(onCloseSession).toHaveBeenCalledWith(expect.objectContaining({ id: 'table-2' }))
+    expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'table-1' }))
+    expect(onEdit).toHaveBeenCalled()
+    expect(stopPropagation).toHaveBeenCalled()
+  })
+
+  it('renderiza detalhes da mesa ocupada com pedidos e total', async () => {
+    const { TableSessionDetailsDialog } = await import('@/features/tables/TableSessionDetailsDialog')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(TableSessionDetailsDialog, {
+        table: {
+          id: 'table-1',
+          tenant_id: 'tenant-1',
+          number: '12',
+          capacity: 4,
+          status: 'occupied',
+          created_at: '2026-03-21T12:00:00.000Z',
+          updated_at: '2026-03-21T12:00:00.000Z',
+          active_session: {
+            id: 'session-1',
+            tenant_id: 'tenant-1',
+            table_id: 'table-1',
+            opened_by: null,
+            closed_by: null,
+            status: 'open',
+            customer_count: 2,
+            total: 74,
+            opened_at: '2026-03-21T12:30:00.000Z',
+            closed_at: null,
+            orders: [
+              {
+                id: 'order-1',
+                tenant_id: 'tenant-1',
+                order_number: 88,
+                customer_name: null,
+                customer_phone: null,
+                customer_cpf: null,
+                customer_id: null,
+                table_number: '12',
+                status: 'confirmed',
+                payment_method: 'table',
+                payment_status: 'pending',
+                subtotal: 74,
+                total: 74,
+                notes: null,
+                cancelled_reason: null,
+                delivery_address: null,
+                created_at: '2026-03-21T12:31:00.000Z',
+                updated_at: '2026-03-21T12:31:00.000Z',
+                items: [
+                  {
+                    id: 'item-1',
+                    order_id: 'order-1',
+                    menu_item_id: null,
+                    name: 'Pizza Margherita',
+                    price: 37,
+                    quantity: 2,
+                    notes: null,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        open: true,
+        onOpenChange: vi.fn(),
+        onCloseSession: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Mesa 12')
+    expect(markup).toContain('Pedido #88')
+    expect(markup).toContain('2× Pizza Margherita')
+    expect(markup).toContain('R$ 74.00')
+    expect(markup).toContain('Fechar comanda')
+  })
+
+  it('renderiza detalhes da mesa livre e modal para abrir comanda', async () => {
+    const { TableSessionDetailsDialog } = await import('@/features/tables/TableSessionDetailsDialog')
+    const { OpenSessionDialog } = await import('@/features/tables/OpenSessionDialog')
+    const { TableFormDialog } = await import('@/features/tables/TableFormDialog')
+
+    const detailsMarkup = renderToStaticMarkup(
+      React.createElement(TableSessionDetailsDialog, {
+        table: {
+          id: 'table-2',
+          tenant_id: 'tenant-1',
+          number: '7',
+          capacity: 2,
+          status: 'available',
+          created_at: '2026-03-21T12:00:00.000Z',
+          updated_at: '2026-03-21T12:00:00.000Z',
+          active_session: null,
+        },
+        open: true,
+        onOpenChange: vi.fn(),
+        onCloseSession: vi.fn(),
+      })
+    )
+
+    const openMarkup = renderToStaticMarkup(
+      React.createElement(
+        OpenSessionDialog,
+        {
+          table: {
+            id: 'table-3',
+            tenant_id: 'tenant-1',
+            number: '9',
+            capacity: 4,
+            status: 'available',
+            created_at: '2026-03-21T12:00:00.000Z',
+            updated_at: '2026-03-21T12:00:00.000Z',
+            active_session: null,
+          },
+          open: true,
+          errorMessage: 'Erro ao abrir comanda.',
+          isSubmitting: true,
+          onOpenChange: vi.fn(),
+        },
+        React.createElement('form', null, React.createElement('input', { value: '4' }))
+      )
+    )
+
+    const formMarkup = renderToStaticMarkup(
+      React.createElement(
+        TableFormDialog,
+        {
+          open: true,
+          editingTable: {
+            id: 'table-4',
+            tenant_id: 'tenant-1',
+            number: '11',
+            capacity: 6,
+            status: 'available',
+            created_at: '2026-03-21T12:00:00.000Z',
+            updated_at: '2026-03-21T12:00:00.000Z',
+            active_session: null,
+          },
+          errorMessage: 'Erro ao atualizar mesa.',
+          isSubmitting: true,
+          onOpenChange: vi.fn(),
+        },
+        React.createElement('form', null, React.createElement('input', { value: '11' }))
+      )
+    )
+
+    expect(detailsMarkup).toContain('Mesa livre - sem comanda aberta.')
+    expect(openMarkup).toContain('Abrir comanda - Mesa 9')
+    expect(openMarkup).toContain('Erro ao abrir comanda.')
+    expect(openMarkup).toContain('Abrindo...')
+    expect(formMarkup).toContain('Editar Mesa 11')
+    expect(formMarkup).toContain('Erro ao atualizar mesa.')
+    expect(formMarkup).toContain('Criando...')
+  })
+})
