@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { DeliveryStatus, Order } from '@/features/orders/types'
 import {

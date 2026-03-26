@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { deductOrderStockIfNeededWithAdmin } from '@/lib/stock-deduction'
 import { createMockSupabaseClient } from '@/tests/helpers/mock-supabase'

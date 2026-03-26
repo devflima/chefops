@@ -248,14 +248,17 @@ describe('menu components', () => {
 
     const onOpenChange = vi.fn()
     const elements = flattenElements(
-      React.createElement(OpenSessionDialog, {
-        table: { id: 'table-1', number: '12', capacity: 4, status: 'available' },
-        open: true,
-        errorMessage: 'Erro ao abrir comanda.',
-        isSubmitting: true,
-        onOpenChange,
-        children: React.createElement('form', null, 'Session form'),
-      }),
+      React.createElement(
+        OpenSessionDialog,
+        {
+          table: { id: 'table-1', number: '12', capacity: 4, status: 'available' },
+          open: true,
+          errorMessage: 'Erro ao abrir comanda.',
+          isSubmitting: true,
+          onOpenChange,
+        },
+        React.createElement('form', null, 'Session form')
+      ),
     )
 
     expect(getTextContent(elements)).toContain('Abrir comanda - Mesa 12')
@@ -275,14 +278,17 @@ describe('menu components', () => {
 
     const onOpenChange = vi.fn()
     const elements = flattenElements(
-      React.createElement(TableFormDialog, {
-        open: true,
-        editingTable: { id: 'table-1', number: '7', capacity: 4, status: 'available' },
-        errorMessage: 'Erro ao salvar mesa.',
-        isSubmitting: false,
-        onOpenChange,
-        children: React.createElement('form', null, 'Table form'),
-      }),
+      React.createElement(
+        TableFormDialog,
+        {
+          open: true,
+          editingTable: { id: 'table-1', number: '7', capacity: 4, status: 'available' },
+          errorMessage: 'Erro ao salvar mesa.',
+          isSubmitting: false,
+          onOpenChange,
+        },
+        React.createElement('form', null, 'Table form')
+      ),
     )
 
     expect(getTextContent(elements)).toContain('Editar Mesa 7')

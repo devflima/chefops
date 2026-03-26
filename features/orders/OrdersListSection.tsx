@@ -2,7 +2,7 @@ import PaginationControls from '@/components/shared/PaginationControls'
 import { OrdersEmptyState } from '@/features/orders/OrdersEmptyState'
 import { OrderCard } from '@/features/orders/OrderCard'
 import { getOrdersTotalPages, orderStatusConfig } from '@/features/orders/orders-page'
-import type { DeliveryStatus, Order } from '@/features/orders/types'
+import type { Order } from '@/features/orders/types'
 
 export function OrdersListSection({
   isLoading,

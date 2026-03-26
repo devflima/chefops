@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useCreateOrder } from '@/features/orders/hooks/useOrders'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { toast } from 'sonner'
 import {
