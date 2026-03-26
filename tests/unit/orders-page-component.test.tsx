@@ -200,4 +200,27 @@ describe('PedidosPage component', () => {
     expect(mutateAsync).not.toHaveBeenCalled()
     expect(alert).toHaveBeenCalledWith('Falha ao gerar cobrança')
   })
+
+  it('aplica fallbacks de listas quando os hooks retornam dados ausentes', async () => {
+    useOrdersMock.mockReturnValue({
+      data: null,
+      isLoading: true,
+    })
+    useDeliveryDriversMock.mockReturnValue({ data: undefined })
+
+    const { default: PedidosPage } = await import('@/app/(dashboard)/pedidos/page')
+    renderToStaticMarkup(React.createElement(PedidosPage))
+
+    const props = capturedOrdersPageContentProps as {
+      isLoading: boolean
+      orders: unknown[]
+      totalCount?: number
+      deliveryDrivers: unknown[]
+    }
+
+    expect(props.isLoading).toBe(true)
+    expect(props.orders).toEqual([])
+    expect(props.totalCount).toBeUndefined()
+    expect(props.deliveryDrivers).toEqual([])
+  })
 })

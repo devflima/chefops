@@ -46,6 +46,26 @@ vi.mock('@/components/ui/form', () => ({
 }))
 
 describe('auth page contents', () => {
+  function flattenElements(node: React.ReactNode): React.ReactElement[] {
+    if (node == null || typeof node === 'boolean' || typeof node === 'string' || typeof node === 'number') {
+      return []
+    }
+
+    if (Array.isArray(node)) {
+      return node.flatMap((child) => flattenElements(child))
+    }
+
+    if (!React.isValidElement(node)) {
+      return []
+    }
+
+    if (typeof node.type === 'function') {
+      return flattenElements(node.type(node.props))
+    }
+
+    return [node, ...flattenElements(node.props.children)]
+  }
+
   it('renderiza o conteúdo de login', async () => {
     const { LoginPageContent } = await import('@/features/auth/components/LoginPageContent')
 
@@ -64,6 +84,38 @@ describe('auth page contents', () => {
     expect(markup).toContain('Entrar')
     expect(markup).toContain('Falha no login')
     expect(markup).toContain('Cadastre seu estabelecimento')
+  })
+
+  it('renderiza login em loading sem erro', async () => {
+    const { LoginPageContent } = await import('@/features/auth/components/LoginPageContent')
+    const onSubmit = vi.fn()
+
+    const element = React.createElement(LoginPageContent, {
+      form: {
+        control: {},
+        handleSubmit: () => onSubmit,
+        formState: { isSubmitting: true },
+      },
+      error: null,
+      onSubmit,
+    })
+
+    const markup = renderToStaticMarkup(element)
+
+    expect(markup).toContain('Entrando...')
+    expect(markup).not.toContain('Falha no login')
+
+    const elements = flattenElements(element)
+    const form = elements.find((node) => node.type === 'form')
+    const submitButton = elements.find(
+      (node) => node.type === 'button' && String(node.props.type) === 'submit'
+    )
+
+    expect(submitButton?.props.disabled).toBe(true)
+
+    form?.props.onSubmit?.()
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 
   it('renderiza o conteúdo de cadastro', async () => {
@@ -86,5 +138,28 @@ describe('auth page contents', () => {
     expect(markup).toContain('Criando conta...')
     expect(markup).toContain('Usado na URL do seu cardápio digital')
     expect(markup).toContain('Já tem conta?')
+  })
+
+  it('aciona o espelhamento do nome do estabelecimento no conteúdo de cadastro', async () => {
+    const { RegisterPageContent } = await import('@/features/auth/components/RegisterPageContent')
+    const onTenantNameChange = vi.fn()
+
+    const element = React.createElement(RegisterPageContent, {
+      form: {
+        control: {},
+        handleSubmit: () => vi.fn(),
+        formState: { isSubmitting: false },
+      },
+      error: 'Erro de cadastro',
+      onSubmit: vi.fn(),
+      onTenantNameChange,
+    })
+
+    const inputs = flattenElements(element).filter((node) => node.type === 'input')
+    inputs[0]?.props.onChange({
+      target: { value: 'Pizzaria ChefOps' },
+    })
+
+    expect(onTenantNameChange).toHaveBeenCalledWith('Pizzaria ChefOps')
   })
 })

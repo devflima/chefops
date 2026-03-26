@@ -85,6 +85,12 @@ describe('api billing and mercado pago routes', () => {
     expect((await billingSubscriptionRoute.GET()).status).toBe(500)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse,
+    } as never)
+    expect((await billingSubscriptionRoute.DELETE()).status).toBe(403)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
       profile: { tenant_id: 'tenant-1' },
     } as never)
@@ -113,11 +119,61 @@ describe('api billing and mercado pago routes', () => {
       profile: { tenant_id: 'tenant-1' },
     } as never)
     vi.mocked(saasBilling.getLatestSaasBillingSubscription).mockResolvedValueOnce({
+      mercado_pago_preapproval_id: 'pre-2',
+      next_payment_date: null,
+    } as never)
+    vi.mocked(mercadoPago.updatePreapprovalById).mockResolvedValueOnce({} as never)
+    vi.mocked(saasBilling.cancelSaasBillingSubscriptionAtPeriodEnd).mockResolvedValueOnce({
+      id: 'sub-2',
+      status: 'cancelled',
+      next_payment_date: null,
+    } as never)
+    const deleteWithoutNextPayment = await billingSubscriptionRoute.DELETE()
+    expect(deleteWithoutNextPayment.status).toBe(200)
+    expect(vi.mocked(saasBilling.cancelSaasBillingSubscriptionAtPeriodEnd)).toHaveBeenLastCalledWith({
+      tenantId: 'tenant-1',
+      mercadoPagoPreapprovalId: 'pre-2',
+      nextPaymentDate: null,
+    })
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(saasBilling.getLatestSaasBillingSubscription).mockResolvedValueOnce({
       mercado_pago_preapproval_id: 'pre-1',
       next_payment_date: '2026-03-30',
     } as never)
     vi.mocked(mercadoPago.updatePreapprovalById).mockRejectedValueOnce(new Error('cancel failed'))
     expect((await billingSubscriptionRoute.DELETE()).status).toBe(500)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(saasBilling.getLatestSaasBillingSubscription).mockResolvedValueOnce({
+      mercado_pago_preapproval_id: 'pre-1',
+      next_payment_date: '2026-03-30',
+    } as never)
+    vi.mocked(mercadoPago.updatePreapprovalById).mockRejectedValueOnce('cancel failed string' as never)
+    const deleteUnknownError = await billingSubscriptionRoute.DELETE()
+    expect(deleteUnknownError.status).toBe(500)
+    expect((await deleteUnknownError.json()).error).toBe('Erro ao cancelar assinatura.')
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse,
+    } as never)
+    expect(
+      (
+        await billingSubscriptionRoute.PATCH(
+          new Request('https://chefops.test/api/billing/subscription', {
+            method: 'PATCH',
+            body: JSON.stringify({ scheduled_plan: 'pro' }),
+          }) as never
+        )
+      ).status
+    ).toBe(403)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
@@ -191,12 +247,30 @@ describe('api billing and mercado pago routes', () => {
         )
       ).status
     ).toBe(500)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(saasBilling.getLatestSaasBillingSubscription).mockResolvedValueOnce({
+      mercado_pago_preapproval_id: 'pre-1',
+    } as never)
+    vi.mocked(saasBilling.scheduleSaasPlanChange).mockRejectedValueOnce('schedule failed string' as never)
+    const patchUnknownError = await billingSubscriptionRoute.PATCH(
+      new Request('https://chefops.test/api/billing/subscription', {
+        method: 'PATCH',
+        body: JSON.stringify({ scheduled_plan: 'pro' }),
+      }) as never
+    )
+    expect(patchUnknownError.status).toBe(500)
+    expect((await patchUnknownError.json()).error).toBe('Erro ao programar troca de plano.')
   })
 
   it('billing subscription POST cobre body inválido, email ausente, sucesso e erro inesperado', async () => {
+    const forbiddenResponse = new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 })
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: false,
-      response: new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 }),
+      response: forbiddenResponse,
     } as never)
     expect(
       (
@@ -274,6 +348,50 @@ describe('api billing and mercado pago routes', () => {
     vi.mocked(saasBilling.buildSaasExternalReference).mockReturnValueOnce('tenant-1:basic')
     vi.mocked(saasBilling.buildSaasSubscriptionReason).mockReturnValueOnce('Plano Basic')
     vi.mocked(saasBilling.getBillingPlanAmount).mockReturnValueOnce(99 as never)
+    vi.mocked(mercadoPago.createSaasSubscriptionLink).mockResolvedValueOnce({
+      id: 'pre-2',
+      status: 'authorized',
+      init_point: null,
+      next_payment_date: null,
+    } as never)
+    vi.mocked(saasBilling.upsertSaasBillingSubscription).mockResolvedValueOnce(undefined as never)
+
+    const successWithoutCheckoutUrl = await billingSubscriptionRoute.POST(
+      new Request('https://chefops.test/api/billing/subscription', {
+        method: 'POST',
+        body: JSON.stringify({ plan: 'basic' }),
+      }) as never
+    )
+    expect(successWithoutCheckoutUrl.status).toBe(200)
+    expect(await successWithoutCheckoutUrl.json()).toEqual({
+      data: {
+        id: 'pre-2',
+        status: 'authorized',
+        checkout_url: null,
+      },
+    })
+    expect(vi.mocked(saasBilling.upsertSaasBillingSubscription)).toHaveBeenLastCalledWith({
+      tenantId: 'tenant-1',
+      plan: 'basic',
+      mercadoPagoPreapprovalId: 'pre-2',
+      payerEmail: 'owner@test.com',
+      externalReference: 'tenant-1:basic',
+      checkoutUrl: null,
+      status: 'authorized',
+      nextPaymentDate: null,
+      metadata: {
+        source: 'plan-page',
+      },
+    })
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      user: { email: 'owner@test.com' },
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(saasBilling.buildSaasExternalReference).mockReturnValueOnce('tenant-1:basic')
+    vi.mocked(saasBilling.buildSaasSubscriptionReason).mockReturnValueOnce('Plano Basic')
+    vi.mocked(saasBilling.getBillingPlanAmount).mockReturnValueOnce(99 as never)
     vi.mocked(mercadoPago.createSaasSubscriptionLink).mockRejectedValueOnce(new Error('boom'))
     expect(
       (
@@ -285,6 +403,24 @@ describe('api billing and mercado pago routes', () => {
         )
       ).status
     ).toBe(500)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      user: { email: 'owner@test.com' },
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(saasBilling.buildSaasExternalReference).mockReturnValueOnce('tenant-1:basic')
+    vi.mocked(saasBilling.buildSaasSubscriptionReason).mockReturnValueOnce('Plano Basic')
+    vi.mocked(saasBilling.getBillingPlanAmount).mockReturnValueOnce(99 as never)
+    vi.mocked(mercadoPago.createSaasSubscriptionLink).mockRejectedValueOnce('boom-string' as never)
+    const postUnknownError = await billingSubscriptionRoute.POST(
+      new Request('https://chefops.test/api/billing/subscription', {
+        method: 'POST',
+        body: JSON.stringify({ plan: 'basic' }),
+      }) as never
+    )
+    expect(postUnknownError.status).toBe(500)
+    expect((await postUnknownError.json()).error).toBe('Erro ao iniciar assinatura.')
   })
 
   it('oauth callback do mercado pago cobre estado inválido, mismatch, sucesso e erro', async () => {

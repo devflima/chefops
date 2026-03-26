@@ -52,7 +52,8 @@ vi.mock('@/components/ui/dialog', () => ({
 }))
 
 vi.mock('@/components/ui/select', () => ({
-  Select: ({ children }: React.PropsWithChildren) => React.createElement('div', { 'data-select': 'true' }, children),
+  Select: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+    React.createElement('div', { 'data-select': 'true', ...props }, children),
   SelectContent: ({ children }: React.PropsWithChildren) => React.createElement('div', null, children),
   SelectGroup: ({ children }: React.PropsWithChildren) => React.createElement('div', null, children),
   SelectItem: ({ children, value }: React.PropsWithChildren<{ value: string }>) => React.createElement('div', { 'data-value': value }, children),
@@ -548,6 +549,7 @@ describe('heavy components smoke', () => {
     const { ManualOrderTabSection } = await import('@/features/orders/ManualOrderTabSection')
     const { ManualOrderSummary } = await import('@/features/orders/ManualOrderSummary')
 
+    const onOrderModeChange = vi.fn()
     const onSelectTab = vi.fn()
     const onNewTabLabelChange = vi.fn()
     const onCreateTab = vi.fn()
@@ -571,7 +573,7 @@ describe('heavy components smoke', () => {
         selectedTabId: '',
         newTabLabel: '',
         creatingTab: false,
-        onOrderModeChange: vi.fn(),
+        onOrderModeChange,
         onTableChange: vi.fn(),
         onSelectTab,
         onNewTabLabelChange,
@@ -617,12 +619,14 @@ describe('heavy components smoke', () => {
 
     expect(getTextContent(contextElements)).toContain('Mesa 10')
     expect(getTextContent(contextElements)).toContain('comanda aberta')
+    contextElements.find((element) => element.props['data-select'] === 'true')?.props.onValueChange('counter')
     customerInputs[0].props.onChange({ target: { value: 'Maria' } })
     customerInputs[1].props.onChange({ target: { value: '(11) 99999-9999' } })
     customerTextarea?.props.onChange({ target: { value: 'Sem cebola' } })
     expect(getTextContent(pickerElements)).toContain('Pizza Margherita')
     pickerButton?.props.onClick()
 
+    expect(onOrderModeChange).toHaveBeenCalledWith('counter')
     expect(onCustomerNameChange).toHaveBeenCalledWith('Maria')
     expect(onCustomerPhoneChange).toHaveBeenCalledWith('(11) 99999-9999')
     expect(onNotesChange).toHaveBeenCalledWith('Sem cebola')
@@ -683,6 +687,61 @@ describe('heavy components smoke', () => {
     expect(onSubmit).toHaveBeenCalledOnce()
   })
 
+  it('renderiza contexto do pedido manual em modo balcão sem blocos extras', async () => {
+    const { ManualOrderContextSection } = await import('@/features/orders/ManualOrderContextSection')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ManualOrderContextSection, {
+        orderMode: 'counter',
+        tables: [] as never,
+        tablesLoading: false,
+        selectedTableId: '',
+        tabs: [] as never,
+        tabsLoading: false,
+        selectedTabId: '',
+        newTabLabel: '',
+        creatingTab: false,
+        onOrderModeChange: vi.fn(),
+        onTableChange: vi.fn(),
+        onSelectTab: vi.fn(),
+        onNewTabLabelChange: vi.fn(),
+        onCreateTab: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Tipo do pedido')
+    expect(markup).toContain('Balcao / caixa')
+    expect(markup).not.toContain('Carregando mesas...')
+    expect(markup).not.toContain('Selecione a mesa')
+    expect(markup).not.toContain('Use uma comanda existente ou crie uma nova sem sair desta tela.')
+  })
+
+  it('renderiza mesa sem comanda aberta no contexto do pedido manual', async () => {
+    const { ManualOrderContextSection } = await import('@/features/orders/ManualOrderContextSection')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ManualOrderContextSection, {
+        orderMode: 'table',
+        tables: [{ id: 'table-1', number: '10', capacity: 4, active_session: null }] as never,
+        tablesLoading: false,
+        selectedTableId: 'table-1',
+        tabs: [] as never,
+        tabsLoading: false,
+        selectedTabId: '',
+        newTabLabel: '',
+        creatingTab: false,
+        onOrderModeChange: vi.fn(),
+        onTableChange: vi.fn(),
+        onSelectTab: vi.fn(),
+        onNewTabLabelChange: vi.fn(),
+        onCreateTab: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Mesa 10')
+    expect(markup).toContain('abrir comanda')
+  })
+
   it('renderiza MenuItemDialog com ficha técnica e extras', async () => {
     const { useForm } = await import('react-hook-form')
     const { MenuItemDialog } = await import('@/features/menu/MenuItemDialog')
@@ -731,6 +790,7 @@ describe('heavy components smoke', () => {
 
     const onOpenChange = vi.fn()
     const onAddIngredient = vi.fn()
+    const onUpdateIngredient = vi.fn()
     const onRemoveIngredient = vi.fn()
     const onSelectedExtrasChange = vi.fn()
     const onSubmit = vi.fn()
@@ -756,7 +816,7 @@ describe('heavy components smoke', () => {
         products: { data: [{ id: 'prod-1', name: 'Queijo', unit: 'kg' }] },
         ingredients: [{ product_id: 'prod-1', quantity: 2 }],
         onAddIngredient,
-        onUpdateIngredient: vi.fn(),
+        onUpdateIngredient,
         onRemoveIngredient,
         allExtras: [{ id: 'extra-1', name: 'Molho', price: 0, category: 'Extras' }],
         selectedExtras: [],
@@ -768,7 +828,16 @@ describe('heavy components smoke', () => {
     const buttons = elements.filter(
       (element) => element.type === 'button' && typeof element.props.onClick === 'function'
     )
+    const ingredientSelect = elements.find(
+      (element) =>
+        element.props['data-select'] === 'true' &&
+        element.props.value === 'prod-1' &&
+        typeof element.props.onValueChange === 'function',
+    )
     const extraCheckbox = elements.find((element) => element.type === 'input' && element.props.type === 'checkbox')
+    const ingredientQuantityInput = elements.find(
+      (element) => element.type === 'input' && element.props.type === 'number' && element.props.step === '0.001',
+    )
     const formElement = elements.find((element) => element.type === 'form')
 
     expect(getTextContent(elements)).toContain('Novo item do cardápio')
@@ -776,14 +845,94 @@ describe('heavy components smoke', () => {
     buttons.find((element) => getTextContent(element).includes('Adicionar insumo'))?.props.onClick()
     buttons.find((element) => getTextContent(element).includes('Cancelar'))?.props.onClick()
     buttons.find((element) => element.props.variant === 'ghost')?.props.onClick()
+    ingredientSelect?.props.onValueChange('prod-2')
+    ingredientQuantityInput?.props.onChange({ target: { value: '3.5' } })
+    ingredientQuantityInput?.props.onChange({ target: { value: '' } })
     extraCheckbox?.props.onChange({ target: { checked: true } })
     await formElement?.props.onSubmit({ preventDefault: vi.fn() })
 
     expect(onAddIngredient).toHaveBeenCalledOnce()
     expect(onOpenChange).toHaveBeenCalledWith(false)
     expect(onRemoveIngredient).toHaveBeenCalledWith(0)
+    expect(onUpdateIngredient).toHaveBeenCalledWith(0, { product_id: 'prod-2' })
+    expect(onUpdateIngredient).toHaveBeenCalledWith(0, { quantity: 3.5 })
+    expect(onUpdateIngredient).toHaveBeenCalledWith(0, { quantity: 0 })
     expect(onSelectedExtrasChange).toHaveBeenCalledOnce()
     expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('cobre MenuItemDialog sem automação, com erro root e update de quantidade/extras', async () => {
+    const { MenuItemDialog } = await import('@/features/menu/MenuItemDialog')
+
+    const onOpenChange = vi.fn()
+    const onUpdateIngredient = vi.fn()
+    const onSelectedExtrasChange = vi.fn()
+
+    const form = {
+      control: {},
+      formState: {
+        isSubmitting: true,
+        errors: {
+          root: { message: 'Erro ao salvar item.' },
+        },
+      },
+      handleSubmit: (callback: (values: Record<string, unknown>) => unknown) => () =>
+        callback({
+          name: 'Pizza',
+          description: 'Especial',
+          price: 42,
+          category_id: 'cat-1',
+          display_order: 4,
+        }),
+    }
+
+    const elements = flattenElements(
+      React.createElement(MenuItemDialog, {
+        open: true,
+        onOpenChange,
+        editing: { id: 'item-1' },
+        form,
+        categories: [{ id: 'cat-1', name: 'Pizzas' }],
+        hasStockAutomation: false,
+        linkedProductId: 'none',
+        onLinkedProductChange: vi.fn(),
+        products: { data: [{ id: 'prod-1', name: 'Queijo', unit: 'kg' }] },
+        ingredients: [{ product_id: 'prod-1', quantity: 2 }],
+        onAddIngredient: vi.fn(),
+        onUpdateIngredient,
+        onRemoveIngredient: vi.fn(),
+        allExtras: [{ id: 'extra-1', name: 'Molho', price: 0, category: 'Extras' }],
+        selectedExtras: ['extra-1'],
+        onSelectedExtrasChange,
+        onSubmit: vi.fn(),
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Editar item')
+    expect(getTextContent(elements)).toContain('Baixa automática de estoque')
+    expect(getTextContent(elements)).toContain('disponível apenas nos planos pagos')
+    expect(getTextContent(elements)).toContain('Erro ao salvar item.')
+    expect(getTextContent(elements)).toContain('Salvando...')
+
+    const extraCheckbox = elements.find((element) => element.type === 'input' && element.props.type === 'checkbox')
+    extraCheckbox?.props.onChange({ target: { checked: false } })
+
+    expect(onSelectedExtrasChange).toHaveBeenCalledOnce()
+    const toggleUpdater = onSelectedExtrasChange.mock.calls[0]?.[0] as (prev: string[]) => string[]
+    expect(toggleUpdater(['extra-1'])).toEqual([])
+
+    const quantityInput = elements.find(
+      (element) => element.type === 'input' && element.props.type === 'number' && element.props.step === '0.01',
+    )
+    quantityInput?.props.onChange({ target: { value: '44' } })
+
+    const cancelButton = elements.find(
+      (element) => element.type === 'button' && getTextContent(element).includes('Cancelar'),
+    )
+    cancelButton?.props.onClick()
+
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onUpdateIngredient).not.toHaveBeenCalled()
   })
 
   it('renderiza OnboardingWizard com progresso e passos', async () => {

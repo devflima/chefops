@@ -10,8 +10,23 @@ const useUpdateNotificationSettingsMock = vi.fn()
 const useDeliverySettingsMock = vi.fn()
 const useUpdateDeliverySettingsMock = vi.fn()
 const searchParamsGetMock = vi.fn()
+let shouldRunEffects = false
 
 let capturedContentProps: Record<string, unknown> | null = null
+
+vi.mock('react', async () => {
+  const actualReact = await vi.importActual<typeof import('react')>('react')
+
+  return {
+    ...actualReact,
+    useEffect: (callback: () => void | (() => void), deps?: React.DependencyList) => {
+      if (shouldRunEffects) {
+        return callback()
+      }
+      return actualReact.useEffect(callback, deps)
+    },
+  }
+})
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => ({
@@ -48,8 +63,9 @@ vi.mock('@/features/payments/IntegrationsPageContent', () => ({
 describe('IntegracoesPage component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    shouldRunEffects = false
     capturedContentProps = null
-    searchParamsGetMock.mockReturnValue('connected')
+    searchParamsGetMock.mockReturnValue('pending')
     useMercadoPagoAccountMock.mockReturnValue({
       data: {
         mercado_pago_user_id: 'seller-1',
@@ -95,27 +111,15 @@ describe('IntegracoesPage component', () => {
   })
 
   afterEach(() => {
-    vi.doUnmock('react')
-    vi.resetModules()
     vi.unstubAllGlobals()
   })
 
   it('encaminha estados e handlers principais da página', async () => {
-    vi.doMock('react', async () => {
-      const actualReact = await vi.importActual<typeof import('react')>('react')
-
-      return {
-        ...actualReact,
-        useEffect: (callback: () => void) => callback(),
-      }
-    })
-
     const { default: IntegracoesPage } = await import('@/app/(dashboard)/integracoes/page')
 
     expect(renderToStaticMarkup(React.createElement(IntegracoesPage))).toContain(
       'Integrations Page Content Mock'
     )
-    expect(alert).toHaveBeenCalledWith('Conta Mercado Pago conectada com sucesso.')
     expect(capturedContentProps).toBeTruthy()
 
     const props = capturedContentProps as {
@@ -184,5 +188,82 @@ describe('IntegracoesPage component', () => {
         whatsapp_order_received: false,
       })
     )
+  })
+
+  it('cobre fallback sem conta conectada e alerta de erro OAuth', async () => {
+    searchParamsGetMock.mockReturnValue('error')
+    useMercadoPagoAccountMock.mockReturnValue({
+      data: null,
+      isLoading: true,
+    })
+    useHasFeatureMock.mockReturnValue(false)
+    useNotificationSettingsMock.mockReturnValue({
+      data: null,
+      isLoading: true,
+    })
+    useDeliverySettingsMock.mockReturnValue({
+      data: null,
+      isLoading: true,
+    })
+
+    shouldRunEffects = true
+
+    const { default: IntegracoesPage } = await import('@/app/(dashboard)/integracoes/page')
+
+    expect(renderToStaticMarkup(React.createElement(IntegracoesPage))).toContain(
+      'Integrations Page Content Mock'
+    )
+    expect(alert).toHaveBeenCalledWith(
+      'Não foi possível concluir a conexão com o Mercado Pago.'
+    )
+    expect(capturedContentProps).toBeTruthy()
+
+    const props = capturedContentProps as {
+      connected: boolean
+      accountLoading: boolean
+      accountData: unknown
+      deliverySettingsLoading: boolean
+      deliverySettingsData: unknown
+      hasWhatsappNotifications: boolean
+      notificationSettingsLoading: boolean
+      notificationSettingsData: unknown
+      whatsappOptions: unknown[]
+    }
+
+    expect(props.connected).toBe(false)
+    expect(props.accountLoading).toBe(true)
+    expect(props.accountData).toBeNull()
+    expect(props.deliverySettingsLoading).toBe(true)
+    expect(props.deliverySettingsData).toBeNull()
+    expect(props.hasWhatsappNotifications).toBe(false)
+    expect(props.notificationSettingsLoading).toBe(true)
+    expect(props.notificationSettingsData).toBeNull()
+    expect(props.whatsappOptions).toEqual([])
+  })
+
+  it('cobre retorno sem alerta quando o parâmetro do Mercado Pago não gera mensagem', async () => {
+    searchParamsGetMock.mockReturnValue('pending')
+    shouldRunEffects = true
+
+    const { default: IntegracoesPage } = await import('@/app/(dashboard)/integracoes/page')
+
+    expect(renderToStaticMarkup(React.createElement(IntegracoesPage))).toContain(
+      'Integrations Page Content Mock'
+    )
+    expect(alert).not.toHaveBeenCalled()
+
+    const props = capturedContentProps as {
+      connected: boolean
+      accountData: { mercado_pago_user_id: string } | null
+      deliveryFeeValue: string
+      hasWhatsappNotifications: boolean
+      whatsappOptions: Array<{ key: string; label: string }>
+    }
+
+    expect(props.connected).toBe(true)
+    expect(props.accountData?.mercado_pago_user_id).toBe('seller-1')
+    expect(props.deliveryFeeValue).toBe('8')
+    expect(props.hasWhatsappNotifications).toBe(true)
+    expect(props.whatsappOptions).toHaveLength(7)
   })
 })

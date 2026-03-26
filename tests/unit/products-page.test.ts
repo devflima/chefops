@@ -44,6 +44,21 @@ describe('products page helpers', () => {
       cost_price: 12.5,
       min_stock: 3,
     })
+
+    expect(
+      getProductFormValues({
+        ...product,
+        sku: null as unknown as string,
+        category_id: null as unknown as string,
+      }),
+    ).toEqual({
+      name: 'Farinha',
+      sku: '',
+      category_id: '',
+      unit: 'kg',
+      cost_price: 12.5,
+      min_stock: 3,
+    })
   })
 
   it('calcula filtros usados pela pagina', () => {
@@ -58,6 +73,7 @@ describe('products page helpers', () => {
     expect(isProductLimitReached(undefined, true)).toBe(false)
     expect(isProductLimitReached({ max_products: 3 }, false)).toBe(true)
     expect(getProductsPlanUsageText(undefined, 1)).toBe('')
+    expect(getProductsPlanUsageText({}, 1)).toBe('')
     expect(getProductsPlanUsageText({ max_products: -1 }, 1)).toBe('')
     expect(getProductsPlanUsageText({ max_products: 10 }, 4)).toBe(' · 4/10 no plano')
   })

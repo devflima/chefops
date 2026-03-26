@@ -40,6 +40,44 @@ describe('misc libs', () => {
     })
   })
 
+  it('recordAdminTenantEvent persiste adminUserId e metadata e propaga erro', async () => {
+    const insertError = new Error('insert failed')
+    const insert = vi
+      .fn()
+      .mockResolvedValueOnce({ error: null })
+      .mockResolvedValueOnce({ error: insertError })
+
+    vi.mocked(createAdminClient).mockReturnValue({
+      from: () => ({
+        insert,
+      }),
+    } as never)
+
+    await recordAdminTenantEvent({
+      tenantId: 'tenant-2',
+      adminUserId: 'admin-1',
+      eventType: 'plan_changed',
+      message: 'Plano alterado',
+      metadata: { from: 'starter', to: 'pro' },
+    })
+
+    expect(insert).toHaveBeenNthCalledWith(1, {
+      tenant_id: 'tenant-2',
+      admin_user_id: 'admin-1',
+      event_type: 'plan_changed',
+      message: 'Plano alterado',
+      metadata: { from: 'starter', to: 'pro' },
+    })
+
+    await expect(
+      recordAdminTenantEvent({
+        tenantId: 'tenant-2',
+        eventType: 'failed',
+        message: 'Falha ao registrar evento',
+      }),
+    ).rejects.toThrow('insert failed')
+  })
+
   it('cn faz merge de classes tailwind', () => {
     expect(cn('p-2', 'p-4', 'font-bold')).toBe('p-4 font-bold')
   })

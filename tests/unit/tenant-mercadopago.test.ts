@@ -103,6 +103,30 @@ describe('tenant mercado pago', () => {
     )
   })
 
+  it('exchange OAuth usa fallback de erro e redirect uri padrão', async () => {
+    delete process.env.MERCADO_PAGO_OAUTH_REDIRECT_URI
+
+    expect(tenantMercadoPago.getMercadoPagoOAuthRedirectUri()).toBe(
+      'https://chefops.test/api/mercado-pago/oauth/callback'
+    )
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'oauth error only' }), { status: 400 })
+    )
+
+    await expect(
+      tenantMercadoPago.refreshMercadoPagoAccessToken('refresh-error')
+    ).rejects.toThrow('oauth error only')
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({}), { status: 500 })
+    )
+
+    await expect(
+      tenantMercadoPago.exchangeMercadoPagoAuthorizationCode('code-no-message')
+    ).rejects.toThrow('Mercado Pago OAuth failed.')
+  })
+
   it('upsertTenantMercadoPagoAccount persiste conta com tokens criptografados', async () => {
     let upsertRow: Record<string, unknown> | undefined
 
@@ -143,11 +167,82 @@ describe('tenant mercado pago', () => {
     })
   })
 
+  it('upsertTenantMercadoPagoAccount usa defaults opcionais', async () => {
+    let upsertRow: Record<string, unknown> | undefined
+
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        tenant_payment_accounts: (state) => {
+          upsertRow = state.rows?.[0] as Record<string, unknown>
+          return { data: null, error: null }
+        },
+      }) as never
+    )
+
+    await tenantMercadoPago.upsertTenantMercadoPagoAccount({
+      tenantId: 'tenant-2',
+      tokens: {
+        access_token: 'access-defaults',
+        refresh_token: 'refresh-defaults',
+        user_id: 456,
+        expires_in: 1800,
+      },
+    })
+
+    expect(upsertRow).toMatchObject({
+      public_key: null,
+      scope: null,
+      live_mode: false,
+    })
+  })
+
+  it('propaga erro ao persistir conta do tenant', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        tenant_payment_accounts: () => ({
+          data: null,
+          error: new Error('upsert failed'),
+        }),
+      }) as never
+    )
+
+    await expect(
+      tenantMercadoPago.upsertTenantMercadoPagoAccount({
+        tenantId: 'tenant-error',
+        tokens: {
+          access_token: 'access',
+          refresh_token: 'refresh',
+          user_id: 123,
+          expires_in: 3600,
+        },
+      })
+    ).rejects.toThrow('upsert failed')
+  })
+
   it('getTenantMercadoPagoAccessToken retorna null para conta ausente ou desconectada', async () => {
     vi.mocked(createAdminClient).mockReturnValue(
       createMockSupabaseClient({
         tenant_payment_accounts: () => ({
           data: null,
+          error: null,
+        }),
+      }) as never
+    )
+
+    await expect(tenantMercadoPago.getTenantMercadoPagoAccessToken('tenant-1')).resolves.toBeNull()
+  })
+
+  it('getTenantMercadoPagoAccessToken retorna null para conta desconectada', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        tenant_payment_accounts: () => ({
+          data: {
+            tenant_id: 'tenant-1',
+            status: 'disconnected',
+            token_expires_at: null,
+            access_token_encrypted: 'enc:access-current',
+            refresh_token_encrypted: 'enc:refresh-current',
+          },
           error: null,
         }),
       }) as never
@@ -188,6 +283,22 @@ describe('tenant mercado pago', () => {
 
     await expect(tenantMercadoPago.getMercadoPagoAccessTokenBySellerUserId('seller-1')).resolves.toBe('fallback-token')
     await expect(tenantMercadoPago.getMercadoPagoAccessTokenBySellerUserId()).resolves.toBe('fallback-token')
+  })
+
+  it('getMercadoPagoAccessTokenBySellerUserId retorna null quando o fallback global não existe', async () => {
+    delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        tenant_payment_accounts: () => ({
+          data: null,
+          error: null,
+        }),
+      }) as never
+    )
+
+    await expect(tenantMercadoPago.getMercadoPagoAccessTokenBySellerUserId()).resolves.toBeNull()
+    await expect(tenantMercadoPago.getMercadoPagoAccessTokenBySellerUserId('seller-1')).resolves.toBeNull()
   })
 
   it('getTenantMercadoPagoAccessToken faz refresh quando o token está perto do vencimento', async () => {
@@ -237,6 +348,53 @@ describe('tenant mercado pago', () => {
     })
   })
 
+  it('getTenantMercadoPagoAccessToken faz refresh quando token_expires_at está ausente', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: 'access-no-expiry',
+          refresh_token: 'refresh-no-expiry',
+          user_id: 123,
+          expires_in: 7200,
+        }),
+        { status: 200 }
+      )
+    )
+
+    const rows: Record<string, unknown>[] = []
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        tenant_payment_accounts: (state) => {
+          if (state.operation === 'select') {
+            return {
+              data: {
+                tenant_id: 'tenant-1',
+                status: 'connected',
+                token_expires_at: null,
+                access_token_encrypted: 'enc:access-old',
+                refresh_token_encrypted: 'enc:refresh-old',
+              },
+              error: null,
+            }
+          }
+
+          rows.push((state.rows?.[0] ?? {}) as Record<string, unknown>)
+          return { data: null, error: null }
+        },
+      }) as never
+    )
+
+    await expect(tenantMercadoPago.getTenantMercadoPagoAccessToken('tenant-1')).resolves.toBe(
+      'access-no-expiry'
+    )
+    expect(decryptSecret).toHaveBeenCalledWith('enc:refresh-old')
+    expect(rows[0]).toMatchObject({
+      tenant_id: 'tenant-1',
+      access_token_encrypted: 'enc:access-no-expiry',
+      refresh_token_encrypted: 'enc:refresh-no-expiry',
+    })
+  })
+
   it('getMercadoPagoAccessTokenBySellerUserId resolve tenant e exchange OAuth trata erro da API', async () => {
     vi.mocked(createAdminClient).mockReturnValue(
       createMockSupabaseClient({
@@ -264,5 +422,63 @@ describe('tenant mercado pago', () => {
     await expect(
       tenantMercadoPago.exchangeMercadoPagoAuthorizationCode('bad-code')
     ).rejects.toThrow('oauth failed')
+  })
+
+  it('getMercadoPagoAccessTokenBySellerUserId usa fallback quando tenant_id vem vazio', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        tenant_payment_accounts: () => ({
+          data: {},
+          error: null,
+        }),
+      }) as never
+    )
+
+    await expect(tenantMercadoPago.getMercadoPagoAccessTokenBySellerUserId(12345)).resolves.toBe(
+      'fallback-token'
+    )
+  })
+
+  it('getMercadoPagoAccessTokenBySellerUserId retorna null quando tenant_id vem vazio e não há fallback global', async () => {
+    delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        tenant_payment_accounts: () => ({
+          data: {},
+          error: null,
+        }),
+      }) as never
+    )
+
+    await expect(tenantMercadoPago.getMercadoPagoAccessTokenBySellerUserId(12345)).resolves.toBeNull()
+  })
+
+  it('propaga erros ao buscar conta por tenant ou seller user id', async () => {
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        tenant_payment_accounts: () => ({
+          data: null,
+          error: new Error('account fetch failed'),
+        }),
+      }) as never
+    )
+
+    await expect(tenantMercadoPago.getTenantMercadoPagoAccount('tenant-1')).rejects.toThrow(
+      'account fetch failed'
+    )
+
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        tenant_payment_accounts: () => ({
+          data: null,
+          error: new Error('seller fetch failed'),
+        }),
+      }) as never
+    )
+
+    await expect(
+      tenantMercadoPago.getMercadoPagoAccessTokenBySellerUserId('seller-error')
+    ).rejects.toThrow('seller fetch failed')
   })
 })

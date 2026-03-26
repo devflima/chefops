@@ -4,6 +4,27 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 const useSearchParamsMock = vi.fn()
 const usePlanMock = vi.fn()
+let reactEffectMode: 'actual' | 'immediate' | 'noop' = 'actual'
+let reactStateImpl: ((initialValue: unknown) => [unknown, ReturnType<typeof vi.fn>]) | null = null
+
+vi.mock('react', async () => {
+  const actualReact = await vi.importActual<typeof import('react')>('react')
+
+  return {
+    ...actualReact,
+    useEffect: (callback: () => void | (() => void), deps?: React.DependencyList) => {
+      if (reactEffectMode === 'immediate') return callback()
+      if (reactEffectMode === 'noop') return undefined
+      return actualReact.useEffect(callback, deps)
+    },
+    useState: (initialValue: unknown) => {
+      if (reactStateImpl) return reactStateImpl(initialValue)
+      return actualReact.useState(initialValue)
+    },
+    useMemo: actualReact.useMemo,
+    useRef: actualReact.useRef,
+  }
+})
 
 vi.mock('lucide-react', () => {
   const Icon = (props: Record<string, unknown>) => React.createElement('svg', props)
@@ -26,7 +47,8 @@ vi.mock('@/features/plans/hooks/usePlan', () => ({
 describe('plans page helpers and components', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    vi.doUnmock('react')
+    reactEffectMode = 'actual'
+    reactStateImpl = null
     vi.resetModules()
   })
 
@@ -73,6 +95,19 @@ describe('plans page helpers and components', () => {
       buttonLabel: 'Redirecionando...',
       disabled: true,
     })
+
+    expect(
+      plansPage.getPlanCardState({
+        plan: 'free',
+        currentPlan: 'basic',
+        currentSubscription: null,
+        loadingPlan: null,
+      })
+    ).toMatchObject({
+      badge: null,
+      buttonLabel: 'Usar Basic',
+      disabled: false,
+    })
   })
 
   it('monta resumos de assinatura, cancelamento e agendamento', async () => {
@@ -93,6 +128,14 @@ describe('plans page helpers and components', () => {
     expect(plansPage.getPlanPriceLabel('free')).toBe('Grátis')
     expect(plansPage.getPlanPriceLabel('basic')).toBe('R$ 89/mês')
     expect(plansPage.isPaidSubscriptionActive(subscription)).toBe(true)
+    expect(plansPage.formatPlanDate(null)).toBeNull()
+    expect(
+      plansPage.getSubscriptionSummary({
+        status: 'pending',
+        plan: 'basic',
+        next_payment_date: null,
+      })
+    ).toBe('Assinatura atual: Standard · status pending')
   })
 
   it('renderiza resumo, card e painel de ajuda', async () => {
@@ -142,6 +185,50 @@ describe('plans page helpers and components', () => {
     })
 
     const helpMarkup = renderToStaticMarkup(React.createElement(PlanHelpPanel))
+    const summaryWithoutSubscriptionMarkup = renderToStaticMarkup(
+      React.createElement(PlanSubscriptionSummary, {
+        currentPlan: 'free',
+        currentSubscription: null,
+      })
+    )
+    const summaryWithoutCurrentPlanMarkup = renderToStaticMarkup(
+      React.createElement(PlanSubscriptionSummary, {
+        currentPlan: null as never,
+        currentSubscription: null,
+      })
+    )
+    const summaryWithoutNextPaymentMarkup = renderToStaticMarkup(
+      React.createElement(PlanSubscriptionSummary, {
+        currentPlan: 'basic',
+        currentSubscription: {
+          status: 'pending',
+          plan: 'basic',
+          next_payment_date: null,
+        },
+      })
+    )
+    const summaryWithCancellationOnlyMarkup = renderToStaticMarkup(
+      React.createElement(PlanSubscriptionSummary, {
+        currentPlan: 'basic',
+        currentSubscription: {
+          status: 'authorized',
+          plan: 'basic',
+          next_payment_date: '2026-04-21T00:00:00.000Z',
+          cancel_at_period_end: true,
+        },
+      })
+    )
+    const summaryWithScheduledOnlyMarkup = renderToStaticMarkup(
+      React.createElement(PlanSubscriptionSummary, {
+        currentPlan: 'basic',
+        currentSubscription: {
+          status: 'authorized',
+          plan: 'basic',
+          next_payment_date: '2026-04-21T00:00:00.000Z',
+          scheduled_plan: 'pro',
+        },
+      })
+    )
 
     expect(summaryMarkup).toContain('Seu plano atual:')
     expect(summaryMarkup).toContain('Assinatura atual:')
@@ -153,6 +240,15 @@ describe('plans page helpers and components', () => {
     expect(renderToStaticMarkup(freeCardTree)).toContain('Plano atual')
     expect(helpMarkup).toContain('Precisa de ajuda para escolher?')
     expect(helpMarkup).toContain('suporte@chefops.com.br')
+    expect(summaryWithoutSubscriptionMarkup).toContain('Seu plano atual:')
+    expect(summaryWithoutSubscriptionMarkup).not.toContain('Assinatura atual:')
+    expect(summaryWithoutCurrentPlanMarkup).toContain('Basic')
+    expect(summaryWithoutNextPaymentMarkup).toContain('Assinatura atual:')
+    expect(summaryWithoutNextPaymentMarkup).not.toContain('próxima cobrança em')
+    expect(summaryWithCancellationOnlyMarkup).toContain('Renovação cancelada')
+    expect(summaryWithCancellationOnlyMarkup).not.toContain('Mudança programada para')
+    expect(summaryWithScheduledOnlyMarkup).toContain('Mudança programada para Premium')
+    expect(summaryWithScheduledOnlyMarkup).not.toContain('Renovação cancelada')
 
     const cardButtons = renderToStaticMarkup(freeCardTree)
     expect(cardButtons).toContain('Plano atual')
@@ -223,6 +319,34 @@ describe('plans page helpers and components', () => {
       },
       message: 'Mudança programada com sucesso. O plano Premium entra na próxima renovação.',
     })
+
+    const missingCheckoutFetch = vi.fn(async () =>
+      new Response(JSON.stringify({ data: {} }))
+    )
+    await expect(plansPage.createPlanSubscription('basic', missingCheckoutFetch)).rejects.toThrow(
+      'O Mercado Pago não retornou um link de assinatura.'
+    )
+
+    const subscribeErrorFetch = vi.fn(async () =>
+      new Response(JSON.stringify({ error: 'Falha ao criar assinatura.' }), { status: 500 })
+    )
+    await expect(plansPage.createPlanSubscription('basic', subscribeErrorFetch)).rejects.toThrow(
+      'Falha ao criar assinatura.'
+    )
+
+    const cancelErrorFetch = vi.fn(async () =>
+      new Response(JSON.stringify({ error: 'Falha ao cancelar assinatura.' }), { status: 500 })
+    )
+    await expect(plansPage.cancelPlanSubscription(cancelErrorFetch)).rejects.toThrow(
+      'Falha ao cancelar assinatura.'
+    )
+
+    const scheduleErrorFetch = vi.fn(async () =>
+      new Response(JSON.stringify({ error: 'Falha ao programar troca.' }), { status: 500 })
+    )
+    await expect(plansPage.schedulePlanSubscriptionChange('basic', scheduleErrorFetch)).rejects.toThrow(
+      'Falha ao programar troca.'
+    )
   })
 
   it('renderiza página de planos com retorno do billing e assinatura ativa', async () => {
@@ -253,39 +377,34 @@ describe('plans page helpers and components', () => {
       value: alertMock,
       configurable: true,
     })
-
-    vi.doMock('react', async () => {
-      const actualReact = await vi.importActual<typeof import('react')>('react')
-      let stateCall = 0
-
-      return {
-        ...actualReact,
-        useEffect: (callback: () => void | (() => void)) => {
-          callback()
-        },
-        useState: (initialValue: unknown) => {
-          stateCall += 1
-
-          if (stateCall === 1) {
-            return [null, vi.fn()]
-          }
-
-          if (stateCall === 2) {
-            return [
-              {
-                status: 'authorized',
-                plan: 'basic',
-                next_payment_date: '2026-04-21T00:00:00.000Z',
-                cancel_at_period_end: false,
-              },
-              vi.fn(),
-            ]
-          }
-
-          return [initialValue, vi.fn()]
-        },
-      }
+    Object.defineProperty(globalThis, 'window', {
+      value: { location: { href: '' } },
+      configurable: true,
     })
+
+    reactEffectMode = 'immediate'
+    let stateCall = 0
+    reactStateImpl = (initialValue: unknown) => {
+      stateCall += 1
+
+      if (stateCall === 1) {
+        return [null, vi.fn()]
+      }
+
+      if (stateCall === 2) {
+        return [
+          {
+            status: 'authorized',
+            plan: 'basic',
+            next_payment_date: '2026-04-21T00:00:00.000Z',
+            cancel_at_period_end: false,
+          },
+          vi.fn(),
+        ]
+      }
+
+      return [initialValue, vi.fn()]
+    }
 
     const { default: PlanosPage } = await import('@/app/(dashboard)/planos/page')
     const markup = renderToStaticMarkup(React.createElement(PlanosPage))
@@ -294,6 +413,283 @@ describe('plans page helpers and components', () => {
     expect(markup).toContain('Seu plano atual:')
     expect(markup).toContain('Standard')
     expect(markup).toContain('Plano atual')
+  })
+
+  it('tolera erro ao carregar assinatura inicial e alerta no downgrade para free', async () => {
+    const alertMock = vi.fn()
+    const fetchMock = vi.fn(async () => {
+      throw new Error('billing offline')
+    })
+
+    useSearchParamsMock.mockReturnValue({
+      get: vi.fn(() => null),
+    })
+    usePlanMock.mockReturnValue({
+      data: { plan: 'basic' },
+    })
+
+    Object.defineProperty(globalThis, 'fetch', {
+      value: fetchMock,
+      configurable: true,
+    })
+    Object.defineProperty(globalThis, 'alert', {
+      value: alertMock,
+      configurable: true,
+    })
+
+    let capturedProps: {
+      onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void
+    } | null = null
+
+    reactEffectMode = 'immediate'
+
+    vi.doMock('@/features/plans/components/PlanosPageContent', () => ({
+      PlanosPageContent: (props: { onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void }) => {
+        capturedProps = props
+        return React.createElement('div', null, 'Planos mock')
+      },
+    }))
+
+    const { default: PlanosPage } = await import('@/app/(dashboard)/planos/page')
+    const markup = renderToStaticMarkup(React.createElement(PlanosPage))
+
+    expect(markup).toContain('Planos mock')
     expect(fetchMock).toHaveBeenCalledWith('/api/billing/subscription')
+
+    capturedProps?.onSelectPlan('free')
+
+    expect(alertMock).toHaveBeenCalledWith(
+      'Downgrade para o plano Basic será tratado manualmente neste primeiro momento.'
+    )
+  })
+
+  it('programa troca de plano quando a assinatura paga já está ativa', async () => {
+    const alertMock = vi.fn()
+    const schedulePlanSubscriptionChangeMock = vi.fn(async () => ({
+      subscription: {
+        status: 'authorized',
+        plan: 'basic' as const,
+        next_payment_date: '2026-04-21T00:00:00.000Z',
+        scheduled_plan: 'pro' as const,
+      },
+      message: 'Mudança programada com sucesso. O plano Premium entra na próxima renovação.',
+    }))
+    const createPlanSubscriptionMock = vi.fn()
+
+    useSearchParamsMock.mockReturnValue({
+      get: vi.fn(() => null),
+    })
+    usePlanMock.mockReturnValue({
+      data: { plan: 'basic' },
+    })
+
+    Object.defineProperty(globalThis, 'alert', {
+      value: alertMock,
+      configurable: true,
+    })
+
+    let capturedProps: {
+      onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void
+    } | null = null
+
+    reactEffectMode = 'noop'
+    let stateCall = 0
+    reactStateImpl = (initialValue: unknown) => {
+      stateCall += 1
+
+      if (stateCall === 1) {
+        return [null, vi.fn()]
+      }
+
+      if (stateCall === 2) {
+        return [
+          {
+            status: 'authorized',
+            plan: 'basic',
+            next_payment_date: '2026-04-21T00:00:00.000Z',
+            cancel_at_period_end: false,
+          },
+          vi.fn(),
+        ]
+      }
+
+      return [initialValue, vi.fn()]
+    }
+
+    vi.doMock('@/features/plans/components/PlanosPageContent', () => ({
+      PlanosPageContent: (props: { onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void }) => {
+        capturedProps = props
+        return React.createElement('div', null, 'Planos mock')
+      },
+    }))
+
+    vi.doMock('@/features/plans/plans-page', async () => {
+      const actual = await vi.importActual<typeof import('@/features/plans/plans-page')>(
+        '@/features/plans/plans-page'
+      )
+      return {
+        ...actual,
+        schedulePlanSubscriptionChange: schedulePlanSubscriptionChangeMock,
+        createPlanSubscription: createPlanSubscriptionMock,
+      }
+    })
+
+    const { default: PlanosPage } = await import('@/app/(dashboard)/planos/page')
+    renderToStaticMarkup(React.createElement(PlanosPage))
+
+    await capturedProps?.onSelectPlan('pro')
+
+    expect(schedulePlanSubscriptionChangeMock).toHaveBeenCalledWith('pro')
+    expect(createPlanSubscriptionMock).not.toHaveBeenCalled()
+    expect(alertMock).toHaveBeenCalledWith(
+      'Mudança programada com sucesso. O plano Premium entra na próxima renovação.'
+    )
+  })
+
+  it('usa fallback de erro ao iniciar assinatura e aceita billing sem data', async () => {
+    const alertMock = vi.fn()
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({})))
+    const createPlanSubscriptionMock = vi.fn(async () => {
+      throw 'checkout unavailable'
+    })
+
+    useSearchParamsMock.mockReturnValue({
+      get: vi.fn(() => null),
+    })
+    usePlanMock.mockReturnValue({
+      data: { plan: 'free' },
+    })
+
+    Object.defineProperty(globalThis, 'fetch', {
+      value: fetchMock,
+      configurable: true,
+    })
+    Object.defineProperty(globalThis, 'alert', {
+      value: alertMock,
+      configurable: true,
+    })
+
+    let capturedProps: {
+      onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void
+    } | null = null
+
+    reactEffectMode = 'immediate'
+
+    vi.doMock('@/features/plans/components/PlanosPageContent', () => ({
+      PlanosPageContent: (props: { onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void }) => {
+        capturedProps = props
+        return React.createElement('div', null, 'Planos mock')
+      },
+    }))
+
+    vi.doMock('@/features/plans/plans-page', async () => {
+      const actual = await vi.importActual<typeof import('@/features/plans/plans-page')>(
+        '@/features/plans/plans-page'
+      )
+      return {
+        ...actual,
+        createPlanSubscription: createPlanSubscriptionMock,
+      }
+    })
+
+    const { default: PlanosPage } = await import('@/app/(dashboard)/planos/page')
+    renderToStaticMarkup(React.createElement(PlanosPage))
+
+    capturedProps?.onSelectPlan('pro')
+    await Promise.resolve()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/billing/subscription')
+    expect(createPlanSubscriptionMock).toHaveBeenCalledWith('pro')
+    expect(alertMock).toHaveBeenCalledWith('Erro ao iniciar assinatura.')
+  })
+
+  it('usa fallbacks de erro ao cancelar e programar troca', async () => {
+    const alertMock = vi.fn()
+    const confirmMock = vi.fn(() => true)
+    const cancelPlanSubscriptionMock = vi.fn(async () => {
+      throw 'cancel failed'
+    })
+    const schedulePlanSubscriptionChangeMock = vi.fn(async () => {
+      throw 'schedule failed'
+    })
+
+    useSearchParamsMock.mockReturnValue({
+      get: vi.fn(() => null),
+    })
+    usePlanMock.mockReturnValue({
+      data: { plan: 'basic' },
+    })
+
+    Object.defineProperty(globalThis, 'alert', {
+      value: alertMock,
+      configurable: true,
+    })
+    Object.defineProperty(globalThis, 'window', {
+      value: { confirm: confirmMock },
+      configurable: true,
+    })
+
+    let capturedProps: {
+      onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void
+      onCancelSubscription: () => Promise<void>
+    } | null = null
+
+    reactEffectMode = 'noop'
+    let stateCall = 0
+    reactStateImpl = (initialValue: unknown) => {
+      stateCall += 1
+
+      if (stateCall === 1) {
+        return [null, vi.fn()]
+      }
+
+      if (stateCall === 2) {
+        return [
+          {
+            status: 'authorized',
+            plan: 'basic',
+            next_payment_date: '2026-04-21T00:00:00.000Z',
+            cancel_at_period_end: false,
+          },
+          vi.fn(),
+        ]
+      }
+
+      return [initialValue, vi.fn()]
+    }
+
+    vi.doMock('@/features/plans/components/PlanosPageContent', () => ({
+      PlanosPageContent: (props: {
+        onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void
+        onCancelSubscription: () => Promise<void>
+      }) => {
+        capturedProps = props
+        return React.createElement('div', null, 'Planos mock')
+      },
+    }))
+
+    vi.doMock('@/features/plans/plans-page', async () => {
+      const actual = await vi.importActual<typeof import('@/features/plans/plans-page')>(
+        '@/features/plans/plans-page'
+      )
+      return {
+        ...actual,
+        cancelPlanSubscription: cancelPlanSubscriptionMock,
+        schedulePlanSubscriptionChange: schedulePlanSubscriptionChangeMock,
+      }
+    })
+
+    const { default: PlanosPage } = await import('@/app/(dashboard)/planos/page')
+    renderToStaticMarkup(React.createElement(PlanosPage))
+
+    await capturedProps?.onCancelSubscription()
+    capturedProps?.onSelectPlan('pro')
+    await Promise.resolve()
+
+    expect(confirmMock).toHaveBeenCalledTimes(1)
+    expect(cancelPlanSubscriptionMock).toHaveBeenCalledTimes(1)
+    expect(schedulePlanSubscriptionChangeMock).toHaveBeenCalledWith('pro')
+    expect(alertMock).toHaveBeenCalledWith('Erro ao cancelar assinatura.')
+    expect(alertMock).toHaveBeenCalledWith('Erro ao programar troca de plano.')
   })
 })

@@ -105,6 +105,10 @@ describe('public menu helpers', () => {
     expect(formatCPF('12345678909')).toBe('123.456.789-09')
     expect(formatCEP('12345678')).toBe('12345-678')
     expect(validateCPF('123.456.789-09')).toBe(true)
+    expect(validateCPF('00000003700')).toBe(true)
+    expect(validateCPF('00000000604')).toBe(true)
+    expect(validateCPF('123.456.789-00')).toBe(false)
+    expect(validateCPF('00000003710')).toBe(false)
     expect(validateCPF('111.111.111-11')).toBe(false)
     expect(getPhoneChangeState('11999999999')).toEqual({
       phone: '(11) 99999-9999',
@@ -165,6 +169,24 @@ describe('public menu helpers', () => {
       orderTotal: 78,
       cartCount: 2,
     })
+
+    expect(getCartTotals(
+      [
+        {
+          menu_item_id: 'item-2',
+          name: 'Suco',
+          price: 8,
+          quantity: 1,
+        },
+      ] as never,
+      null,
+      { delivery_enabled: true, flat_fee: null as never },
+    )).toEqual({
+      cartTotal: 8,
+      deliveryFee: 0,
+      orderTotal: 8,
+      cartCount: 1,
+    })
   })
 
   it('valida dados do cliente, endereco, steps e normalizacao de joins', () => {
@@ -189,6 +211,7 @@ describe('public menu helpers', () => {
       delivery_enabled: true,
       flat_fee: 8,
     })
+    expect(normalizeTenantDeliverySettings(null)).toBeNull()
 
     expect(normalizePublicMenuItems([
       {
@@ -207,6 +230,154 @@ describe('public menu helpers', () => {
       {
         category: { id: 'cat-1', name: 'Pizzas' },
         extras: [{ extra: { id: 'extra-1', name: 'Catupiry' } }],
+      },
+    ])
+
+    expect(normalizePublicMenuItems([
+      {
+        id: 'item-2',
+        tenant_id: 'tenant-1',
+        category_id: null,
+        name: 'Suco',
+        description: null,
+        price: 8,
+        available: true,
+        display_order: 2,
+        category: undefined,
+        extras: [{ extra: null }, { extra: undefined }],
+      },
+    ] as never)).toMatchObject([
+      {
+        category: null,
+        extras: [],
+      },
+    ])
+  })
+
+  it('cobre fallbacks e ramos simples restantes dos helpers públicos', () => {
+    const plainItem = {
+      id: 'item-1',
+      tenant_id: 'tenant-1',
+      category_id: null,
+      name: 'Suco',
+      description: null,
+      price: 8,
+      available: true,
+      display_order: 1,
+      category: null,
+      extras: [],
+    } as const
+
+    expect(createCartItem(plainItem)).toEqual({
+      menu_item_id: 'item-1',
+      name: 'Suco',
+      price: 8,
+      quantity: 1,
+      extras: [],
+      half_flavor: undefined,
+    })
+
+    expect(decrementCartItem([], 0)).toEqual([])
+    expect(filterGroupsByCategory(groupMenuItems([plainItem as never]), null)).toHaveLength(1)
+    expect(getCartTotals([{ menu_item_id: 'item-1', name: 'Suco', price: 8, quantity: 1 }], { id: 'table-1', number: '10' }, {
+      delivery_enabled: true,
+      flat_fee: 12,
+    })).toEqual({
+      cartTotal: 8,
+      deliveryFee: 0,
+      orderTotal: 8,
+      cartCount: 1,
+    })
+    expect(getBorders(plainItem as never)).toEqual([])
+
+    expect(validateCustomerInfo('Maria', '(11) 99999-9999', '', null)).toEqual({})
+    expect(validateCustomerAddress({
+      zip_code: '12345-678',
+      street: 'Rua A',
+      number: '10',
+      city: 'Sao Paulo',
+    })).toEqual({})
+
+    expect(getPublicOrderHeadline({
+      id: 'order-1',
+      order_number: 42,
+      status: 'ready',
+      payment_status: 'pending',
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    }, [{ key: 'pending', label: 'Recebido' }] as never)).toBe('andamento')
+    expect(getCustomerBannerState(true, null, false)).toBeNull()
+    expect(getAddressSubmitLabel('delivery', true)).toBe('Processando...')
+    expect(shouldShowDeliveryStep(null)).toBe(false)
+    expect(isDeliveryStepCompleted({
+      id: 'order-1',
+      order_number: 42,
+      status: 'ready',
+      payment_status: 'paid',
+      payment_method: 'delivery',
+      delivery_status: 'delivered',
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })).toBe(true)
+    expect(getDeliveryStepMessage({
+      id: 'order-1',
+      order_number: 42,
+      status: 'ready',
+      payment_status: 'paid',
+      payment_method: 'delivery',
+      delivery_status: 'out_for_delivery',
+      delivery_driver: null,
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })).toBe('Seu pedido saiu para entrega.')
+
+    expect(normalizeTenantDeliverySettings({
+      delivery_enabled: false,
+      flat_fee: 0,
+    })).toEqual({
+      delivery_enabled: false,
+      flat_fee: 0,
+    })
+    expect(normalizeTenantDeliverySettings(undefined as never)).toBeNull()
+
+    expect(normalizePublicMenuItems([
+      {
+        ...plainItem,
+        category: { id: 'cat-1', name: 'Bebidas' },
+        extras: [{ extra: { id: 'extra-1', name: 'Gelo', price: 0, category: 'addon' } }],
+      },
+    ] as never)).toMatchObject([
+      {
+        category: { id: 'cat-1', name: 'Bebidas' },
+        extras: [{ extra: { id: 'extra-1', name: 'Gelo', price: 0, category: 'addon' } }],
+      },
+    ])
+
+    expect(normalizeTenantDeliverySettings([] as never)).toBeNull()
+
+    expect(normalizePublicMenuItems([
+      {
+        ...plainItem,
+        category: [],
+        extras: [{ extra: [] }],
+      },
+    ] as never)).toMatchObject([
+      {
+        category: null,
+        extras: [],
+      },
+    ])
+
+    expect(normalizePublicMenuItems([
+      {
+        ...plainItem,
+        category: { id: 'cat-2', name: 'Doces' },
+        extras: undefined,
+      },
+    ] as never)).toMatchObject([
+      {
+        category: { id: 'cat-2', name: 'Doces' },
+        extras: [],
       },
     ])
   })
@@ -242,7 +413,15 @@ describe('public menu helpers', () => {
     })
 
     expect(incrementCartItem([cartItem], 0)[0].quantity).toBe(2)
+    expect(incrementCartItem([cartItem], 1)).toEqual([cartItem])
     expect(decrementCartItem([{ ...cartItem, quantity: 2 }], 0)[0].quantity).toBe(1)
+    expect(decrementCartItem([
+      { ...cartItem, quantity: 2 },
+      { ...cartItem, menu_item_id: 'item-4', quantity: 3 },
+    ], 0)).toMatchObject([
+      { menu_item_id: 'item-1', quantity: 1 },
+      { menu_item_id: 'item-4', quantity: 3 },
+    ])
     expect(decrementCartItem([cartItem], 0)).toEqual([])
     expect(removeCartItem([cartItem, { ...cartItem, menu_item_id: 'item-3' }], 0)).toHaveLength(1)
 
@@ -252,6 +431,7 @@ describe('public menu helpers', () => {
       order_number: 42,
     })
     expect(parseStoredActiveOrder('{"id":"order-1"}')).toBeNull()
+    expect(parseStoredActiveOrder('{"id":"order-1","order_number":"42"}')).toBeNull()
     expect(parseStoredActiveOrder('{invalid')).toBeNull()
     expect(parseStoredActiveOrder(null)).toBeNull()
     expect(shouldPersistActiveOrder('pending')).toBe(true)
@@ -282,6 +462,16 @@ describe('public menu helpers', () => {
       id: 'order-1',
       order_number: 42,
       status: 'confirmed',
+      payment_status: 'paid',
+      payment_method: 'online',
+    })
+    expect(createPublicOrderStatusFromCheckout({
+      created_order_id: 'order-2',
+      order_number: 43,
+    })).toMatchObject({
+      id: 'order-2',
+      order_number: 43,
+      status: 'pending',
       payment_status: 'paid',
       payment_method: 'online',
     })
@@ -388,6 +578,8 @@ describe('public menu helpers', () => {
     expect(getCancelOrderErrorMessage(new Error('cancel error'))).toBe('cancel error')
     expect(getCancelOrderErrorMessage(null)).toBe('Erro ao cancelar pedido.')
     expect(shouldShowCancelOrderButton('pending')).toBe(true)
+    expect(shouldShowCancelOrderButton('confirmed')).toBe(true)
+    expect(shouldShowCancelOrderButton(undefined)).toBe(false)
     expect(shouldShowCancelOrderButton('ready')).toBe(false)
     expect(shouldShowDeliveryStep(publicOrderStatus)).toBe(true)
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
@@ -424,6 +616,7 @@ describe('public menu helpers', () => {
 
     expect(getContinueFlowTarget('online', { id: 'table-1', number: '10' })).toBe('online-checkout')
     expect(getContinueFlowTarget('counter', null)).toBe('address')
+    expect(getContinueFlowTarget('counter', { id: 'table-1', number: '10' })).toBe('place-order')
     expect(getAddressFlowTarget('online')).toBe('online-checkout')
     expect(getAddressFlowTarget('delivery')).toBe('place-order')
 
@@ -455,6 +648,23 @@ describe('public menu helpers', () => {
       delivery_fee: 8,
     })
 
+    expect(buildPublicCheckoutPayload({
+      tenantId: 'tenant-1',
+      tenantSlug: 'chefops',
+      customerName: 'Maria',
+      phone: '',
+      customerCpf: '',
+      tableInfo: null,
+      notes: '',
+      deliveryFee: 0,
+      items: cart,
+    })).toMatchObject({
+      customer_phone: undefined,
+      customer_cpf: undefined,
+      notes: undefined,
+      table_number: undefined,
+    })
+
     expect(buildPublicOrderPayload({
       tenantId: 'tenant-1',
       customerName: 'Maria',
@@ -475,6 +685,23 @@ describe('public menu helpers', () => {
       delivery_address: undefined,
     })
 
+    expect(buildPublicOrderPayload({
+      tenantId: 'tenant-1',
+      customerName: 'Maria',
+      customerCpf: '',
+      phone: '',
+      tableInfo: { id: 'table-1', number: '10' },
+      paymentMethod: 'table',
+      notes: '',
+      deliveryFee: 0,
+      items: cart,
+    })).toMatchObject({
+      customer_phone: undefined,
+      table_number: '10',
+      payment_method: 'table',
+      notes: undefined,
+    })
+
     expect(resolvePublicCheckoutUrl({ checkout_url: 'https://checkout.test' })).toBe('https://checkout.test')
     expect(resolvePublicCheckoutUrl({ sandbox_init_point: 'https://sandbox.test' })).toBe('https://sandbox.test')
     expect(resolvePublicCheckoutUrl({ init_point: 'https://init.test' })).toBe('https://init.test')
@@ -485,8 +712,18 @@ describe('public menu helpers', () => {
       { ...item, id: 'item-2', name: 'Calabresa' },
       { ...item, id: 'item-3', category: { id: 'cat-2', name: 'Massas' } },
     ], item)).toMatchObject([{ id: 'item-2', name: 'Calabresa' }])
+    expect(getHalfFlavorOptions([
+      item,
+      { ...item, id: 'item-4', category: null },
+    ], item)).toEqual([])
 
     expect(getCartItemLineTotal(cart[0])).toBe(70)
+    expect(getCartItemLineTotal({
+      menu_item_id: 'item-9',
+      name: 'Água',
+      price: 4,
+      quantity: 2,
+    })).toBe(8)
     expect(getCustomerBannerState(true, { id: 'customer-1' }, false)).toBe('existing')
     expect(getCustomerBannerState(true, null, true)).toBe('new')
     expect(getCustomerBannerState(false, null, true)).toBeNull()
@@ -639,4 +876,181 @@ describe('public menu smoke', () => {
     expect(markup).toContain('Pizza')
     expect(markup).toContain('Mesa 10')
   }, 15000)
+
+  it('usa a primeira mesa quando o join do qrcode retorna array', async () => {
+    supabaseFromMock.mockImplementation((table: string) => {
+      if (table === 'tenants') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'tenant-1',
+              name: 'ChefOps House',
+              slug: 'chefops-house',
+              plan: 'pro',
+              tenant_delivery_settings: [{ delivery_enabled: true, flat_fee: 8 }],
+            },
+          }),
+        }
+      }
+
+      if (table === 'menu_items') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn()
+            .mockReturnThis()
+            .mockImplementationOnce(function () { return this })
+            .mockResolvedValueOnce({ data: [] }),
+        }
+      }
+
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { table_id: 'table-1', table: [{ id: 'table-1', number: '12' }] },
+        }),
+      }
+    })
+
+    const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+    const element = await MenuPage({
+      params: Promise.resolve({ slug: 'chefops-house' }),
+      searchParams: Promise.resolve({ table: 'table-token' }),
+    })
+
+    const markup = renderToStaticMarkup(element)
+    expect(markup).toContain('Mesa 12')
+  })
+
+  it('renderiza sem itens quando o select do cardapio retorna null', async () => {
+    supabaseFromMock.mockImplementation((table: string) => {
+      if (table === 'tenants') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'tenant-1',
+              name: 'ChefOps House',
+              slug: 'chefops-house',
+              plan: 'pro',
+              tenant_delivery_settings: [{ delivery_enabled: true, flat_fee: 8 }],
+            },
+          }),
+        }
+      }
+
+      if (table === 'menu_items') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn()
+            .mockReturnThis()
+            .mockImplementationOnce(function () { return this })
+            .mockResolvedValueOnce({ data: null }),
+        }
+      }
+
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+
+    const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+    const element = await MenuPage({
+      params: Promise.resolve({ slug: 'chefops-house' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    const markup = renderToStaticMarkup(element)
+    expect(markup).toContain('ChefOps House')
+    expect(markup).not.toContain('Pizza')
+    expect(markup).not.toContain('Mesa ')
+  })
+
+  it('ignora mesa quando o qrcode existe mas o join vem sem table', async () => {
+    supabaseFromMock.mockImplementation((table: string) => {
+      if (table === 'tenants') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'tenant-1',
+              name: 'ChefOps House',
+              slug: 'chefops-house',
+              plan: 'pro',
+              tenant_delivery_settings: [{ delivery_enabled: true, flat_fee: 8 }],
+            },
+          }),
+        }
+      }
+
+      if (table === 'menu_items') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn()
+            .mockReturnThis()
+            .mockImplementationOnce(function () { return this })
+            .mockResolvedValueOnce({ data: [] }),
+        }
+      }
+
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { table_id: 'table-1', table: null },
+        }),
+      }
+    })
+
+    const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+    const element = await MenuPage({
+      params: Promise.resolve({ slug: 'chefops-house' }),
+      searchParams: Promise.resolve({ table: 'table-token' }),
+    })
+
+    const markup = renderToStaticMarkup(element)
+    expect(markup).toContain('ChefOps House')
+    expect(markup).not.toContain('Mesa ')
+  })
+
+  it('aciona notFound quando o tenant publico nao existe', async () => {
+    supabaseFromMock.mockImplementation((table: string) => {
+      if (table === 'tenants') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null }),
+        }
+      }
+
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+
+    const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+    await expect(
+      MenuPage({
+        params: Promise.resolve({ slug: 'missing-tenant' }),
+        searchParams: Promise.resolve({}),
+      })
+    ).rejects.toThrow('not-found')
+
+    expect(notFoundMock).toHaveBeenCalledTimes(1)
+  })
 })

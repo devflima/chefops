@@ -32,12 +32,25 @@ describe('dashboard menu page helpers', () => {
   it('filtra, pagina e resume itens do cardapio', () => {
     expect(filterMenuItems(items, 'available', 'all').map((item) => item.id)).toEqual(['1', '3'])
     expect(filterMenuItems(items, 'inactive', 'cat-2').map((item) => item.id)).toEqual(['2'])
+    expect(filterMenuItems(items, 'all', 'cat-1').map((item) => item.id)).toEqual(['1', '3'])
     expect(paginateMenuItems(items, 2, 2).map((item) => item.id)).toEqual(['3'])
     expect(buildMenuPageSummary(items, { resource_limits: { menu_items: 10 } } as never)).toEqual({
       availableCount: 2,
       inactiveCount: 1,
       menuItemCount: 3,
       limitLabel: '3/10 no plano',
+    })
+    expect(buildMenuPageSummary(items, { resource_limits: { menu_items: -1 } } as never)).toEqual({
+      availableCount: 2,
+      inactiveCount: 1,
+      menuItemCount: 3,
+      limitLabel: '',
+    })
+    expect(buildMenuPageSummary(undefined, null)).toEqual({
+      availableCount: 0,
+      inactiveCount: 0,
+      menuItemCount: 0,
+      limitLabel: '0/undefined no plano',
     })
   })
 
@@ -59,6 +72,12 @@ describe('dashboard menu page helpers', () => {
       { name: 'Pizza', description: 'Grande', price: 30, category_id: 'cat-1', display_order: 1 },
       false,
       'prod-1',
+    )).toMatchObject({ product_id: null })
+
+    expect(buildMenuItemPayload(
+      { name: 'Pizza', description: 'Grande', price: 30, category_id: 'cat-1', display_order: 1 },
+      true,
+      'none',
     )).toMatchObject({ product_id: null })
 
     expect(getNormalizedIngredients([
@@ -148,6 +167,41 @@ describe('dashboard menu page helpers', () => {
         price: 12,
         category_id: '',
         display_order: 1,
+      },
+      selectedExtras: [],
+      ingredients: [],
+      linkedProductId: 'none',
+    })
+
+    expect(getMenuEditState({
+      item: {
+        id: 'item-3',
+        name: 'Agua',
+        description: null,
+        price: 5,
+        category_id: null,
+        display_order: 4,
+        product_id: null,
+      } as never,
+      selectedExtras: undefined,
+      ingredients: null,
+      hasStockAutomation: true,
+    })).toEqual({
+      editing: {
+        id: 'item-3',
+        name: 'Agua',
+        description: null,
+        price: 5,
+        category_id: null,
+        display_order: 4,
+        product_id: null,
+      },
+      formValues: {
+        name: 'Agua',
+        description: '',
+        price: 5,
+        category_id: '',
+        display_order: 4,
       },
       selectedExtras: [],
       ingredients: [],

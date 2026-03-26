@@ -861,6 +861,7 @@ describe('page smoke', () => {
     expect(renderToStaticMarkup(React.createElement(SuspendedPage))).toContain('Conta suspensa')
   })
 
+
   it('redireciona dashboard layout sem usuario e aceita tenants em array', async () => {
     const { default: DashboardLayout } = await import('@/app/(dashboard)/layout')
 

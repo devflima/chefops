@@ -73,6 +73,30 @@ describe('react-query hooks', () => {
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/delivery-drivers/driver-1', { method: 'DELETE' })
     remove.onSuccess()
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['delivery-drivers'] })
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao listar entregadores' }, { status: 500 })
+    )
+    await expect(list.queryFn()).rejects.toThrow('Falha ao listar entregadores')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao criar entregador' }, { status: 400 })
+    )
+    await expect(create.mutationFn({ name: 'Moto', vehicle_type: 'moto' })).rejects.toThrow(
+      'Falha ao criar entregador'
+    )
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao atualizar entregador' }, { status: 400 })
+    )
+    await expect(
+      update.mutationFn({ id: 'driver-1', name: 'Moto', vehicle_type: 'moto' })
+    ).rejects.toThrow('Falha ao atualizar entregador')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao remover entregador' }, { status: 400 })
+    )
+    await expect(remove.mutationFn('driver-1')).rejects.toThrow('Falha ao remover entregador')
   })
 
   it('configura hooks de delivery settings e notification settings', async () => {
@@ -99,6 +123,30 @@ describe('react-query hooks', () => {
     await notifMutation.mutationFn({ whatsapp_order_received: true })
     notifMutation.onSuccess()
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['notification-settings'] })
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao listar configuracoes de entrega' }, { status: 500 })
+    )
+    await expect(deliveryQuery.queryFn()).rejects.toThrow('Falha ao listar configuracoes de entrega')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao atualizar configuracoes de entrega' }, { status: 400 })
+    )
+    await expect(
+      deliveryMutation.mutationFn({ delivery_enabled: true, flat_fee: 10 })
+    ).rejects.toThrow('Falha ao atualizar configuracoes de entrega')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao listar notificações' }, { status: 500 })
+    )
+    await expect(notifQuery.queryFn()).rejects.toThrow('Falha ao listar notificações')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao atualizar notificações' }, { status: 400 })
+    )
+    await expect(
+      notifMutation.mutationFn({ whatsapp_order_received: true })
+    ).rejects.toThrow('Falha ao atualizar notificações')
   })
 
   it('configura hooks de onboarding e pagamentos', async () => {
@@ -125,6 +173,28 @@ describe('react-query hooks', () => {
     await disconnect.mutationFn()
     disconnect.onSuccess()
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['mercado-pago-account'] })
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao listar onboarding' }, { status: 500 })
+    )
+    await expect(onboardingQuery.queryFn()).rejects.toThrow('Falha ao listar onboarding')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao atualizar onboarding' }, { status: 400 })
+    )
+    await expect(completeStep.mutationFn({ has_category: true })).rejects.toThrow(
+      'Falha ao atualizar onboarding'
+    )
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao listar conta Mercado Pago' }, { status: 500 })
+    )
+    await expect(mpQuery.queryFn()).rejects.toThrow('Falha ao listar conta Mercado Pago')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 'Falha ao desconectar conta Mercado Pago' }, { status: 400 })
+    )
+    await expect(disconnect.mutationFn()).rejects.toThrow('Falha ao desconectar conta Mercado Pago')
   })
 
   it('configura hooks de pedidos', async () => {
@@ -143,6 +213,16 @@ describe('react-query hooks', () => {
     expect(orders.refetchInterval).toBe(15000)
     await orders.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/orders?status=pending&from=2026-03-01&to=2026-03-21&page=2&pageSize=20')
+
+    const ordersWithoutParams = ordersHooks.useOrders() as { queryFn: () => Promise<unknown> }
+    await ordersWithoutParams.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/orders?')
+
+    const ordersWithPartialParams = ordersHooks.useOrders({ status: 'confirmed', pageSize: 5 }) as {
+      queryFn: () => Promise<unknown>
+    }
+    await ordersWithPartialParams.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/orders?status=confirmed&pageSize=5')
 
     const updateStatus = ordersHooks.useUpdateOrderStatus() as {
       mutationFn: (payload: { id: string; status: string }) => Promise<unknown>
@@ -184,12 +264,54 @@ describe('react-query hooks', () => {
     expect(kds.refetchInterval).toBe(10000)
     await kds.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/orders/kds')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar pedidos' }), { status: 500 })
+    )
+    await expect(orders.queryFn()).rejects.toThrow('Falha ao listar pedidos')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao atualizar pedido' }), { status: 400 })
+    )
+    await expect(
+      updateStatus.mutationFn({ id: 'order-1', status: 'confirmed' })
+    ).rejects.toThrow('Falha ao atualizar pedido')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar pedido' }), { status: 400 })
+    )
+    await expect(createOrder.mutationFn({ items: [] })).rejects.toThrow('Falha ao criar pedido')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar itens do menu' }), { status: 500 })
+    )
+    await expect(menuItems.queryFn()).rejects.toThrow('Falha ao listar itens do menu')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar item do menu' }), { status: 400 })
+    )
+    await expect(createMenuItem.mutationFn({ name: 'Pizza', price: 50 })).rejects.toThrow(
+      'Falha ao criar item do menu'
+    )
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar métricas' }), { status: 500 })
+    )
+    await expect(metrics.queryFn()).rejects.toThrow('Falha ao listar métricas')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar pedidos do KDS' }), { status: 500 })
+    )
+    await expect(kds.queryFn()).rejects.toThrow('Falha ao listar pedidos do KDS')
   })
 
   it('configura hooks de plano', () => {
     const planQuery = planHooks.usePlan() as { queryKey: unknown; queryFn: () => Promise<unknown>; staleTime: number }
     expect(planQuery.queryKey).toEqual(['tenant-plan'])
     expect(planQuery.staleTime).toBe(1000 * 60 * 5)
+
+    useQueryMock.mockReturnValueOnce({ data: undefined })
+    expect(planHooks.useHasFeature('reports')).toBe(false)
 
     useQueryMock.mockReturnValueOnce({
       data: {
@@ -221,6 +343,9 @@ describe('react-query hooks', () => {
     })
     expect(planHooks.useCanAddMore('extras', 999)).toBe(true)
 
+    useQueryMock.mockReturnValueOnce({ data: undefined })
+    expect(planHooks.useCanAddMore('users', 0)).toBe(false)
+
     useQueryMock.mockReturnValueOnce({
       data: {
         features: [],
@@ -250,6 +375,47 @@ describe('react-query hooks', () => {
       },
     })
     expect(planHooks.useCanAddMore('users', 1)).toBe(true)
+
+    useQueryMock.mockReturnValueOnce({
+      data: {
+        features: [],
+        max_users: 2,
+        max_tables: 3,
+        max_products: 4,
+        resource_limits: {
+          categories: 1,
+          extras: -1,
+          menu_items: 2,
+        },
+      },
+    })
+    expect(planHooks.useCanAddMore('menu_items', 1)).toBe(true)
+
+    useQueryMock.mockReturnValueOnce({
+      data: {
+        features: [],
+        max_users: 2,
+        max_tables: 3,
+        max_products: 4,
+        resource_limits: undefined,
+      },
+    })
+    expect(planHooks.useCanAddMore('menu_items', 999)).toBe(true)
+
+    useQueryMock.mockReturnValueOnce({
+      data: {
+        features: [],
+        max_users: 2,
+        max_tables: 3,
+        max_products: 4,
+        resource_limits: {
+          categories: 1,
+          extras: -1,
+          menu_items: 10,
+        },
+      },
+    })
+    expect(planHooks.useCanAddMore('tables', 3)).toBe(false)
   })
 
   it('executa queryFn do hook de plano e propaga erro da api', async () => {
@@ -274,6 +440,16 @@ describe('react-query hooks', () => {
     await products.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/products?category_id=cat-1&active=true&page=1&pageSize=10')
 
+    const productsWithoutParams = productHooks.useProducts() as { queryFn: () => Promise<unknown> }
+    await productsWithoutParams.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/products?')
+
+    const productsWithPartialParams = productHooks.useProducts({ active: false, pageSize: 25 }) as {
+      queryFn: () => Promise<unknown>
+    }
+    await productsWithPartialParams.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/products?active=false&pageSize=25')
+
     const createProduct = productHooks.useCreateProduct() as { mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void }
     await createProduct.mutationFn({ name: 'Coca' })
     createProduct.onSuccess()
@@ -292,6 +468,14 @@ describe('react-query hooks', () => {
     await balance.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/stock/balance?category_id=cat-1&only_active=true')
 
+    const balanceWithoutParams = stockHooks.useStockBalance() as { queryFn: () => Promise<unknown> }
+    await balanceWithoutParams.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/stock/balance?')
+
+    const balanceWithPartialParams = stockHooks.useStockBalance({ only_active: false }) as { queryFn: () => Promise<unknown> }
+    await balanceWithPartialParams.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/stock/balance?only_active=false')
+
     const alerts = stockHooks.useStockAlerts() as { queryFn: () => Promise<unknown> }
     await alerts.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/stock/alerts')
@@ -299,6 +483,10 @@ describe('react-query hooks', () => {
     const movements = stockHooks.useStockMovements({ product_id: 'prod-1' }) as { queryFn: () => Promise<unknown> }
     await movements.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/stock/movements?product_id=prod-1')
+
+    const movementsWithoutParams = stockHooks.useStockMovements() as { queryFn: () => Promise<unknown> }
+    await movementsWithoutParams.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/stock/movements?')
 
     const createMovement = stockHooks.useCreateMovement() as { mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void }
     await createMovement.mutationFn({ product_id: 'prod-1' })
@@ -309,6 +497,53 @@ describe('react-query hooks', () => {
     await closeDay.mutationFn()
     closeDay.onSuccess()
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['stock-balance'] })
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar produtos' }), { status: 500 })
+    )
+    await expect(products.queryFn()).rejects.toThrow('Falha ao listar produtos')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar produto' }), { status: 400 })
+    )
+    await expect(createProduct.mutationFn({ name: 'Coca' })).rejects.toThrow('Falha ao criar produto')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao atualizar produto' }), { status: 400 })
+    )
+    await expect(updateProduct.mutationFn({ id: 'prod-1' })).rejects.toThrow('Falha ao atualizar produto')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar categorias' }), { status: 500 })
+    )
+    await expect(categories.queryFn()).rejects.toThrow('Falha ao listar categorias')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar saldo de estoque' }), { status: 500 })
+    )
+    await expect(balance.queryFn()).rejects.toThrow('Falha ao listar saldo de estoque')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar alertas de estoque' }), { status: 500 })
+    )
+    await expect(alerts.queryFn()).rejects.toThrow('Falha ao listar alertas de estoque')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar movimentações' }), { status: 500 })
+    )
+    await expect(movements.queryFn()).rejects.toThrow('Falha ao listar movimentações')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar movimentação' }), { status: 400 })
+    )
+    await expect(createMovement.mutationFn({ product_id: 'prod-1' })).rejects.toThrow(
+      'Falha ao criar movimentação'
+    )
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao fechar dia' }), { status: 400 })
+    )
+    await expect(closeDay.mutationFn()).rejects.toThrow('Falha ao fechar dia')
   })
 
   it('configura hooks de mesas, tabs e usuarios', async () => {
@@ -381,6 +616,56 @@ describe('react-query hooks', () => {
     await deleteUser.mutationFn('user-1')
     deleteUser.onSuccess()
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tenant-plan'] })
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar mesas' }), { status: 500 })
+    )
+    await expect(tables.queryFn()).rejects.toThrow('Falha ao listar mesas')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao atualizar mesa' }), { status: 400 })
+    )
+    await expect(updateTable.mutationFn({ id: 'table-1' })).rejects.toThrow('Falha ao atualizar mesa')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao excluir mesa' }), { status: 400 })
+    )
+    await expect(deleteTable.mutationFn('table-1')).rejects.toThrow('Falha ao excluir mesa')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar mesa' }), { status: 400 })
+    )
+    await expect(createTable.mutationFn({ number: '1' })).rejects.toThrow('Falha ao criar mesa')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao abrir sessão' }), { status: 400 })
+    )
+    await expect(openSession.mutationFn({ table_id: 'table-1' })).rejects.toThrow('Falha ao abrir sessão')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao fechar sessão' }), { status: 400 })
+    )
+    await expect(closeSession.mutationFn('session-1')).rejects.toThrow('Falha ao fechar sessão')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao buscar sessão' }), { status: 500 })
+    )
+    await expect(session.queryFn()).rejects.toThrow('Falha ao buscar sessão')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar comandas' }), { status: 500 })
+    )
+    await expect(tabs.queryFn()).rejects.toThrow('Falha ao listar comandas')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar comanda' }), { status: 400 })
+    )
+    await expect(createTab.mutationFn({ table_id: 'table-1' })).rejects.toThrow('Falha ao criar comanda')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao fechar comanda' }), { status: 400 })
+    )
+    await expect(closeTab.mutationFn('tab-1')).rejects.toThrow('Falha ao fechar comanda')
   })
 
   it('propaga erros de resposta nao ok', async () => {
@@ -391,5 +676,42 @@ describe('react-query hooks', () => {
     const query = deliveryDrivers.useDeliveryDrivers() as { queryFn: () => Promise<unknown> }
 
     await expect(query.queryFn()).rejects.toThrow('boom')
+  })
+
+  it('propaga erros dos hooks de usuários', async () => {
+    const users = userHooks.useUsers() as { queryFn: () => Promise<unknown> }
+    const createUser = userHooks.useCreateUser() as {
+      mutationFn: (payload: unknown) => Promise<unknown>
+    }
+    const updateUser = userHooks.useUpdateUserRole() as {
+      mutationFn: (payload: { id: string; role: string }) => Promise<unknown>
+    }
+    const deleteUser = userHooks.useDeleteUser() as {
+      mutationFn: (id: string) => Promise<unknown>
+    }
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar usuários' }), { status: 500 })
+    )
+    await expect(users.queryFn()).rejects.toThrow('Falha ao listar usuários')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar usuário' }), { status: 400 })
+    )
+    await expect(createUser.mutationFn({ full_name: 'Felipe' })).rejects.toThrow(
+      'Falha ao criar usuário'
+    )
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao atualizar usuário' }), { status: 400 })
+    )
+    await expect(updateUser.mutationFn({ id: 'user-1', role: 'manager' })).rejects.toThrow(
+      'Falha ao atualizar usuário'
+    )
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao remover usuário' }), { status: 400 })
+    )
+    await expect(deleteUser.mutationFn('user-1')).rejects.toThrow('Falha ao remover usuário')
   })
 })

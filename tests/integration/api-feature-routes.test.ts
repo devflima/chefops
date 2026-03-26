@@ -100,6 +100,34 @@ describe('api feature routes', () => {
           eq: vi.fn().mockReturnThis(),
           gte: vi.fn().mockReturnThis(),
           lte: vi.fn().mockResolvedValue({
+            data: [
+              { id: '1', status: 'delivered', total: 25, payment_status: 'paid' },
+            ],
+            error: null,
+          }),
+        }),
+      },
+    } as never)
+
+    const defaultResponse = await salesMetricsRoute.GET(
+      new Request('https://chefops.test/api/sales/metrics') as never
+    )
+    const defaultJson = await defaultResponse.json()
+
+    expect(defaultResponse.status).toBe(200)
+    expect(defaultJson.data.period).toBe('today')
+    expect(defaultJson.data.total_orders).toBe(1)
+    expect(defaultJson.data.revenue).toBe(25)
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lte: vi.fn().mockResolvedValue({
             data: null,
             error: new Error('metrics failed'),
           }),
@@ -109,6 +137,76 @@ describe('api feature routes', () => {
     expect((await salesMetricsRoute.GET(
       new Request('https://chefops.test/api/sales/metrics?period=today') as never
     )).status).toBe(500)
+  })
+
+  it('sales metrics GET cobre período mensal com entrega não paga', async () => {
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lte: vi.fn().mockResolvedValue({
+            data: [
+              { id: '1', status: 'delivered', total: 30, payment_status: 'paid' },
+              { id: '2', status: 'delivered', total: 50, payment_status: 'pending' },
+              { id: '3', status: 'confirmed', total: 20, payment_status: 'pending' },
+            ],
+            error: null,
+          }),
+        }),
+      },
+    } as never)
+
+    const response = await salesMetricsRoute.GET(
+      new Request('https://chefops.test/api/sales/metrics?period=month') as never
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.data.period).toBe('month')
+    expect(json.data.delivered).toBe(2)
+    expect(json.data.pending).toBe(1)
+    expect(json.data.revenue).toBe(30)
+    expect(json.data.average_ticket).toBe(15)
+  })
+
+  it('sales metrics GET cobre período custom sem from e to', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-23T15:30:00.000Z'))
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lte: vi.fn().mockResolvedValue({
+            data: [
+              { id: '1', status: 'delivered', total: 40, payment_status: 'paid' },
+            ],
+            error: null,
+          }),
+        }),
+      },
+    } as never)
+
+    const response = await salesMetricsRoute.GET(
+      new Request('https://chefops.test/api/sales/metrics?period=custom') as never
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.data.period).toBe('custom')
+    expect(json.data.from).toBe('2026-03-23T15:30:00.000Z')
+    expect(json.data.to).toBe('2026-03-23T15:30:00.000Z')
+    expect(json.data.revenue).toBe(40)
+
+    vi.useRealTimers()
   })
 
   it('stock alerts GET e stock balance GET enriquecem resultados', async () => {
@@ -133,6 +231,14 @@ describe('api feature routes', () => {
       is_low_stock: true,
       deficit: 3,
     })
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: false,
+      response: new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 }),
+    } as never)
+    expect((await stockBalanceRoute.GET(
+      new Request('https://chefops.test/api/stock/balance') as never
+    )).status).toBe(403)
 
     const balanceQuery = {
       select: vi.fn().mockReturnThis(),
@@ -181,6 +287,30 @@ describe('api feature routes', () => {
       new Request('https://chefops.test/api/stock/balance?only_active=false') as never
     )
     expect((await allItemsBalance.json()).data[0].is_low_stock).toBe(false)
+
+    const emptyCategoryBalanceQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      then(resolve: (value: unknown) => unknown) {
+        return Promise.resolve({
+          data: [{ id: '3', current_stock: 1, min_stock: 0 }],
+          error: null,
+        }).then(resolve)
+      },
+    }
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => emptyCategoryBalanceQuery,
+      },
+    } as never)
+
+    const emptyCategoryBalance = await stockBalanceRoute.GET(
+      new Request('https://chefops.test/api/stock/balance?category_id=&only_active=true') as never
+    )
+    expect((await emptyCategoryBalance.json()).data[0].is_low_stock).toBe(false)
 
     const failedBalanceQuery = {
       select: vi.fn().mockReturnThis(),
@@ -255,6 +385,26 @@ describe('api feature routes', () => {
     const getJson = await getResponse.json()
     expect(getJson.data.whatsapp_order_received).toBe(true)
     expect(getJson.data.whatsapp_order_delivered).toBe(true)
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        tenant_notification_settings: () => ({
+          data: null,
+          error: null,
+        }),
+      }) as never
+    )
+
+    const fallbackResponse = await notificationSettingsRoute.GET()
+    const fallbackJson = await fallbackResponse.json()
+    expect(fallbackResponse.status).toBe(200)
+    expect(fallbackJson.data.tenant_id).toBe('tenant-1')
+    expect(fallbackJson.data.whatsapp_order_received).toBe(true)
+    expect(fallbackJson.data.whatsapp_order_delivered).toBe(false)
 
     vi.mocked(requireTenantFeature).mockResolvedValueOnce({
       ok: true,
@@ -465,5 +615,47 @@ describe('api feature routes', () => {
     const response = await kdsRoute.GET()
     const json = await response.json()
     expect(json.data[0].items).toEqual([{ id: 'b', menu_item_id: 'menu-1' }])
+
+    const supabaseWithArrayCategory = {
+      from: vi.fn((table: string) => {
+        if (table === 'kds_orders') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({
+              data: [
+                { id: 'order-empty-items', items: undefined },
+                {
+                  id: 'order-array-category',
+                  items: [{ id: 'c', menu_item_id: 'menu-2' }],
+                },
+              ],
+              error: null,
+            }),
+          }
+        }
+
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { category: [{ goes_to_kitchen: true }] },
+          }),
+        }
+      }),
+    }
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: supabaseWithArrayCategory,
+    } as never)
+
+    const arrayCategoryResponse = await kdsRoute.GET()
+    const arrayCategoryJson = await arrayCategoryResponse.json()
+    expect(arrayCategoryJson.data).toEqual([
+      { id: 'order-empty-items', items: [] },
+      { id: 'order-array-category', items: [{ id: 'c', menu_item_id: 'menu-2' }] },
+    ])
   })
 })

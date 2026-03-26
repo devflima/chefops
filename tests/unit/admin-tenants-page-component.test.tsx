@@ -92,11 +92,12 @@ describe('AdminTenantsPage component', () => {
     reactivateAdminTenantMock.mockResolvedValue(undefined)
 
     vi.doMock('react', async () => {
-      const actualReact = await vi.importActual<typeof import('react')>('react')
       let stateCall = 0
 
       return {
-        ...actualReact,
+        ...React,
+        useMemo: React.useMemo,
+        useRef: React.useRef,
         useEffect: vi.fn(),
         useState: (initialValue: unknown) => {
           stateCall += 1
@@ -187,6 +188,96 @@ describe('AdminTenantsPage component', () => {
     expect(setTenants).toHaveBeenCalledWith([selectedTenant])
     expect(setSaving).toHaveBeenCalledWith(true)
     expect(setSaving).toHaveBeenCalledWith(false)
+
+    vi.doUnmock('react')
+    vi.resetModules()
+  })
+
+  it('executa efeitos iniciais e bloqueia ações sem tenant selecionado', async () => {
+    vi.resetModules()
+
+    capturedTableProps = null
+    capturedDialogProps = null
+    capturedFiltersProps = null
+    capturedStatsProps = null
+
+    const setTenants = vi.fn()
+    const setLoading = vi.fn()
+    const setSearch = vi.fn()
+    const setPlanFilter = vi.fn()
+    const setStatusFilter = vi.fn()
+    const setSelected = vi.fn()
+    const setSuspendReason = vi.fn()
+    const setNewPlan = vi.fn()
+    const setNewBillingDate = vi.fn()
+    const setSaving = vi.fn()
+    const setPage = vi.fn()
+
+    loadAdminTenantsMock.mockResolvedValue([])
+    saveAdminTenantChangesMock.mockResolvedValue(undefined)
+    suspendAdminTenantMock.mockResolvedValue(undefined)
+    reactivateAdminTenantMock.mockResolvedValue(undefined)
+
+    vi.doMock('react', async () => {
+      let stateCall = 0
+
+      return {
+        ...React,
+        useRef: React.useRef,
+        useEffect: (callback: () => void | Promise<void>) => {
+          void callback()
+        },
+        useMemo: <T,>(factory: () => T) => factory(),
+        useState: (initialValue: unknown) => {
+          stateCall += 1
+
+          const valuesByCall = new Map<number, [unknown, ReturnType<typeof vi.fn>]>([
+            [1, [[], setTenants]],
+            [2, [true, setLoading]],
+            [3, ['pizza', setSearch]],
+            [4, ['basic', setPlanFilter]],
+            [5, ['inactive', setStatusFilter]],
+            [6, [null, setSelected]],
+            [7, ['', setSuspendReason]],
+            [8, ['free', setNewPlan]],
+            [9, ['', setNewBillingDate]],
+            [10, [false, setSaving]],
+            [11, [3, setPage]],
+          ])
+
+          return valuesByCall.get(stateCall) ?? [initialValue, vi.fn()]
+        },
+      }
+    })
+
+    const { default: AdminTenantsPage } = await import('@/app/admin/tenants/page')
+
+    const tree = AdminTenantsPage()
+
+    expect(renderToStaticMarkup(tree)).toContain('Admin Tenant Management Dialog Mock')
+    expect(capturedDialogProps).toBeTruthy()
+
+    const dialogProps = capturedDialogProps as {
+      onOpenChange: (open: boolean) => void
+      onSave: () => Promise<void>
+      onSuspend: () => Promise<void>
+      onReactivate: () => Promise<void>
+    }
+
+    dialogProps.onOpenChange(true)
+    await dialogProps.onSave()
+    await dialogProps.onSuspend()
+    await dialogProps.onReactivate()
+    await Promise.resolve()
+
+    expect(setSelected).not.toHaveBeenCalled()
+    expect(setLoading).toHaveBeenCalledWith(true)
+    expect(setLoading).toHaveBeenCalledWith(false)
+    expect(setTenants).toHaveBeenCalledWith([])
+    expect(setSaving).not.toHaveBeenCalled()
+    expect(saveAdminTenantChangesMock).not.toHaveBeenCalled()
+    expect(suspendAdminTenantMock).not.toHaveBeenCalled()
+    expect(reactivateAdminTenantMock).not.toHaveBeenCalled()
 
     vi.doUnmock('react')
     vi.resetModules()

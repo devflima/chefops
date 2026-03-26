@@ -41,6 +41,32 @@ describe('api menu and customers routes', () => {
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: 'cust-found',
+            phone: '11999999999',
+            addresses: [{ id: 'addr-found', street: 'Rua B' }],
+          },
+          error: null,
+        }),
+      })),
+    } as never)
+    const foundResponse = await customersRoute.GET(
+      new Request('https://chefops.test/api/customers?phone=(11)%2099999-9999&tenant_id=550e8400-e29b-41d4-a716-446655440000') as never,
+    )
+    expect(foundResponse.status).toBe(200)
+    await expect(foundResponse.json()).resolves.toEqual({
+      data: {
+        id: 'cust-found',
+        phone: '11999999999',
+        addresses: [{ id: 'addr-found', street: 'Rua B' }],
+      },
+    })
+
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: new Error('missing') }),
       })),
     } as never)
@@ -244,6 +270,17 @@ describe('api menu and customers routes', () => {
     )).status).toBe(400)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse(401),
+    } as never)
+    expect((await menuItemsRoute.POST(
+      new Request('https://chefops.test/api/menu-items', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Bloqueado', price: 10, display_order: 1 }),
+      }) as never,
+    )).status).toBe(401)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
       profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
@@ -281,6 +318,47 @@ describe('api menu and customers routes', () => {
         }),
       }) as never,
     )).status).toBe(403)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'menu_items') {
+            return {
+              select: vi.fn((...args: unknown[]) => {
+                if (args.length > 1) {
+                  return {
+                    eq: vi.fn().mockResolvedValue({ count: null }),
+                  }
+                }
+
+                return {
+                  insert: vi.fn(),
+                }
+              }),
+              eq: vi.fn().mockReturnThis(),
+              insert: vi.fn(() => ({
+                select: vi.fn().mockReturnThis(),
+                single: vi.fn().mockResolvedValue({ data: { id: 'item-fallback' }, error: null }),
+              })),
+            }
+          }
+
+          return {}
+        }),
+      },
+    } as never)
+    expect((await menuItemsRoute.POST(
+      new Request('https://chefops.test/api/menu-items', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'Pizza',
+          price: 12,
+          display_order: 2,
+        }),
+      }) as never,
+    )).status).toBe(201)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
@@ -330,8 +408,20 @@ describe('api menu and customers routes', () => {
     )).status).toBe(500)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse(),
+    } as never)
+    expect((await menuItemByIdRoute.PATCH(
+      new Request('https://chefops.test/api/menu-items/item-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Novo nome' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'item-1' }) },
+    )).status).toBe(403)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
+      profile: { tenant_id: 'tenant-1' },
       supabase: {},
     } as never)
     expect((await menuItemByIdRoute.PATCH(
@@ -354,6 +444,27 @@ describe('api menu and customers routes', () => {
       }) as never,
       { params: Promise.resolve({ id: 'item-1' }) },
     )).status).toBe(403)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn(() => ({
+          update: vi.fn(() => ({
+            eq: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { id: 'item-1', product_id: null }, error: null }),
+          })),
+        })),
+      },
+    } as never)
+    expect((await menuItemByIdRoute.PATCH(
+      new Request('https://chefops.test/api/menu-items/item-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ product_id: null }),
+      }) as never,
+      { params: Promise.resolve({ id: 'item-1' }) },
+    )).status).toBe(200)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
@@ -636,6 +747,18 @@ describe('api menu and customers routes', () => {
     )).status).toBe(400)
 
     vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse(401),
+    } as never)
+    expect((await menuItemIngredientsRoute.PUT(
+      new Request('https://chefops.test/api/menu-items/item-1/ingredients', {
+        method: 'PUT',
+        body: JSON.stringify({ ingredients: [] }),
+      }) as never,
+      { params: Promise.resolve({ id: 'item-1' }) },
+    )).status).toBe(401)
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
       ok: true,
       profile: { tenant_id: 'tenant-1' },
       supabase: {
@@ -658,6 +781,27 @@ describe('api menu and customers routes', () => {
       }) as never,
       { params: Promise.resolve({ id: 'item-1' }) },
     )).status).toBe(500)
+
+    const insertSpy = vi.fn()
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn(() => ({
+          delete: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          insert: insertSpy.mockResolvedValue({ error: null }),
+        })),
+      },
+    } as never)
+    expect((await menuItemIngredientsRoute.PUT(
+      new Request('https://chefops.test/api/menu-items/item-1/ingredients', {
+        method: 'PUT',
+        body: JSON.stringify({ ingredients: [] }),
+      }) as never,
+      { params: Promise.resolve({ id: 'item-1' }) },
+    )).status).toBe(200)
+    expect(insertSpy).not.toHaveBeenCalled()
 
     vi.mocked(requireTenantFeature).mockResolvedValueOnce({
       ok: true,

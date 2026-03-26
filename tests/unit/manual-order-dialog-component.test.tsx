@@ -11,6 +11,7 @@ const useCreateTabMock = vi.fn()
 const useUserMock = vi.fn()
 const createOrderMutateAsyncMock = vi.fn()
 const createTabMutateAsyncMock = vi.fn()
+const getManualOrderSubmitSuccessStateMock = vi.fn()
 
 let capturedContentProps: Record<string, unknown> | null = null
 let stateValues: unknown[] = []
@@ -43,6 +44,17 @@ vi.mock('@/features/tabs/hooks/useTabs', () => ({
 vi.mock('@/features/auth/hooks/useUser', () => ({
   useUser: () => useUserMock(),
 }))
+
+vi.mock('@/features/orders/manual-order-dialog', async () => {
+  const actual = await vi.importActual<typeof import('@/features/orders/manual-order-dialog')>(
+    '@/features/orders/manual-order-dialog',
+  )
+
+  return {
+    ...actual,
+    getManualOrderSubmitSuccessState: () => getManualOrderSubmitSuccessStateMock(),
+  }
+})
 
 vi.mock('@/features/orders/ManualOrderDialogContent', () => ({
   ManualOrderDialogContent: (props: Record<string, unknown>) => {
@@ -109,6 +121,10 @@ describe('ManualOrderDialog component', () => {
       updated_at: '2026-03-22T00:00:00.000Z',
     })
     createTabMutateAsyncMock.mockResolvedValue({ id: 'tab-created' })
+    getManualOrderSubmitSuccessStateMock.mockReturnValue({
+      shouldClose: true,
+      errorMessage: '',
+    })
 
     useCreateOrderMock.mockReturnValue({
       isPending: false,
@@ -196,6 +212,51 @@ describe('ManualOrderDialog component', () => {
     expect(stateSetters[7]).toHaveBeenLastCalledWith([])
     expect(stateSetters[8]).toHaveBeenLastCalledWith('')
     expect(stateSetters[9]).toHaveBeenLastCalledWith('')
+  })
+
+  it('executa os updaters internos do carrinho ao alterar quantidade e remover item', async () => {
+    stateValues[7] = [
+      { menu_item_id: 'menu-1', name: 'Pizza Margherita', price: 32, quantity: 2 },
+      { menu_item_id: 'menu-2', name: 'Suco', price: 8, quantity: 1 },
+    ]
+
+    const { default: ManualOrderDialog } = await import('@/features/orders/components/ManualOrderDialog')
+
+    renderToStaticMarkup(
+      React.createElement(ManualOrderDialog, {
+        open: true,
+        onOpenChange: vi.fn(),
+      }),
+    )
+
+    const props = capturedContentProps as {
+      onChangeQuantity: (menuItemId: string, delta: number) => void
+      onRemoveItem: (menuItemId: string) => void
+    }
+
+    props.onChangeQuantity('menu-1', -1)
+    props.onRemoveItem('menu-2')
+
+    const changeQuantityUpdater = stateSetters[7].mock.calls[0]?.[0] as (
+      current: Array<Record<string, unknown>>
+    ) => Array<Record<string, unknown>>
+    const removeItemUpdater = stateSetters[7].mock.calls[1]?.[0] as (
+      current: Array<Record<string, unknown>>
+    ) => Array<Record<string, unknown>>
+
+    expect(changeQuantityUpdater([
+      { menu_item_id: 'menu-1', name: 'Pizza Margherita', price: 32, quantity: 2 },
+      { menu_item_id: 'menu-2', name: 'Suco', price: 8, quantity: 1 },
+    ])).toEqual([
+      { menu_item_id: 'menu-1', name: 'Pizza Margherita', price: 32, quantity: 1 },
+      { menu_item_id: 'menu-2', name: 'Suco', price: 8, quantity: 1 },
+    ])
+    expect(removeItemUpdater([
+      { menu_item_id: 'menu-1', name: 'Pizza Margherita', price: 32, quantity: 2 },
+      { menu_item_id: 'menu-2', name: 'Suco', price: 8, quantity: 1 },
+    ])).toEqual([
+      { menu_item_id: 'menu-1', name: 'Pizza Margherita', price: 32, quantity: 2 },
+    ])
   })
 
   it('cria comanda, adiciona item e envia pedido com sucesso', async () => {
@@ -309,5 +370,79 @@ describe('ManualOrderDialog component', () => {
 
     expect(stateSetters[9]).toHaveBeenCalledWith('Falha ao criar comanda')
     expect(stateSetters[9]).toHaveBeenCalledWith('Falha ao criar pedido')
+  })
+
+  it('usa fallbacks de listas vazias e não reseta ao abrir o diálogo', async () => {
+    useMenuItemsMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    })
+    useTablesMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    })
+    useTabsMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    })
+
+    const onOpenChange = vi.fn()
+
+    const { default: ManualOrderDialog } = await import('@/features/orders/components/ManualOrderDialog')
+
+    renderToStaticMarkup(
+      React.createElement(ManualOrderDialog, {
+        open: true,
+        onOpenChange,
+      }),
+    )
+
+    const props = capturedContentProps as {
+      availableItemsCount: number
+      tables: unknown[]
+      tabs: unknown[]
+      onOpenChange: (open: boolean) => void
+    }
+
+    expect(props.availableItemsCount).toBe(0)
+    expect(props.tables).toEqual([])
+    expect(props.tabs).toEqual([])
+
+    props.onOpenChange(true)
+
+    expect(onOpenChange).toHaveBeenCalledWith(true)
+    expect(stateSetters[0]).not.toHaveBeenCalled()
+    expect(stateSetters[1]).not.toHaveBeenCalled()
+    expect(stateSetters[9]).not.toHaveBeenCalled()
+  })
+
+  it('mantém o diálogo aberto quando o submit bem-sucedido não pede fechamento', async () => {
+    stateValues[0] = 'counter'
+    stateValues[4] = 'Maria'
+    stateValues[7] = [{ menu_item_id: 'menu-1', name: 'Pizza Margherita', price: 32, quantity: 1 }]
+    getManualOrderSubmitSuccessStateMock.mockReturnValueOnce({
+      shouldClose: false,
+      errorMessage: 'Pedido criado sem fechar modal.',
+    })
+
+    const onOpenChange = vi.fn()
+    const { default: ManualOrderDialog } = await import('@/features/orders/components/ManualOrderDialog')
+
+    renderToStaticMarkup(
+      React.createElement(ManualOrderDialog, {
+        open: true,
+        onOpenChange,
+      }),
+    )
+
+    const props = capturedContentProps as {
+      onSubmit: () => Promise<void>
+    }
+
+    await props.onSubmit()
+
+    expect(createOrderMutateAsyncMock).toHaveBeenCalledTimes(1)
+    expect(stateSetters[9]).toHaveBeenCalledWith('Pedido criado sem fechar modal.')
+    expect(onOpenChange).not.toHaveBeenCalled()
   })
 })

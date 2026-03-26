@@ -309,6 +309,59 @@ describe('InstallBanner component', () => {
     expect(removeEventListener).toHaveBeenCalledWith('beforeinstallprompt', expect.any(Function))
   })
 
+  it('captura o evento beforeinstallprompt e salva o prompt no estado', async () => {
+    const actualReact = await vi.importActual<typeof import('react')>('react')
+    const addEventListener = vi.fn()
+    const setPrompt = vi.fn()
+
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn().mockReturnValue(null),
+      setItem: vi.fn(),
+    })
+    vi.stubGlobal('window', {
+      matchMedia: vi.fn().mockReturnValue({ matches: false }),
+      addEventListener,
+      removeEventListener: vi.fn(),
+    })
+
+    let stateCall = 0
+
+    vi.doMock('react', () => ({
+      ...actualReact,
+      useState: (initialValue: unknown) => {
+        stateCall += 1
+
+        if (stateCall === 1) {
+          return [initialValue, setPrompt]
+        }
+
+        if (stateCall === 2) {
+          return [false, vi.fn()]
+        }
+
+        return [initialValue, vi.fn()]
+      },
+      useEffect: (effect: () => void | (() => void)) => {
+        effect()
+      },
+    }))
+
+    const { default: InstallBanner } = await import('@/features/pwa/components/InstallBanner')
+    renderToStaticMarkup(React.createElement(InstallBanner))
+
+    const handler = addEventListener.mock.calls[0]?.[1] as ((event: Event) => void) | undefined
+    const event = {
+      preventDefault: vi.fn(),
+      prompt: vi.fn(),
+      userChoice: Promise.resolve({ outcome: 'accepted' as const }),
+    } as unknown as Event
+
+    handler?.(event)
+
+    expect(event.preventDefault).toHaveBeenCalled()
+    expect(setPrompt).toHaveBeenCalledWith(event)
+  })
+
   it('não registra listener quando o banner deve ser ignorado no efeito', async () => {
     const actualReact = await vi.importActual<typeof import('react')>('react')
     const addEventListener = vi.fn()
@@ -335,5 +388,43 @@ describe('InstallBanner component', () => {
     renderToStaticMarkup(React.createElement(InstallBanner))
 
     expect(addEventListener).not.toHaveBeenCalled()
+  })
+
+  it('ignora o clique em instalar quando nao existe prompt ativo', async () => {
+    const actualReact = await vi.importActual<typeof import('react')>('react')
+    const promptSpy = vi.fn()
+    let stateCall = 0
+
+    vi.doMock('@/features/pwa/install-banner', async () => {
+      const actual = await vi.importActual<typeof import('@/features/pwa/install-banner')>('@/features/pwa/install-banner')
+      return {
+        ...actual,
+        shouldRenderInstallBanner: () => true,
+      }
+    })
+
+    vi.doMock('react', () => ({
+      ...actualReact,
+      useState: (initialValue: unknown) => {
+        stateCall += 1
+        if (stateCall === 1) {
+          return [null, vi.fn()]
+        }
+
+        if (stateCall === 2) {
+          return [false, vi.fn()]
+        }
+
+        return [initialValue, vi.fn()]
+      },
+      useEffect: vi.fn(),
+    }))
+
+    const { default: InstallBanner } = await import('@/features/pwa/components/InstallBanner')
+    const buttons = flattenElements(React.createElement(InstallBanner)).filter((element) => element.type === 'button')
+    const installButton = buttons.find((button) => getTextContent(button).includes('Instalar'))
+
+    await expect(installButton?.props.onClick()).resolves.toBeUndefined()
+    expect(promptSpy).not.toHaveBeenCalled()
   })
 })

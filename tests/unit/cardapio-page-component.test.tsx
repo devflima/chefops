@@ -319,4 +319,97 @@ describe('CardapioPage component', () => {
       message: 'Erro ao criar item',
     })
   })
+
+  it('cobre fallbacks de dados vazios e criação sem id retornado', async () => {
+    useMenuItemsMock.mockReturnValue({
+      data: null,
+      isLoading: false,
+    })
+    useCategoriesMock.mockReturnValue({
+      data: undefined,
+    })
+    useProductsMock.mockReturnValue({
+      data: undefined,
+    })
+    useQueryMock.mockReturnValue({
+      data: undefined,
+    })
+    useHasFeatureMock.mockReturnValue(false)
+    usePlanMock.mockReturnValue({
+      data: null,
+    })
+    useCanAddMoreMock.mockReturnValue(true)
+
+    const createMenuItemMutateAsync = vi.fn().mockResolvedValue({})
+    useCreateMenuItemMock.mockReturnValue({
+      mutateAsync: createMenuItemMutateAsync,
+    })
+
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ data: [] }),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: CardapioPage } = await import('@/app/(dashboard)/cardapio/page')
+
+    renderToStaticMarkup(React.createElement(CardapioPage))
+
+    const props = capturedMenuDashboardPageContentProps as {
+      availableCount: number
+      inactiveCount: number
+      limitLabel?: string
+      menuItemLimitReached: boolean
+      categories?: Array<{ id: string; name: string }>
+      items: unknown[]
+      paginatedItems: unknown[]
+      planName?: string
+      menuItemLimit?: number
+      totalPages: number
+      dialogProps: {
+        products?: Array<{ id: string; name: string }>
+        allExtras?: Array<{ id: string; name: string }>
+        onSubmit: (values: {
+          name: string
+          description?: string
+          price: number
+          category_id?: string
+          display_order: number
+        }) => Promise<void>
+      }
+    }
+
+    expect(props.availableCount).toBe(0)
+    expect(props.inactiveCount).toBe(0)
+    expect(props.limitLabel).toBe('0/undefined no plano')
+    expect(props.menuItemLimitReached).toBe(false)
+    expect(props.categories).toBeUndefined()
+    expect(props.items).toEqual([])
+    expect(props.paginatedItems).toEqual([])
+    expect(props.planName).toBeUndefined()
+    expect(props.menuItemLimit).toBeUndefined()
+    expect(props.totalPages).toBe(1)
+    expect(props.dialogProps.products).toBeUndefined()
+    expect(props.dialogProps.allExtras).toBeUndefined()
+
+    await props.dialogProps.onSubmit({
+      name: 'Pizza sem id',
+      description: 'Fallback',
+      price: 20,
+      category_id: 'cat-1',
+      display_order: 1,
+    })
+
+    expect(useCanAddMoreMock).toHaveBeenCalledWith('menu_items', 0)
+    expect(createMenuItemMutateAsync).toHaveBeenCalledWith({
+      name: 'Pizza sem id',
+      description: 'Fallback',
+      price: 20,
+      category_id: 'cat-1',
+      display_order: 1,
+      product_id: null,
+    })
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/menu-items/undefined/extras', expect.anything())
+    expect(formResetMock).toHaveBeenCalled()
+  })
 })

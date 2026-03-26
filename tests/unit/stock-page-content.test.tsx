@@ -165,6 +165,110 @@ describe('StockPageContent', () => {
     expect(markup).toContain('Selecionar produto')
   })
 
+  it('renderiza plural de estoque baixo e fallback de categoria vazia no saldo', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(StockPageContent, {
+        open: true,
+        tab: 'balance',
+        lowStock: [
+          {
+            product_id: 'prod-1',
+            product_name: 'Molho',
+            category_name: 'Insumos',
+            current_stock: 2,
+            min_stock: 5,
+            unit: 'kg',
+            is_low_stock: true,
+          },
+          {
+            product_id: 'prod-2',
+            product_name: 'Queijo',
+            category_name: null,
+            current_stock: 1,
+            min_stock: 3,
+            unit: 'kg',
+            is_low_stock: true,
+          },
+        ],
+        categories: ['Insumos'],
+        categoryFilter: 'all',
+        balanceStatusFilter: 'all',
+        movementTypeFilter: 'all',
+        paginatedBalance: [
+          {
+            product_id: 'prod-2',
+            product_name: 'Queijo',
+            category_name: null,
+            current_stock: 1,
+            min_stock: 3,
+            unit: 'kg',
+            is_low_stock: true,
+          },
+        ],
+        filteredBalanceCount: 1,
+        balancePage: 1,
+        paginatedMovements: [],
+        filteredMovementsCount: 0,
+        movementsPage: 1,
+        pageSize: 10,
+        isLoading: false,
+        products: [{ id: 'prod-2', name: 'Queijo', unit: 'kg' }],
+        closeDayPending: false,
+        form: createForm(),
+        onOpenChange: vi.fn(),
+        onTabChange: vi.fn(),
+        onCategoryFilterChange: vi.fn(),
+        onBalanceStatusFilterChange: vi.fn(),
+        onMovementTypeFilterChange: vi.fn(),
+        onBalancePageChange: vi.fn(),
+        onMovementsPageChange: vi.fn(),
+        onCloseDay: vi.fn().mockResolvedValue(undefined),
+        onSubmit: vi.fn().mockResolvedValue(undefined),
+      }),
+    )
+
+    expect(markup).toContain('2 itens abaixo do mínimo')
+    expect(markup).toContain('Queijo')
+    expect(markup).toContain('—')
+  })
+
+  it('renderiza loading no saldo atual', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(StockPageContent, {
+        open: true,
+        tab: 'balance',
+        lowStock: [],
+        categories: [],
+        categoryFilter: 'all',
+        balanceStatusFilter: 'all',
+        movementTypeFilter: 'all',
+        paginatedBalance: [],
+        filteredBalanceCount: 0,
+        balancePage: 1,
+        paginatedMovements: [],
+        filteredMovementsCount: 0,
+        movementsPage: 1,
+        pageSize: 10,
+        isLoading: true,
+        products: [],
+        closeDayPending: false,
+        form: createForm(),
+        onOpenChange: vi.fn(),
+        onTabChange: vi.fn(),
+        onCategoryFilterChange: vi.fn(),
+        onBalanceStatusFilterChange: vi.fn(),
+        onMovementTypeFilterChange: vi.fn(),
+        onBalancePageChange: vi.fn(),
+        onMovementsPageChange: vi.fn(),
+        onCloseDay: vi.fn().mockResolvedValue(undefined),
+        onSubmit: vi.fn().mockResolvedValue(undefined),
+      }),
+    )
+
+    expect(markup).toContain('Carregando...')
+    expect(markup).not.toContain('<thead')
+  })
+
   it('renderiza movimentações, estado pendente e erro do formulário', () => {
     const markup = renderToStaticMarkup(
       React.createElement(StockPageContent, {
@@ -280,15 +384,22 @@ describe('StockPageContent', () => {
     const buttons = elements.filter((entry) => entry.type === 'button')
     const selects = elements.filter((entry) => entry.type === 'select')
     const form = elements.find((entry) => entry.type === 'form')
+    const tabButtons = buttons.filter(
+      (entry) =>
+        typeof entry.props.onClick === 'function' &&
+        ['Saldo atual', 'Movimentações'].includes(String(entry.props.children))
+    )
 
     buttons[0]?.props.onClick()
     buttons[1]?.props.onClick()
+    tabButtons[1]?.props.onClick()
     selects[0]?.props.onChange({ target: { value: 'Insumos' } })
     selects[1]?.props.onChange({ target: { value: 'low' } })
     form?.props.onSubmit()
 
     expect(onCloseDay).toHaveBeenCalledTimes(1)
     expect(onOpenChange).toHaveBeenCalledWith(true)
+    expect(onTabChange).toHaveBeenCalledWith('movements')
     expect(onCategoryFilterChange).toHaveBeenCalledWith('Insumos')
     expect(onBalanceStatusFilterChange).toHaveBeenCalledWith('low')
     expect(onSubmit).toHaveBeenCalledWith({
@@ -342,5 +453,11 @@ describe('StockPageContent', () => {
     )
     movementSelect?.props.onChange({ target: { value: 'adjustment' } })
     expect(onMovementTypeFilterChange).toHaveBeenCalledWith('adjustment')
+
+    const cancelButton = flattenElements(movementsElement).find(
+      (entry) => entry.type === 'button' && String(entry.props.children) === 'Cancelar',
+    )
+    cancelButton?.props.onClick()
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

@@ -31,6 +31,11 @@ describe('tabs page helpers', () => {
       openCount: 1,
       closedCount: 2,
     })
+    expect(getLiveTotal({ label: 'C-13', total: null, orders: undefined } as never)).toBe(0)
+    expect(getTabsSummary(undefined, undefined)).toEqual({
+      openCount: 0,
+      closedCount: 0,
+    })
   })
 
   it('gera prompt e valida nova comanda', () => {

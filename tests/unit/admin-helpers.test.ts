@@ -172,6 +172,37 @@ describe('admin helpers', () => {
     expect(statusConfig.suspended.label).toBe('Suspenso')
   })
 
+  it('cobre fallbacks de highlights, upgrade negativo e load sem data', async () => {
+    const tenant = {
+      id: 'tenant-3',
+      name: 'Padaria Sol',
+      slug: 'padaria-sol',
+      plan: 'free',
+      status: 'inactive',
+      created_at: '2026-03-05T00:00:00.000Z',
+      suspended_at: null,
+      suspension_reason: null,
+      next_billing_at: null,
+      total_users: 1,
+      total_orders: 2,
+      total_revenue: null,
+      last_order_at: null,
+    }
+
+    const fetchMock = vi.fn(async () => ({
+      json: async () => ({ data: null }),
+    })) as unknown as typeof fetch
+
+    expect(isUpgradeCandidate(tenant)).toBe(false)
+    expect(buildSelectedTenantHighlights(tenant)).toEqual([
+      { label: 'Slug', value: 'padaria-sol' },
+      { label: 'Cadastrado em', value: expect.any(String) },
+      { label: 'Pedidos', value: '2' },
+      { label: 'Receita total', value: expect.stringContaining('0') },
+    ])
+    await expect(loadAdminTenants(fetchMock)).resolves.toEqual([])
+  })
+
   it('prepara estado do modal, resumo de filtros e paginação do admin', () => {
     const tenants = [
       {

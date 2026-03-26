@@ -182,4 +182,294 @@ describe('checkout session', () => {
 
     expect(tableStatusUpdate).toEqual({ status: 'occupied' })
   })
+
+  it('segue sem table_session_id quando a nova sessão não é criada', async () => {
+    let tableStatusUpdate: Record<string, unknown> | undefined
+
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        table_sessions: (state) => {
+          if (state.operation === 'select') {
+            return { data: null, error: null }
+          }
+
+          return {
+            data: null,
+            error: null,
+          }
+        },
+        tables: (state) => {
+          tableStatusUpdate = state.values
+          return { data: null, error: null }
+        },
+        orders: (state) => ({
+          data: {
+            id: 'order-no-session',
+            ...(state.rows?.[0] ?? {}),
+          },
+          error: null,
+        }),
+        order_items: () => ({
+          data: [{ id: 'item-1' }],
+          error: null,
+        }),
+        checkout_sessions: () => ({
+          data: null,
+          error: null,
+        }),
+      }) as never
+    )
+
+    const order = await createOrderFromCheckoutSession({
+      checkoutSessionId: 'checkout-no-session',
+      payload: {
+        tenant_id: 'tenant-1',
+        customer_name: 'Mesa 5',
+        table_id: 'table-5',
+        table_number: '5',
+        items: [
+          {
+            menu_item_id: 'menu-1',
+            name: 'Pizza',
+            price: 25,
+            quantity: 1,
+          },
+        ],
+      },
+    })
+
+    expect(order).toMatchObject({
+      id: 'order-no-session',
+      table_session_id: null,
+    })
+    expect(tableStatusUpdate).toBeUndefined()
+  })
+
+  it('cria pedido sem mesa, sem extras e ignora falha do WhatsApp', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.mocked(sendOrderWhatsappNotification).mockRejectedValueOnce(new Error('twilio down'))
+
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        orders: (state) => ({
+          data: {
+            id: 'order-no-table',
+            ...(state.rows?.[0] ?? {}),
+          },
+          error: null,
+        }),
+        order_items: () => ({
+          data: [{ id: 'item-no-extra' }],
+          error: null,
+        }),
+        checkout_sessions: () => ({
+          data: null,
+          error: null,
+        }),
+      }) as never
+    )
+
+    const order = await createOrderFromCheckoutSession({
+      checkoutSessionId: 'checkout-no-table',
+      payload: {
+        tenant_id: 'tenant-1',
+        customer_name: 'Delivery',
+        customer_phone: '+5511999999999',
+        notes: 'Sem cebola',
+        delivery_address: {
+          zip_code: '12345-678',
+          street: 'Rua A',
+          number: '10',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+        items: [
+          {
+            menu_item_id: 'menu-1',
+            name: 'Pizza',
+            price: 40,
+            quantity: 1,
+            notes: 'Bem assada',
+          },
+        ],
+      },
+    })
+
+    expect(order).toMatchObject({
+      id: 'order-no-table',
+      delivery_status: 'waiting_dispatch',
+      payment_provider: null,
+      payment_transaction_id: null,
+      table_session_id: null,
+    })
+    expect(sendOrderWhatsappNotification).toHaveBeenCalledWith({
+      orderId: 'order-no-table',
+      eventKey: 'order_received',
+    })
+    expect(consoleError).toHaveBeenCalledWith(
+      '[order-whatsapp:received]',
+      expect.any(Error)
+    )
+  })
+
+  it('propaga erro ao criar pedido quando insert falha', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        orders: () => ({
+          data: null,
+          error: new Error('insert failed'),
+        }),
+      }) as never
+    )
+
+    await expect(
+      createOrderFromCheckoutSession({
+        checkoutSessionId: 'checkout-error',
+        payload: {
+          tenant_id: 'tenant-1',
+          customer_name: 'Felipe',
+          items: [
+            {
+              menu_item_id: 'menu-1',
+              name: 'Pizza',
+              price: 20,
+              quantity: 1,
+            },
+          ],
+        },
+      })
+    ).rejects.toThrow('insert failed')
+
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        orders: () => ({
+          data: null,
+          error: null,
+        }),
+      }) as never
+    )
+
+    await expect(
+      createOrderFromCheckoutSession({
+        checkoutSessionId: 'checkout-order-null',
+        payload: {
+          tenant_id: 'tenant-1',
+          customer_name: 'Felipe',
+          items: [
+            {
+              menu_item_id: 'menu-1',
+              name: 'Pizza',
+              price: 20,
+              quantity: 1,
+            },
+          ],
+        },
+      })
+    ).rejects.toThrow('Erro ao criar pedido a partir do checkout.')
+  })
+
+  it('propaga erro ao inserir extras e ao atualizar checkout', async () => {
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        orders: () => ({
+          data: { id: 'order-items-error' },
+          error: null,
+        }),
+        order_items: () => ({
+          data: null,
+          error: new Error('items failed'),
+        }),
+      }) as never
+    )
+
+    await expect(
+      createOrderFromCheckoutSession({
+        checkoutSessionId: 'checkout-items-error',
+        payload: {
+          tenant_id: 'tenant-1',
+          customer_name: 'Felipe',
+          items: [
+            {
+              menu_item_id: 'menu-1',
+              name: 'Pizza',
+              price: 20,
+              quantity: 1,
+            },
+          ],
+        },
+      })
+    ).rejects.toThrow('items failed')
+
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        orders: () => ({
+          data: { id: 'order-extras-error' },
+          error: null,
+        }),
+        order_items: () => ({
+          data: [{ id: 'item-1' }],
+          error: null,
+        }),
+        order_item_extras: () => ({
+          data: null,
+          error: new Error('extras failed'),
+        }),
+      }) as never
+    )
+
+    await expect(
+      createOrderFromCheckoutSession({
+        checkoutSessionId: 'checkout-extras-error',
+        payload: {
+          tenant_id: 'tenant-1',
+          customer_name: 'Felipe',
+          items: [
+            {
+              menu_item_id: 'menu-1',
+              name: 'Pizza',
+              price: 20,
+              quantity: 1,
+              extras: [{ name: 'Borda', price: 4 }],
+            },
+          ],
+        },
+      })
+    ).rejects.toThrow('extras failed')
+
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        orders: () => ({
+          data: { id: 'order-checkout-error' },
+          error: null,
+        }),
+        order_items: () => ({
+          data: [{ id: 'item-1' }],
+          error: null,
+        }),
+        checkout_sessions: () => ({
+          data: null,
+          error: new Error('checkout update failed'),
+        }),
+      }) as never
+    )
+
+    await expect(
+      createOrderFromCheckoutSession({
+        checkoutSessionId: 'checkout-update-error',
+        payload: {
+          tenant_id: 'tenant-1',
+          customer_name: 'Felipe',
+          items: [
+            {
+              menu_item_id: 'menu-1',
+              name: 'Pizza',
+              price: 20,
+              quantity: 1,
+            },
+          ],
+        },
+      })
+    ).rejects.toThrow('checkout update failed')
+  })
 })

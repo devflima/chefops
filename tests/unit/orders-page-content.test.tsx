@@ -141,5 +141,51 @@ describe('OrdersPageContent', () => {
       open: true,
       onOpenChange: onManualOrderOpenChange,
     })
+
+    capturedHeaderProps = null
+    capturedFiltersProps = null
+    capturedListProps = null
+    capturedDialogProps = null
+
+    const directTree = OrdersPageContent({
+      manualOrderOpen: false,
+      onManualOrderOpenChange,
+      filters: [],
+      statusFilter: '',
+      onStatusFilterChange,
+      isLoading: true,
+      orders: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+      onPageChange,
+      deliveryDrivers: [],
+      hasWhatsappNotifications: false,
+      updatePending: true,
+      chargingOrderId: 'order-2',
+      onAssignDriver,
+      onAdvance,
+      onAdvanceDelivery,
+      onMercadoPagoCheckout,
+      onConfirmPayment,
+      onCancel,
+    })
+
+    expect(renderToStaticMarkup(directTree)).toContain('Orders Header Mock')
+    expect(capturedListProps).toMatchObject({
+      isLoading: true,
+      orders: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+      deliveryDrivers: [],
+      hasWhatsappNotifications: false,
+      updatePending: true,
+      chargingOrderId: 'order-2',
+    })
+    expect(capturedDialogProps).toMatchObject({
+      open: false,
+      onOpenChange: onManualOrderOpenChange,
+    })
   })
 })

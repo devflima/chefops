@@ -13,6 +13,20 @@ const removeChannelMock = vi.fn()
 
 let realtimeCallback: (() => void) | null = null
 let capturedContentProps: Record<string, unknown> | null = null
+let capturedCleanup: (() => void) | undefined
+
+vi.mock('react', async () => {
+  const actualReact = await vi.importActual<typeof import('react')>('react')
+
+  return {
+    ...actualReact,
+    default: actualReact,
+    useEffect: (callback: () => void | (() => void)) => {
+      const cleanupCandidate = callback()
+      if (typeof cleanupCandidate === 'function') capturedCleanup = cleanupCandidate
+    },
+  }
+})
 
 vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({
@@ -48,6 +62,7 @@ describe('KDSPage component', () => {
     vi.clearAllMocks()
     capturedContentProps = null
     realtimeCallback = null
+    capturedCleanup = undefined
 
     useKDSOrdersMock.mockReturnValue({
       data: [
@@ -78,19 +93,10 @@ describe('KDSPage component', () => {
   })
 
   afterEach(() => {
-    vi.doUnmock('react')
-    vi.resetModules()
+    capturedCleanup = undefined
   })
 
   it('encaminha o avanço do pedido e invalida a query da cozinha', async () => {
-    vi.doMock('react', async () => {
-      const actualReact = await vi.importActual<typeof import('react')>('react')
-      return {
-        ...actualReact,
-        useEffect: (callback: () => void) => callback(),
-      }
-    })
-
     const { default: KDSPage } = await import('@/app/(dashboard)/kds/page')
 
     expect(renderToStaticMarkup(React.createElement(KDSPage))).toContain('KDS Page Content Mock')
@@ -120,5 +126,28 @@ describe('KDSPage component', () => {
     realtimeCallback?.()
     expect(refetchMock).toHaveBeenCalledTimes(1)
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['kds-orders'] })
+  })
+
+  it('cobre fallback de pedidos vazios e cleanup do canal realtime', async () => {
+    useKDSOrdersMock.mockReturnValue({
+      data: null,
+      refetch: refetchMock,
+    })
+
+    const { default: KDSPage } = await import('@/app/(dashboard)/kds/page')
+
+    expect(renderToStaticMarkup(React.createElement(KDSPage))).toContain('KDS Page Content Mock')
+
+    const props = capturedContentProps as {
+      orders: Array<unknown>
+      updatePending: boolean
+    }
+
+    expect(props.orders).toEqual([])
+    expect(props.updatePending).toBe(false)
+
+    capturedCleanup?.()
+    expect(removeChannelMock).toHaveBeenCalledTimes(1)
+    expect(removeChannelMock).toHaveBeenCalledWith(expect.objectContaining({ unsubscribe: expect.any(Function) }))
   })
 })

@@ -61,6 +61,17 @@ describe('api operations routes', () => {
     expect((await deliverySettingsRoute.GET()).status).toBe(200)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse(),
+    } as never)
+    expect((await deliverySettingsRoute.PATCH(
+      new Request('https://chefops.test/api/delivery-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ delivery_enabled: true, flat_fee: 9.5 }),
+      }) as never,
+    )).status).toBe(403)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
       profile: { tenant_id: 'tenant-1' },
     } as never)
@@ -240,6 +251,99 @@ describe('api operations routes', () => {
     )).status).toBe(400)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse(),
+    } as never)
+    expect((await deliveryDriverByIdRoute.PATCH(
+      new Request('https://chefops.test/api/delivery-drivers/driver-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Carlos' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'driver-1' }) },
+    )).status).toBe(403)
+
+    const updateSpy = vi.fn(() => ({
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          id: 'driver-1',
+          name: 'Carlos',
+          phone: null,
+          notes: null,
+          vehicle_type: 'moto',
+          active: false,
+        },
+        error: null,
+      }),
+    }))
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => ({
+          update: updateSpy,
+        }),
+      },
+    } as never)
+    expect((await deliveryDriverByIdRoute.PATCH(
+      new Request('https://chefops.test/api/delivery-drivers/driver-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: '  Carlos  ',
+          phone: '   ',
+          notes: '   ',
+          vehicle_type: 'moto',
+          active: false,
+        }),
+      }) as never,
+      { params: Promise.resolve({ id: 'driver-1' }) },
+    )).status).toBe(200)
+    expect(updateSpy).toHaveBeenCalledWith({
+      name: 'Carlos',
+      phone: null,
+      notes: null,
+      vehicle_type: 'moto',
+      active: false,
+    })
+
+    const partialUpdateSpy = vi.fn(() => ({
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          id: 'driver-1',
+          phone: '11999999999',
+          notes: 'turno noite',
+        },
+        error: null,
+      }),
+    }))
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => ({
+          update: partialUpdateSpy,
+        }),
+      },
+    } as never)
+    expect((await deliveryDriverByIdRoute.PATCH(
+      new Request('https://chefops.test/api/delivery-drivers/driver-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          phone: ' 11999999999 ',
+          notes: '  turno noite  ',
+        }),
+      }) as never,
+      { params: Promise.resolve({ id: 'driver-1' }) },
+    )).status).toBe(200)
+    expect(partialUpdateSpy).toHaveBeenCalledWith({
+      phone: '11999999999',
+      notes: 'turno noite',
+    })
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
       profile: { tenant_id: 'tenant-1' },
       supabase: {
@@ -293,6 +397,32 @@ describe('api operations routes', () => {
       {} as never,
       { params: Promise.resolve({ id: 'driver-1' }) },
     )).status).toBe(404)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => ({
+          delete: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockRejectedValue(new Error('delete failed')),
+        }),
+      },
+    } as never)
+    expect((await deliveryDriverByIdRoute.DELETE(
+      {} as never,
+      { params: Promise.resolve({ id: 'driver-1' }) },
+    )).status).toBe(500)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse(),
+    } as never)
+    expect((await deliveryDriverByIdRoute.DELETE(
+      {} as never,
+      { params: Promise.resolve({ id: 'driver-1' }) },
+    )).status).toBe(403)
   })
 
   it('tabs GET/POST/PATCH cobrem conflitos, validacao, auth e fechamento', async () => {
@@ -318,6 +448,23 @@ describe('api operations routes', () => {
     expect((await tabsRoute.GET(
       { nextUrl: new URL('https://chefops.test/api/tabs?status=open') } as never,
     )).status).toBe(200)
+
+    const defaultStatusQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [{ id: 'tab-default' }], error: null }),
+    }
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => defaultStatusQuery,
+      },
+    } as never)
+    expect((await tabsRoute.GET(
+      { nextUrl: new URL('https://chefops.test/api/tabs') } as never,
+    )).status).toBe(200)
+    expect(defaultStatusQuery.eq).toHaveBeenCalledWith('status', 'open')
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
@@ -530,6 +677,45 @@ describe('api operations routes', () => {
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: new Error('create failed') }),
+        })),
+      })),
+    } as never)
+    expect((await deliverySettingsRoute.PATCH(
+      new Request('https://chefops.test/api/delivery-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ delivery_enabled: false, flat_fee: 3 }),
+      }) as never,
+    )).status).toBe(500)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValue({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        })),
+      })),
+    } as never)
+    expect((await deliverySettingsRoute.GET()).status).toBe(500)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValue({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1' }, error: null }),
         update: vi.fn(() => ({
           eq: vi.fn().mockReturnThis(),
@@ -607,6 +793,34 @@ describe('api operations routes', () => {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           order: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: 'table-3',
+                active_session: [
+                  { id: 'sess-closed-1', status: 'closed', orders: [{ total: 8 }] },
+                  { id: 'sess-closed-2', status: 'cancelled', orders: [{ total: 12 }] },
+                ],
+              },
+            ],
+            error: null,
+          }),
+        }),
+      },
+    } as never)
+    const tablesWithClosedArraySessions = await tablesRoute.GET()
+    expect(tablesWithClosedArraySessions.status).toBe(200)
+    await expect(tablesWithClosedArraySessions.json()).resolves.toMatchObject({
+      data: [{ id: 'table-3', active_session: null }],
+    })
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: () => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({
             data: null,
             error: new Error('tables failed'),
           }),
@@ -674,6 +888,33 @@ describe('api operations routes', () => {
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { max_tables: 0 } }),
+            }
+          }
+
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({}),
+          }
+        }),
+      },
+    } as never)
+    expect((await tablesRoute.POST(
+      new Request('https://chefops.test/api/tables', {
+        method: 'POST',
+        body: JSON.stringify({ number: '10A', capacity: 4 }),
+      }) as never,
+    )).status).toBe(429)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'tenants') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
               single: vi.fn().mockResolvedValue({ data: { max_tables: -1 } }),
             }
           }
@@ -708,6 +949,190 @@ describe('api operations routes', () => {
       new Request('https://chefops.test/api/tables', {
         method: 'POST',
         body: JSON.stringify({ number: '11', capacity: 4 }),
+      }) as never,
+    )).status).toBe(201)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'tenants') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { max_tables: 5 } }),
+            }
+          }
+
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ count: null }),
+          }
+        }),
+      },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn((table: string) => {
+        if (table === 'tables') {
+          return {
+            insert: vi.fn(() => ({
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: { id: 'table-2b', number: '11B', capacity: 6 },
+                error: null,
+              }),
+            })),
+          }
+        }
+
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }),
+    } as never)
+    expect((await tablesRoute.POST(
+      new Request('https://chefops.test/api/tables', {
+        method: 'POST',
+        body: JSON.stringify({ number: '11-finite-below-limit', capacity: 4 }),
+      }) as never,
+    )).status).toBe(201)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'tenants') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { max_tables: 2 } }),
+            }
+          }
+
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ count: 1 }),
+          }
+        }),
+      },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn((table: string) => {
+        if (table === 'tables') {
+          return {
+            insert: vi.fn(() => ({
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: { id: 'table-2finite', number: '11-finite-below-limit', capacity: 4 },
+                error: null,
+              }),
+            })),
+          }
+        }
+
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }),
+    } as never)
+    expect((await tablesRoute.POST(
+      new Request('https://chefops.test/api/tables', {
+        method: 'POST',
+        body: JSON.stringify({ number: '11-null-tenant', capacity: 5 }),
+      }) as never,
+    )).status).toBe(201)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'tenants') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { max_tables: 2 } }),
+            }
+          }
+
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ count: undefined }),
+          }
+        }),
+      },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn((table: string) => {
+        if (table === 'tables') {
+          return {
+            insert: vi.fn(() => ({
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: { id: 'table-undefined-count', number: '11-undef', capacity: 4 },
+                error: null,
+              }),
+            })),
+          }
+        }
+
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }),
+    } as never)
+    expect((await tablesRoute.POST(
+      new Request('https://chefops.test/api/tables', {
+        method: 'POST',
+        body: JSON.stringify({ number: '11-undef', capacity: 4 }),
+      }) as never,
+    )).status).toBe(201)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'tenants') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: null }),
+            }
+          }
+
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ count: 999 }),
+          }
+        }),
+      },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn((table: string) => {
+        if (table === 'tables') {
+          return {
+            insert: vi.fn(() => ({
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: { id: 'table-2c', number: '11-null-tenant', capacity: 5 },
+                error: null,
+              }),
+            })),
+          }
+        }
+
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }),
+    } as never)
+    expect((await tablesRoute.POST(
+      new Request('https://chefops.test/api/tables', {
+        method: 'POST',
+        body: JSON.stringify({ number: '11B', capacity: 6 }),
       }) as never,
     )).status).toBe(201)
 
@@ -837,5 +1262,73 @@ describe('api operations routes', () => {
       {} as never,
       { params: Promise.resolve({ id: 'table-1' }) },
     )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      },
+    } as never)
+    expect((await tabByIdRoute.PATCH(
+      new Request('https://chefops.test/api/tabs/tab-invalid', {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'noop' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'tab-invalid' }) },
+    )).status).toBe(400)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      },
+    } as never)
+    expect((await tabByIdRoute.PATCH(
+      new Request('https://chefops.test/api/tabs/tab-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'close' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'tab-1' }) },
+    )).status).toBe(401)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
+          .mockResolvedValueOnce({
+            data: { id: 'tab-1', orders: null },
+          })
+          .mockResolvedValueOnce({
+            data: { id: 'tab-1', total: 0 },
+            error: null,
+          }),
+        update: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { id: 'tab-1', total: 0 },
+            error: null,
+          }),
+        })),
+      })),
+    } as never)
+    expect((await tabByIdRoute.PATCH(
+      new Request('https://chefops.test/api/tabs/tab-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'close' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'tab-1' }) },
+    )).status).toBe(200)
+
+    vi.mocked(createClient).mockRejectedValueOnce(new Error('tabs failed') as never)
+    expect((await tabByIdRoute.PATCH(
+      new Request('https://chefops.test/api/tabs/tab-500', {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'close' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'tab-500' }) },
+    )).status).toBe(500)
   })
 })

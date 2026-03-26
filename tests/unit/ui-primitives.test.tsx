@@ -2,6 +2,8 @@ import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
+let mockFieldState: { error?: { message?: string } } = {}
+
 vi.mock('radix-ui', () => {
   const React = require('react') as typeof import('react')
 
@@ -51,8 +53,50 @@ vi.mock('radix-ui', () => {
     Separator: {
       Root: forward('div', 'SeparatorRoot'),
     },
+    Label: {
+      Root: forward('label', 'LabelRoot'),
+    },
+    Slot: {
+      Root: React.forwardRef(({ children, ...props }: Record<string, unknown>, ref) => {
+        if (React.isValidElement(children)) {
+          return React.cloneElement(children, { ref, ...props })
+        }
+        return React.createElement('span', { ref, ...props }, children)
+      }),
+    },
   }
 })
+
+vi.mock('@radix-ui/react-label', () => {
+  const React = require('react') as typeof import('react')
+  return {
+    Root: React.forwardRef(({ children, ...props }: Record<string, unknown>, ref) =>
+      React.createElement('label', { ref, ...props }, children)
+    ),
+  }
+})
+
+vi.mock('@radix-ui/react-slot', () => {
+  const React = require('react') as typeof import('react')
+  return {
+    Slot: React.forwardRef(({ children, ...props }: Record<string, unknown>, ref) => {
+      if (React.isValidElement(children)) {
+        return React.cloneElement(children, { ref, ...props })
+      }
+      return React.createElement('span', { ref, ...props }, children)
+    }),
+  }
+})
+
+vi.mock('react-hook-form', () => ({
+  Controller: ({ render }: { render?: (args: { field: Record<string, unknown> }) => React.ReactNode }) =>
+    render ? render({ field: { name: 'email', onChange: vi.fn(), onBlur: vi.fn(), value: '' } }) : null,
+  FormProvider: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
+  useFormContext: () => ({
+    getFieldState: () => mockFieldState,
+    formState: {},
+  }),
+}))
 
 vi.mock('next-themes', () => ({
   useTheme: () => ({
@@ -87,6 +131,7 @@ describe('ui primitives', () => {
   it('renderiza dialog com slots principais', async () => {
     const {
       Dialog,
+      DialogClose,
       DialogTrigger,
       DialogContent,
       DialogHeader,
@@ -119,6 +164,13 @@ describe('ui primitives', () => {
     expect(markup).toContain('Descrição')
     expect(markup).toContain('Rodapé')
     expect(markup).toContain('Close')
+
+    const closeMarkup = renderToStaticMarkup(
+      React.createElement(DialogClose, null, 'Fechar direto')
+    )
+
+    expect(closeMarkup).toContain('data-slot="dialog-close"')
+    expect(closeMarkup).toContain('Fechar direto')
   })
 
   it('renderiza select, separator e tabela com estrutura básica', async () => {
@@ -267,4 +319,121 @@ describe('ui primitives', () => {
     expect(markup).toContain('Título do card')
     expect(markup).toContain('custom-card')
   })
+
+  it('renderiza badge com variant link e asChild', async () => {
+    const { Badge } = await import('@/components/ui/badge')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        Badge,
+        { variant: 'link', asChild: true },
+        React.createElement('a', { href: '/planos' }, 'Ver planos')
+      )
+    )
+
+    expect(markup).toContain('data-slot="badge"')
+    expect(markup).toContain('data-variant="link"')
+    expect(markup).toContain('href="/planos"')
+    expect(markup).toContain('hover:underline')
+  })
+
+  it('renderiza form sem erro usando description e mensagem customizada', async () => {
+    mockFieldState = {}
+
+    const {
+      Form,
+      FormField,
+      FormItem,
+      FormLabel,
+      FormControl,
+      FormDescription,
+      FormMessage,
+    } = await import('@/components/ui/form')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        Form,
+        null,
+        React.createElement(FormField, {
+          name: 'email',
+          render: () =>
+            React.createElement(
+              FormItem,
+              null,
+              React.createElement(FormLabel, null, 'E-mail'),
+              React.createElement(
+                FormControl,
+                null,
+                React.createElement('input', { defaultValue: 'user@chefops.com' })
+              ),
+              React.createElement(FormDescription, null, 'Use seu melhor e-mail'),
+              React.createElement(FormMessage, null, 'Tudo certo')
+            ),
+        })
+      )
+    )
+
+    expect(markup).toContain('E-mail')
+    expect(markup).toContain('Use seu melhor e-mail')
+    expect(markup).toContain('Tudo certo')
+    expect(markup).toContain('aria-invalid="false"')
+    expect(markup).toContain('form-item-description')
+  })
+
+  it('renderiza form com erro e esconde mensagem vazia quando nao ha body', async () => {
+    mockFieldState = { error: { message: 'Campo obrigatório' } }
+
+    const {
+      Form,
+      FormField,
+      FormItem,
+      FormLabel,
+      FormControl,
+      FormDescription,
+      FormMessage,
+    } = await import('@/components/ui/form')
+
+    const withErrorMarkup = renderToStaticMarkup(
+      React.createElement(
+        Form,
+        null,
+        React.createElement(FormField, {
+          name: 'email',
+          render: () =>
+            React.createElement(
+              FormItem,
+              null,
+              React.createElement(FormLabel, null, 'E-mail'),
+              React.createElement(
+                FormControl,
+                null,
+                React.createElement('input', null)
+              ),
+              React.createElement(FormDescription, null, 'Descrição'),
+              React.createElement(FormMessage, null, 'Ignorado')
+            ),
+        })
+      )
+    )
+
+    mockFieldState = {}
+
+    const emptyMessageMarkup = renderToStaticMarkup(
+      React.createElement(
+        Form,
+        null,
+        React.createElement(FormField, {
+          name: 'email',
+          render: () => React.createElement(FormItem, null, React.createElement(FormMessage, null)),
+        })
+      )
+    )
+
+    expect(withErrorMarkup).toContain('Campo obrigatório')
+    expect(withErrorMarkup).toContain('aria-invalid="true"')
+    expect(withErrorMarkup).toContain('text-destructive')
+    expect(withErrorMarkup).toContain('form-item-message')
+    expect(emptyMessageMarkup).toBe('<div><div class="space-y-2"></div></div>')
+  })
+
 })

@@ -31,6 +31,7 @@ describe('orders-page helpers', () => {
     expect(normalizeDeliveryAddress({ street: 'Rua B' })).toEqual({ street: 'Rua B' })
     expect(normalizeDeliveryAddress('{invalid')).toBeNull()
     expect(normalizeDeliveryAddress(null)).toBeNull()
+    expect(normalizeDeliveryAddress(123)).toBeNull()
   })
 
   it('monta filtros e ordena notificacoes do whatsapp', () => {
@@ -52,6 +53,8 @@ describe('orders-page helpers', () => {
 
     expect(getSortedNotifications(order as never).map((item) => item.id)).toEqual(['2', '1'])
     expect(getLatestWhatsappNotification(order as never)?.id).toBe('2')
+    expect(getSortedNotifications({ notifications: null } as never)).toEqual([])
+    expect(getLatestWhatsappNotification({ notifications: null } as never)).toBeNull()
   })
 
   it('decide cards e acoes de entrega conforme contexto do pedido', () => {
@@ -66,6 +69,12 @@ describe('orders-page helpers', () => {
       table_number: '10',
       notifications: [{ id: '1', created_at: '2026-03-21T12:00:00.000Z' }],
     } as never, true)).toBe(false)
+
+    expect(shouldShowWhatsappCard({
+      payment_method: 'online',
+      table_number: null,
+      notifications: [{ id: '1', created_at: '2026-03-21T12:00:00.000Z' }],
+    } as never, false)).toBe(false)
 
     expect(shouldShowAdvanceButton({
       status: 'confirmed',
@@ -130,6 +139,9 @@ describe('orders-page helpers', () => {
     expect(resolveMercadoPagoCheckoutUrl({ sandbox_init_point: 'https://mp.test/checkout' })).toBe(
       'https://mp.test/checkout'
     )
+    expect(resolveMercadoPagoCheckoutUrl({ init_point: 'https://mp.test/init' })).toBe(
+      'https://mp.test/init'
+    )
     expect(() => resolveMercadoPagoCheckoutUrl({})).toThrow('Mercado Pago não retornou um link de pagamento.')
     expect(buildCancelOrderPayload({ id: 'order-10' } as never, 'Cliente desistiu')).toEqual({
       id: 'order-10',
@@ -142,6 +154,7 @@ describe('orders-page helpers', () => {
     expect(getOrderFilterChangeState('ready')).toEqual({ statusFilter: 'ready', page: 1 })
     expect(getOrdersInvalidationQueryKey()).toEqual(['orders'])
     expect(getOrdersTotalPages(0, 10)).toBe(1)
+    expect(getOrdersTotalPages(undefined, 10)).toBe(1)
     expect(getOrdersTotalPages(21, 10)).toBe(3)
   })
 })

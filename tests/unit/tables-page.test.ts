@@ -50,6 +50,8 @@ describe('tables-page helpers', () => {
     expect(getTableOrdersCount(table as never)).toBe(2)
     expect(getTableDetailsTotal(table as never)).toBe('42.50')
     expect(buildCloseSessionPrompt({ number: '11', active_session: null } as never)).toBeNull()
+    expect(getTableOrdersCount({ active_session: null } as never)).toBe(0)
+    expect(getTableDetailsTotal({ active_session: null } as never)).toBe('0.00')
   })
 
   it('expoe configuracao de status das mesas', () => {
@@ -67,6 +69,8 @@ describe('tables-page helpers', () => {
     expect(getOpenSessionSubmitLabel(false)).toBe('Abrir comanda')
     expect(resolveTableQrUrlResponse({ url: 'https://chefops.test/qrcode' })).toBe('https://chefops.test/qrcode')
     expect(resolveTableQrUrlResponse({})).toBeNull()
+    expect(resolveTableQrUrlResponse(null)).toBeNull()
+    expect(resolveTableQrUrlResponse(undefined)).toBeNull()
   })
 
   it('resolve valores de edicao e mensagens auxiliares', () => {

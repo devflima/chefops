@@ -263,6 +263,38 @@ describe('catalog and users page components', () => {
     expect(alert).toHaveBeenCalledWith('Erro ao excluir categoria.')
   })
 
+  it('cobre fallback quando categorias ainda não carregaram', async () => {
+    usePlanMock.mockReturnValue({ data: undefined })
+    useCategoriesMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    })
+
+    const { default: CategoriasPage } = await import('@/app/(dashboard)/categorias/page')
+
+    expect(renderToStaticMarkup(React.createElement(CategoriasPage))).toContain(
+      'Categories Page Content Mock'
+    )
+
+    const props = capturedCategoriesProps as {
+      categoryLimitReached: boolean
+      categoryLimit: number | undefined
+      isLoading: boolean
+      filteredCategories: unknown[]
+      paginatedCategories: unknown[]
+      totalPages: number
+      planUsageText: string
+    }
+
+    expect(props.isLoading).toBe(true)
+    expect(props.filteredCategories).toEqual([])
+    expect(props.paginatedCategories).toEqual([])
+    expect(props.totalPages).toBe(1)
+    expect(props.categoryLimitReached).toBe(false)
+    expect(props.categoryLimit).toBeUndefined()
+    expect(props.planUsageText).toBe('')
+  })
+
 
   it('encaminha ações principais da página de extras', async () => {
     useQueryMock.mockReturnValue({
@@ -389,6 +421,80 @@ describe('catalog and users page components', () => {
       message: 'Erro ao salvar adicional.',
     })
     expect(fetchMock).toHaveBeenCalledWith('/api/extras/extra-1', { method: 'DELETE' })
+  })
+
+  it('executa a queryFn real da página de extras', async () => {
+    let capturedQueryFn: (() => Promise<unknown>) | null = null
+
+    useQueryMock.mockImplementation((options: { queryFn: () => Promise<unknown> }) => {
+      capturedQueryFn = options.queryFn
+      return {
+        data: [],
+        isLoading: false,
+      }
+    })
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: 'extra-1',
+            name: 'Borda',
+            category: 'border',
+            price: 10,
+          },
+        ],
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: ExtrasPage } = await import('@/app/(dashboard)/extras/page')
+
+    renderToStaticMarkup(React.createElement(ExtrasPage))
+
+    expect(capturedQueryFn).toBeTypeOf('function')
+    await expect(capturedQueryFn?.()).resolves.toEqual([
+      {
+        id: 'extra-1',
+        name: 'Borda',
+        category: 'border',
+        price: 10,
+      },
+    ])
+    expect(fetchMock).toHaveBeenCalledWith('/api/extras')
+  })
+
+  it('cobre fallback quando extras ainda não carregaram', async () => {
+    usePlanMock.mockReturnValue({ data: undefined })
+    useQueryMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    })
+
+    const { default: ExtrasPage } = await import('@/app/(dashboard)/extras/page')
+
+    expect(renderToStaticMarkup(React.createElement(ExtrasPage))).toContain(
+      'Extras Page Content Mock'
+    )
+
+    const props = capturedExtrasProps as {
+      extrasLimitReached: boolean
+      extrasLimit: number | undefined
+      isLoading: boolean
+      filteredExtras: unknown[]
+      paginatedExtras: unknown[]
+      totalPages: number
+      planUsageText: string
+    }
+
+    expect(props.isLoading).toBe(true)
+    expect(props.filteredExtras).toEqual([])
+    expect(props.paginatedExtras).toEqual([])
+    expect(props.totalPages).toBe(1)
+    expect(props.extrasLimitReached).toBe(false)
+    expect(props.extrasLimit).toBeUndefined()
+    expect(props.planUsageText).toBe('')
   })
 
 
@@ -607,5 +713,57 @@ describe('catalog and users page components', () => {
 
     expect(deleteMutateAsync).toHaveBeenCalledWith('user-2')
     expect(toast.error).toHaveBeenCalledWith('Falha ao remover usuário')
+  })
+
+  it('cobre fallback da página de usuários sem user e sem dados carregados', async () => {
+    useUserMock.mockReturnValue({
+      user: null,
+    })
+    useUsersMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    })
+    useCreateUserMock.mockReturnValue({
+      isPending: true,
+      mutateAsync: vi.fn(),
+    })
+    useUpdateUserRoleMock.mockReturnValue({
+      isPending: true,
+      mutateAsync: vi.fn(),
+    })
+    useDeleteUserMock.mockReturnValue({
+      isPending: true,
+      mutateAsync: vi.fn(),
+    })
+
+    const { default: UsuariosPage } = await import('@/app/(dashboard)/usuarios/page')
+
+    expect(renderToStaticMarkup(React.createElement(UsuariosPage))).toContain(
+      'Users Page Content Mock'
+    )
+
+    const props = capturedUsersProps as {
+      isOwner: boolean
+      isLoading: boolean
+      data: unknown
+      paginatedUsers: unknown[]
+      updatePending: boolean
+      deletePending: boolean
+      createPending: boolean
+      totalPages: number
+      availableRoles: unknown[]
+      canManageUser: (teamUser: Record<string, unknown>) => boolean
+    }
+
+    expect(props.isOwner).toBe(false)
+    expect(props.isLoading).toBe(true)
+    expect(props.data).toBeNull()
+    expect(props.paginatedUsers).toEqual([])
+    expect(props.totalPages).toBe(1)
+    expect(props.availableRoles).toEqual([])
+    expect(props.updatePending).toBe(true)
+    expect(props.deletePending).toBe(true)
+    expect(props.createPending).toBe(true)
+    expect(props.canManageUser({ id: 'user-2' })).toBe(false)
   })
 })

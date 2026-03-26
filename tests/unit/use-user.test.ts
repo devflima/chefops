@@ -123,6 +123,108 @@ describe('useUser', () => {
     expect(stateSetters[1]).toHaveBeenCalledWith(false)
   })
 
+  it('recarrega o usuário ao mudar auth state e aceita tenant em objeto', async () => {
+    const unsubscribe = vi.fn()
+    const getUser = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          user: {
+            id: 'user-3',
+            email: 'owner@chefops.dev',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          user: {
+            id: 'user-3',
+            email: 'owner@chefops.dev',
+          },
+        },
+      })
+
+    const single = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          full_name: 'Owner One',
+          role: 'owner',
+          tenant_id: 'tenant-3',
+          tenants: {
+            id: 'tenant-3',
+            name: 'ChefOps Prime',
+            slug: 'chefops-prime',
+            plan: 'pro',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          full_name: 'Owner Reloaded',
+          role: 'owner',
+          tenant_id: 'tenant-3',
+          tenants: {
+            id: 'tenant-3',
+            name: 'ChefOps Prime',
+            slug: 'chefops-prime',
+            plan: 'pro',
+          },
+        },
+      })
+
+    const onAuthStateChange = vi.fn((callback: () => void) => {
+      callback()
+      return {
+        data: {
+          subscription: { unsubscribe },
+        },
+      }
+    })
+
+    createClientMock.mockReturnValue({
+      auth: {
+        getUser,
+        onAuthStateChange,
+      },
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single,
+          })),
+        })),
+      })),
+    })
+
+    const { useUser } = await import('@/features/auth/hooks/useUser')
+    useUser()
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(getUser).toHaveBeenCalledTimes(2)
+    expect(onAuthStateChange).toHaveBeenCalledTimes(1)
+    expect(stateSetters[0]).toHaveBeenCalledWith({
+      id: 'user-3',
+      email: 'owner@chefops.dev',
+      profile: {
+        full_name: 'Owner Reloaded',
+        role: 'owner',
+        tenant_id: 'tenant-3',
+        tenant: {
+          id: 'tenant-3',
+          name: 'ChefOps Prime',
+          slug: 'chefops-prime',
+          plan: 'pro',
+        },
+      },
+    })
+    expect(stateSetters[1]).toHaveBeenCalledWith(false)
+
+    effectCleanup?.()
+    expect(unsubscribe).toHaveBeenCalled()
+  })
+
   it('zera usuário quando perfil não existe', async () => {
     createClientMock.mockReturnValue({
       auth: {

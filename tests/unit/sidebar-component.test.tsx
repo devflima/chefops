@@ -133,4 +133,33 @@ describe('Sidebar component', () => {
 
     expect(globalThis.window.location.href).toBe('/login')
   })
+
+  it('renderiza sem links quando o profile é nulo e usa fallback se o json do logout falhar', async () => {
+    const { default: Sidebar } = await import('@/features/auth/components/Sidebar')
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: vi.fn().mockRejectedValue(new Error('invalid json')),
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('window', { location: { href: '/dashboard' } })
+    usePlanMock.mockReturnValue({ data: { plan: 'pro' } })
+    usePathnameMock.mockReturnValue('/produtos')
+
+    const tree = React.createElement(Sidebar, {
+      profile: null,
+    })
+
+    const markup = renderToStaticMarkup(tree)
+    expect(markup).toContain('Premium')
+    expect(markup).toContain('text-xs font-medium text-slate-600">?</div>')
+    expect(markup).not.toContain('href="/dashboard"')
+    expect(markup).not.toContain('href="/produtos"')
+
+    const buttons = flattenElements(tree).filter((element) => element.type === 'button')
+    const logoutButton = buttons.find((button) => getTextContent(button).includes('Sair'))
+    await logoutButton?.props.onClick()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' })
+    expect(globalThis.window.location.href).toBe('/login')
+  })
 })

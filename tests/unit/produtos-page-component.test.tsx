@@ -14,6 +14,7 @@ const formSetErrorMock = vi.fn()
 const capturedButtons: Array<Record<string, unknown>> = []
 let capturedDialogChildren: React.ReactNode = null
 let capturedPaginationProps: Record<string, unknown> | null = null
+let currentFormState: { isSubmitting: boolean; errors: Record<string, unknown> }
 
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react')
@@ -105,7 +106,7 @@ vi.mock('lucide-react', () => {
 vi.mock('react-hook-form', () => ({
   useForm: () => ({
     control: {},
-    formState: { isSubmitting: false, errors: {} },
+    formState: currentFormState,
     reset: formResetMock,
     setError: formSetErrorMock,
     handleSubmit: (callback: (values: Record<string, unknown>) => unknown) => () =>
@@ -169,6 +170,10 @@ function getButtonByText(label: string) {
   })
 }
 
+function getNativeSelectsFromTree(node: React.ReactNode) {
+  return flattenElements(node).filter((element) => element.type === 'select')
+}
+
 describe('ProdutosPage component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -176,6 +181,7 @@ describe('ProdutosPage component', () => {
     capturedButtons.length = 0
     capturedDialogChildren = null
     capturedPaginationProps = null
+    currentFormState = { isSubmitting: false, errors: {} }
 
     useProductsMock.mockReturnValue({
       data: {
@@ -300,6 +306,42 @@ describe('ProdutosPage component', () => {
     const emptyMarkup = renderToStaticMarkup(React.createElement(ProdutosPage))
     expect(emptyMarkup).toContain('Nenhum produto cadastrado.')
     expect(emptyMarkup).toContain('Cadastrar primeiro produto')
+
+    const emptyButton = getButtonByText('Cadastrar primeiro produto')
+    ;(emptyButton?.onClick as (() => void) | undefined)?.()
+
+    const latestOpenSetter = useStateMock.mock.results[useStateMock.mock.results.length - 2]?.value?.[1] as ReturnType<typeof vi.fn>
+    expect(latestOpenSetter).toHaveBeenCalledWith(true)
+  })
+
+  it('reseta a pagina ao trocar os filtros nativos', async () => {
+    const setPageMock = vi.fn()
+    const setCategoryFilterMock = vi.fn()
+    const setStatusFilterMock = vi.fn()
+
+    useStateMock
+      .mockImplementationOnce(() => [3, setPageMock])
+      .mockImplementationOnce(() => ['all', setCategoryFilterMock])
+      .mockImplementationOnce(() => ['active', setStatusFilterMock])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+
+    const { default: ProdutosPage } = await import('@/app/(dashboard)/produtos/page')
+
+    const tree = ProdutosPage()
+    const [categorySelect, statusSelect] = getNativeSelectsFromTree(tree)
+
+    ;(categorySelect?.props.onChange as ((event: { target: { value: string } }) => void) | undefined)?.({
+      target: { value: 'cat-1' },
+    })
+    ;(statusSelect?.props.onChange as ((event: { target: { value: string } }) => void) | undefined)?.({
+      target: { value: 'inactive' },
+    })
+
+    expect(setCategoryFilterMock).toHaveBeenCalledWith('cat-1')
+    expect(setStatusFilterMock).toHaveBeenCalledWith('inactive')
+    expect(setPageMock).toHaveBeenCalledTimes(2)
+    expect(setPageMock).toHaveBeenCalledWith(1)
   })
 
   it('submete criação, edição e erro do formulário no componente real', async () => {
@@ -379,5 +421,115 @@ describe('ProdutosPage component', () => {
     expect(formSetErrorMock).toHaveBeenCalledWith('root', {
       message: 'Falha ao salvar produto',
     })
+  })
+
+  it('fecha dialogo e usa fallback de erro generico', async () => {
+    const setOpenMock = vi.fn()
+
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [true, setOpenMock])
+      .mockImplementationOnce(() => [{
+        id: 'prod-1',
+        tenant_id: 'tenant-1',
+        category_id: 'cat-1',
+        name: 'Farinha',
+        sku: 'FR-1',
+        unit: 'kg',
+        cost_price: 12,
+        min_stock: 2,
+        active: true,
+        category: { id: 'cat-1', name: 'Secos' },
+      }, vi.fn()])
+
+    useUpdateProductMock.mockReturnValueOnce({
+      mutateAsync: vi.fn().mockRejectedValue('falha-desconhecida'),
+    })
+
+    const { default: ProdutosPage } = await import('@/app/(dashboard)/produtos/page')
+    renderToStaticMarkup(React.createElement(ProdutosPage))
+
+    const cancelButton = getButtonByText('Cancelar')
+
+    ;(cancelButton?.onClick as (() => void) | undefined)?.()
+    await getDialogFormSubmitHandler()?.()
+
+    expect(setOpenMock).toHaveBeenCalledWith(false)
+    expect(formSetErrorMock).toHaveBeenCalledWith('root', {
+      message: 'Erro ao salvar produto.',
+    })
+  })
+
+  it('renderiza variações de produto inativo e estado de submit do formulário', async () => {
+    currentFormState = {
+      isSubmitting: true,
+      errors: {
+        root: { message: 'Erro de validação' },
+      },
+    }
+
+    useProductsMock.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: 'prod-2',
+            tenant_id: 'tenant-1',
+            category_id: null,
+            name: 'Molho especial',
+            sku: '',
+            unit: 'ml',
+            cost_price: 4.5,
+            min_stock: 0,
+            active: false,
+            category: null,
+          },
+        ],
+        count: 0,
+      },
+      isLoading: false,
+    })
+    useCategoriesMock.mockReturnValue({ data: undefined })
+    usePlanMock.mockReturnValue({ data: undefined })
+
+    const setOpenMock = vi.fn()
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [true, setOpenMock])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+
+    const { default: ProdutosPage } = await import('@/app/(dashboard)/produtos/page')
+    const markup = renderToStaticMarkup(React.createElement(ProdutosPage))
+
+    expect(markup).toContain('0 produtos cadastrados')
+    expect(markup).toContain('Molho especial')
+    expect(markup).toContain('mL')
+    expect(markup).toContain('Inativo')
+    expect(markup).toContain('—')
+    expect(markup).not.toContain('SKU:')
+    expect(markup).toContain('Erro de validação')
+    expect(markup).toContain('Salvando...')
+  })
+
+  it('aplica fallbacks quando a consulta de produtos ainda nao retornou data', async () => {
+    useProductsMock.mockReturnValue({
+      data: null,
+      isLoading: false,
+    })
+    useCategoriesMock.mockReturnValue({ data: undefined })
+    usePlanMock.mockReturnValue({ data: undefined })
+    useCanAddMoreMock.mockReturnValue(true)
+
+    const { default: ProdutosPage } = await import('@/app/(dashboard)/produtos/page')
+    const markup = renderToStaticMarkup(React.createElement(ProdutosPage))
+
+    expect(markup).toContain('0 produtos cadastrados')
+    expect(markup).toContain('Produto')
+    expect(markup).not.toContain('Nenhum produto cadastrado.')
+    expect(markup).toContain('pagination-1-1')
+    expect(useCanAddMoreMock).toHaveBeenCalledWith('products', 0)
   })
 })

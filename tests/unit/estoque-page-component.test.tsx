@@ -233,4 +233,75 @@ describe('EstoquePage component', () => {
     expect(closeDayMutateAsync).toHaveBeenCalled()
     expect(alert).toHaveBeenCalledWith('Falha no fechamento')
   })
+
+  it('usa mensagens fallback quando os erros nao sao instancias de Error', async () => {
+    const createMovementMutateAsync = vi.fn().mockRejectedValue('falha')
+    const closeDayMutateAsync = vi.fn().mockRejectedValue('falha')
+
+    useCreateMovementMock.mockReturnValue({
+      mutateAsync: createMovementMutateAsync,
+    })
+    useCloseDayMock.mockReturnValue({
+      isPending: false,
+      mutateAsync: closeDayMutateAsync,
+    })
+
+    const { default: EstoquePage } = await import('@/app/(dashboard)/estoque/page')
+
+    renderToStaticMarkup(React.createElement(EstoquePage))
+
+    const props = capturedStockPageContentProps as {
+      onCloseDay: () => Promise<void>
+      onSubmit: (values: {
+        product_id: string
+        type: 'entry' | 'exit' | 'loss' | 'adjustment'
+        quantity: number
+        reason?: string
+      }) => Promise<void>
+    }
+
+    await props.onSubmit({
+      product_id: 'prod-1',
+      type: 'adjustment',
+      quantity: 2,
+      reason: 'Ajuste',
+    })
+    await props.onCloseDay()
+
+    expect(formSetErrorMock).toHaveBeenCalledWith('root', {
+      message: 'Erro ao registrar movimentação.',
+    })
+    expect(alert).toHaveBeenCalledWith('Erro ao fechar o dia.')
+  })
+
+  it('monta estado vazio quando balance, movimentos e produtos nao chegaram', async () => {
+    useStockBalanceMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    })
+    useStockMovementsMock.mockReturnValue({
+      data: undefined,
+    })
+    useProductsMock.mockReturnValue({
+      data: undefined,
+    })
+
+    const { default: EstoquePage } = await import('@/app/(dashboard)/estoque/page')
+
+    renderToStaticMarkup(React.createElement(EstoquePage))
+
+    const props = capturedStockPageContentProps as {
+      lowStock: unknown[]
+      categories: string[]
+      filteredBalanceCount: number
+      filteredMovementsCount: number
+      products: unknown
+    }
+
+    expect(props.lowStock).toEqual([])
+    expect(props.categories).toEqual([])
+    expect(props.filteredBalanceCount).toBe(0)
+    expect(props.filteredMovementsCount).toBe(0)
+    expect(props.products).toBeUndefined()
+  })
 })

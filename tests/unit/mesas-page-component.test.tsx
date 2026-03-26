@@ -296,6 +296,30 @@ describe('MesasPage component', () => {
     expect(capturedEmptyStateProps).toBeTruthy()
   })
 
+  it('renderiza loading e banner quando o limite do plano foi atingido', async () => {
+    useTablesMock.mockReturnValue({
+      data: [],
+      isLoading: true,
+    })
+    useCanAddMoreMock.mockReturnValue(false)
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    const markup = renderToStaticMarkup(React.createElement(MesasPage))
+
+    expect(markup).toContain('Carregando...')
+    expect(markup).toContain('O plano atual atingiu o limite de 10 mesas.')
+    expect(capturedHeaderProps).toBeTruthy()
+
+    const headerProps = capturedHeaderProps as {
+      tableLimitReached: boolean
+      maxTables?: number
+    }
+
+    expect(headerProps.tableLimitReached).toBe(true)
+    expect(headerProps.maxTables).toBe(10)
+  })
+
   it('submete criação e abertura de comanda com sucesso pelo componente real', async () => {
     const setNewTableOpenMock = vi.fn()
     const setOpenSessionModalMock = vi.fn()
@@ -419,5 +443,298 @@ describe('MesasPage component', () => {
     expect(execCommandMock).toHaveBeenCalledWith('copy')
     expect(removeChildMock).toHaveBeenCalled()
     expect(alert).toHaveBeenCalledWith('URL copiada!\nhttps://chefops.test/qr/table-1')
+  })
+
+  it('cobre fallbacks de erro e saída curta em ações da página', async () => {
+    const deleteTableMutateAsync = vi.fn().mockRejectedValue('falha')
+    const updateTableMutateAsync = vi.fn().mockRejectedValue('falha')
+    const openSessionMutateAsync = vi.fn().mockRejectedValue('falha')
+    const closeSessionMutateAsync = vi.fn().mockRejectedValue('falha')
+
+    useDeleteTableMock.mockReturnValue({ mutateAsync: deleteTableMutateAsync })
+    useUpdateTableMock.mockReturnValue({ mutateAsync: updateTableMutateAsync })
+    useOpenSessionMock.mockReturnValue({ mutateAsync: openSessionMutateAsync })
+    useCloseSessionMock.mockReturnValue({ mutateAsync: closeSessionMutateAsync })
+
+    const setEditingTableMock = vi.fn()
+    const setOpenSessionModalMock = vi.fn()
+
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [{
+        id: 'table-1',
+        number: '10',
+        capacity: 4,
+        status: 'available',
+        active_session: null,
+      }, setOpenSessionModalMock])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [{
+        id: 'table-1',
+        number: '10',
+        capacity: 4,
+      }, setEditingTableMock])
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({}),
+    }))
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    renderToStaticMarkup(React.createElement(MesasPage))
+
+    const gridProps = capturedGridProps as {
+      onDelete: (table: { id: string; number: string }) => Promise<void>
+      onCopyQr: (table: { id: string }) => Promise<void>
+      onCloseSession: (table: { number: string; active_session?: { id: string; total: number } | null }) => Promise<void>
+    }
+    const dialogProps = capturedTableSessionDialogProps as {
+      onCloseSession: (table: { number: string; active_session?: { id: string; total: number } | null }) => Promise<void>
+    }
+
+    await gridProps.onDelete({ id: 'table-1', number: '10' })
+    await getFormSubmitHandler(capturedTableFormDialogChildren)?.()
+    await getFormSubmitHandler(capturedOpenSessionDialogChildren)?.()
+    await gridProps.onCopyQr({ id: 'table-1' })
+    await gridProps.onCloseSession({ number: '10', active_session: null })
+    await dialogProps.onCloseSession({ number: '10', active_session: null })
+
+    expect(deleteTableMutateAsync).toHaveBeenCalledWith('table-1')
+    expect(alert).toHaveBeenCalledWith('Erro ao excluir mesa.')
+    expect(tableFormSetErrorMock).toHaveBeenCalledWith('root', {
+      message: 'Erro ao atualizar mesa.',
+    })
+    expect(openSessionMutateAsync).toHaveBeenCalledWith({
+      table_id: 'table-1',
+      customer_count: 1,
+    })
+    expect(sessionFormSetErrorMock).toHaveBeenCalledWith('root', {
+      message: 'Erro ao abrir comanda.',
+    })
+    expect(closeSessionMutateAsync).not.toHaveBeenCalled()
+    expect(setOpenSessionModalMock).not.toHaveBeenCalledWith(null)
+    expect(setEditingTableMock).not.toHaveBeenCalledWith(null)
+  })
+
+  it('fecha seleção do detalhe e permite abrir criação pelo header e estado vazio', async () => {
+    const setNewTableOpenMock = vi.fn()
+    const setSelectedTableMock = vi.fn()
+
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, setNewTableOpenMock])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [{
+        id: 'table-1',
+        number: '10',
+        capacity: 4,
+        status: 'occupied',
+        active_session: {
+          id: 'session-1',
+          total: 42,
+          opened_at: '2026-03-22T12:00:00.000Z',
+          orders: [],
+        },
+      }, setSelectedTableMock])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    renderToStaticMarkup(React.createElement(MesasPage))
+
+    const headerProps = capturedHeaderProps as {
+      onCreate: () => void
+    }
+    const dialogProps = capturedTableSessionDialogProps as {
+      onOpenChange: (open: boolean) => void
+    }
+
+    headerProps.onCreate()
+    dialogProps.onOpenChange(false)
+
+    expect(setNewTableOpenMock).toHaveBeenCalledWith(true)
+    expect(setSelectedTableMock).toHaveBeenCalledWith(null)
+
+    useTablesMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+    })
+    useStateMock.mockImplementation((initial: unknown) => [initial, setNewTableOpenMock])
+
+    const { default: EmptyMesasPage } = await import('@/app/(dashboard)/mesas/page')
+    renderToStaticMarkup(React.createElement(EmptyMesasPage))
+
+    const emptyStateProps = capturedEmptyStateProps as {
+      onCreate: () => void
+    }
+
+    emptyStateProps.onCreate()
+
+    expect(setNewTableOpenMock).toHaveBeenCalledWith(true)
+  })
+
+  it('fecha modal de abrir comanda e usa fallback genérico ao falhar fechar sessão', async () => {
+    const closeSessionMutateAsync = vi.fn().mockRejectedValue('falha')
+    const setOpenSessionModalMock = vi.fn()
+
+    useCloseSessionMock.mockReturnValue({ mutateAsync: closeSessionMutateAsync })
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [{
+        id: 'table-1',
+        number: '10',
+        capacity: 4,
+        status: 'occupied',
+        active_session: {
+          id: 'session-1',
+          total: 42,
+          orders: [],
+        },
+      }, setOpenSessionModalMock])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    renderToStaticMarkup(React.createElement(MesasPage))
+
+    const openDialogProps = capturedOpenSessionDialogProps as {
+      onOpenChange: (open: boolean) => void
+    }
+    const gridProps = capturedGridProps as {
+      onCloseSession: (table: { number: string; active_session: { id: string; total: number } }) => Promise<void>
+    }
+
+    openDialogProps.onOpenChange(false)
+    await gridProps.onCloseSession({
+      number: '10',
+      active_session: { id: 'session-1', total: 42 },
+    })
+
+    expect(setOpenSessionModalMock).toHaveBeenCalledWith(null)
+    expect(closeSessionMutateAsync).toHaveBeenCalledWith('session-1')
+    expect(alert).toHaveBeenCalledWith('Erro ao fechar comanda.')
+  })
+
+  it('mantém seleções quando dialogs seguem abertos e ignora QR sem URL', async () => {
+    const setOpenSessionModalMock = vi.fn()
+    const setSelectedTableMock = vi.fn()
+
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, setOpenSessionModalMock])
+      .mockImplementationOnce((initial: unknown) => [initial, setSelectedTableMock])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({}),
+    }))
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    renderToStaticMarkup(React.createElement(MesasPage))
+
+    const dialogProps = capturedTableSessionDialogProps as {
+      onOpenChange: (open: boolean) => void
+    }
+    const openDialogProps = capturedOpenSessionDialogProps as {
+      onOpenChange: (open: boolean) => void
+    }
+    const gridProps = capturedGridProps as {
+      onCopyQr: (table: { id: string }) => Promise<void>
+    }
+
+    dialogProps.onOpenChange(true)
+    openDialogProps.onOpenChange(true)
+    await gridProps.onCopyQr({ id: 'table-1' })
+
+    expect(setSelectedTableMock).not.toHaveBeenCalled()
+    expect(setOpenSessionModalMock).not.toHaveBeenCalled()
+    expect(alert).not.toHaveBeenCalled()
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
+  })
+
+  it('aborta exclusão e fechamento quando as confirmações são negadas', async () => {
+    const deleteTableMutateAsync = vi.fn()
+    const closeSessionMutateAsync = vi.fn()
+
+    useDeleteTableMock.mockReturnValue({ mutateAsync: deleteTableMutateAsync })
+    useCloseSessionMock.mockReturnValue({ mutateAsync: closeSessionMutateAsync })
+
+    const confirmMock = vi.fn(() => false)
+    const windowConfirmMock = vi.fn(() => false)
+
+    vi.stubGlobal('confirm', confirmMock)
+    vi.stubGlobal('window', { confirm: windowConfirmMock })
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    renderToStaticMarkup(React.createElement(MesasPage))
+
+    const gridProps = capturedGridProps as {
+      onDelete: (table: { id: string; number: string }) => Promise<void>
+      onCloseSession: (table: { number: string; active_session: { id: string; total: number } }) => Promise<void>
+    }
+
+    await gridProps.onDelete({ id: 'table-1', number: '10' })
+    await gridProps.onCloseSession({
+      number: '10',
+      active_session: { id: 'session-1', total: 42 },
+    })
+
+    expect(confirmMock).toHaveBeenCalledWith('Excluir a Mesa 10? Esta ação não pode ser desfeita.')
+    expect(windowConfirmMock).toHaveBeenCalledWith('Fechar comanda da Mesa 10?\nTotal: R$ 42.00')
+    expect(deleteTableMutateAsync).not.toHaveBeenCalled()
+    expect(closeSessionMutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('ignora submit de edição e abertura quando não existe seleção ativa', async () => {
+    const updateTableMutateAsync = vi.fn()
+    const openSessionMutateAsync = vi.fn()
+
+    useUpdateTableMock.mockReturnValue({ mutateAsync: updateTableMutateAsync })
+    useOpenSessionMock.mockReturnValue({ mutateAsync: openSessionMutateAsync })
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()])
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    renderToStaticMarkup(React.createElement(MesasPage))
+
+    await getFormSubmitHandler(capturedTableFormDialogChildren)?.()
+    await getFormSubmitHandler(capturedOpenSessionDialogChildren)?.()
+
+    expect(updateTableMutateAsync).not.toHaveBeenCalled()
+    expect(openSessionMutateAsync).not.toHaveBeenCalled()
+    expect(tableFormSetErrorMock).not.toHaveBeenCalled()
+    expect(sessionFormSetErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('não tenta fechar comanda quando o prompt não é gerado', async () => {
+    const closeSessionMutateAsync = vi.fn()
+    const windowConfirmMock = vi.fn(() => true)
+
+    useCloseSessionMock.mockReturnValue({ mutateAsync: closeSessionMutateAsync })
+    vi.stubGlobal('window', { confirm: windowConfirmMock })
+
+    const { default: MesasPage } = await import('@/app/(dashboard)/mesas/page')
+
+    renderToStaticMarkup(React.createElement(MesasPage))
+
+    const gridProps = capturedGridProps as {
+      onCloseSession: (table: { number: string; active_session: { id: string; total: number } }) => Promise<void>
+    }
+
+    await gridProps.onCloseSession({
+      number: '10',
+      active_session: undefined as unknown as { id: string; total: number },
+    })
+
+    expect(windowConfirmMock).not.toHaveBeenCalled()
+    expect(closeSessionMutateAsync).not.toHaveBeenCalled()
   })
 })

@@ -99,7 +99,22 @@ describe('integrations page helpers', () => {
     ).toEqual({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
-      flat_fee: 15.75,
+        flat_fee: 15.75,
+      })
+
+    expect(
+      buildDeliveryFeePayload(
+        {
+          tenant_id: 'tenant-1',
+          delivery_enabled: true,
+          flat_fee: 9,
+        },
+        ''
+      )
+    ).toEqual({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 0,
     })
 
     expect(
@@ -277,5 +292,175 @@ describe('IntegrationsPageContent', () => {
     expect(markup).toContain('Carregando integração...')
     expect(markup).toContain('Não foi possível carregar as configurações de entrega.')
     expect(markup).toContain('Recurso disponível apenas nos planos Standard e Premium.')
+  })
+
+  it('renderiza fallback de conta desconectada e estados de loading pendente', async () => {
+    const { IntegrationsPageContent } = await import('@/features/payments/IntegrationsPageContent')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(IntegrationsPageContent, {
+        connected: false,
+        accountLoading: false,
+        accountData: null,
+        disconnectPending: false,
+        onDisconnect: vi.fn(),
+        deliverySettingsLoading: true,
+        deliverySettingsData: null,
+        deliverySettingsPending: false,
+        deliveryFeeValue: '0',
+        onDeliveryToggle: vi.fn(),
+        onDeliveryFeeInputChange: vi.fn(),
+        onDeliveryFeeSave: vi.fn(),
+        hasWhatsappNotifications: true,
+        notificationSettingsLoading: true,
+        notificationSettingsData: null,
+        notificationSettingsPending: false,
+        whatsappOptions: whatsappOptionDefinitions,
+        onToggleWhatsappOption: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Desconectado')
+    expect(markup).toContain('Conectar Mercado Pago')
+    expect(markup).toContain('Carregando configuração de entrega...')
+    expect(markup).toContain('Carregando configurações...')
+  })
+
+  it('renderiza modo teste, expiração ausente e ações pendentes', async () => {
+    const { IntegrationsPageContent } = await import('@/features/payments/IntegrationsPageContent')
+
+    const accountData = {
+      mercado_pago_user_id: 'seller-test',
+      live_mode: false,
+      token_expires_at: null,
+    }
+
+    const deliverySettingsData = {
+      tenant_id: 'tenant-1',
+      delivery_enabled: false,
+      flat_fee: 0,
+    }
+
+    const notificationSettingsData = {
+      whatsapp_order_received: false,
+      whatsapp_order_confirmed: false,
+      whatsapp_order_preparing: false,
+      whatsapp_order_ready: false,
+      whatsapp_order_out_for_delivery: false,
+      whatsapp_order_delivered: false,
+      whatsapp_order_cancelled: false,
+    }
+
+    const markup = renderToStaticMarkup(
+      React.createElement(IntegrationsPageContent, {
+        connected: true,
+        accountLoading: false,
+        accountData,
+        disconnectPending: true,
+        onDisconnect: vi.fn(),
+        deliverySettingsLoading: false,
+        deliverySettingsData,
+        deliverySettingsPending: true,
+        deliveryFeeValue: '0',
+        onDeliveryToggle: vi.fn(),
+        onDeliveryFeeInputChange: vi.fn(),
+        onDeliveryFeeSave: vi.fn(),
+        hasWhatsappNotifications: true,
+        notificationSettingsLoading: false,
+        notificationSettingsData,
+        notificationSettingsPending: true,
+        whatsappOptions: whatsappOptionDefinitions,
+        onToggleWhatsappOption: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Teste')
+    expect(markup).toContain('não informado')
+    expect(markup).toContain('Desconectando...')
+    expect(markup).toContain('Salvando...')
+  })
+
+  it('renderiza bloco de notificações mesmo sem opções disponíveis', async () => {
+    const { IntegrationsPageContent } = await import('@/features/payments/IntegrationsPageContent')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(IntegrationsPageContent, {
+        connected: true,
+        accountLoading: false,
+        accountData: {
+          mercado_pago_user_id: 'seller-empty-options',
+          live_mode: true,
+          token_expires_at: '2026-03-21T00:00:00.000Z',
+        },
+        disconnectPending: false,
+        onDisconnect: vi.fn(),
+        deliverySettingsLoading: false,
+        deliverySettingsData: {
+          tenant_id: 'tenant-1',
+          delivery_enabled: true,
+          flat_fee: 10,
+        },
+        deliverySettingsPending: false,
+        deliveryFeeValue: '10',
+        onDeliveryToggle: vi.fn(),
+        onDeliveryFeeInputChange: vi.fn(),
+        onDeliveryFeeSave: vi.fn(),
+        hasWhatsappNotifications: true,
+        notificationSettingsLoading: false,
+        notificationSettingsData: {
+          whatsapp_order_received: false,
+          whatsapp_order_confirmed: false,
+          whatsapp_order_preparing: false,
+          whatsapp_order_ready: false,
+          whatsapp_order_out_for_delivery: false,
+          whatsapp_order_delivered: false,
+          whatsapp_order_cancelled: false,
+        },
+        notificationSettingsPending: false,
+        whatsappOptions: [],
+        onToggleWhatsappOption: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Notificações WhatsApp')
+    expect(markup).not.toContain('Carregando configurações...')
+    expect(markup).not.toContain('Recurso disponível apenas nos planos Standard e Premium.')
+  })
+
+  it('renderiza fallback quando as configurações de WhatsApp não carregam', async () => {
+    const { IntegrationsPageContent } = await import('@/features/payments/IntegrationsPageContent')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(IntegrationsPageContent, {
+        connected: true,
+        accountLoading: false,
+        accountData: {
+          mercado_pago_user_id: 'seller-whatsapp-fallback',
+          live_mode: true,
+          token_expires_at: '2026-03-21T00:00:00.000Z',
+        },
+        disconnectPending: false,
+        onDisconnect: vi.fn(),
+        deliverySettingsLoading: false,
+        deliverySettingsData: {
+          tenant_id: 'tenant-1',
+          delivery_enabled: true,
+          flat_fee: 10,
+        },
+        deliverySettingsPending: false,
+        deliveryFeeValue: '10',
+        onDeliveryToggle: vi.fn(),
+        onDeliveryFeeInputChange: vi.fn(),
+        onDeliveryFeeSave: vi.fn(),
+        hasWhatsappNotifications: true,
+        notificationSettingsLoading: false,
+        notificationSettingsData: null,
+        notificationSettingsPending: false,
+        whatsappOptions: whatsappOptionDefinitions,
+        onToggleWhatsappOption: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Não foi possível carregar as configurações de WhatsApp.')
   })
 })

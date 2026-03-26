@@ -79,6 +79,15 @@ describe('api auth and mercado pago routes', () => {
       email: 'chefops@test.com',
       password: '123456',
     })
+
+    vi.mocked(createClient).mockRejectedValueOnce(new Error('client failed') as never)
+    const failed = await loginRoute.POST(
+      new Request('https://chefops.test/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'chefops@test.com', password: '123456' }),
+      }) as never
+    )
+    expect(failed.status).toBe(500)
   })
 
   it('register POST valida body, trata slug duplicado, rollback e sucesso', async () => {
@@ -121,6 +130,37 @@ describe('api auth and mercado pago routes', () => {
       }) as never
     )
     expect(conflict.status).toBe(409)
+
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn(() => ({
+        insert: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: new Error('tenant insert failed'),
+          }),
+        })),
+      })),
+      auth: {
+        admin: {
+          createUser: vi.fn(),
+        },
+      },
+    } as never)
+
+    const tenantFailure = await registerRoute.POST(
+      new Request('https://chefops.test/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          full_name: 'Maria',
+          email: 'maria@test.com',
+          password: '123456',
+          tenant_name: 'Casa',
+          tenant_slug: 'casa',
+        }),
+      }) as never
+    )
+    expect(tenantFailure.status).toBe(500)
 
     const cleanupEq = vi.fn()
     const deleteMock = vi.fn(() => ({ eq: cleanupEq }))
@@ -237,6 +277,28 @@ describe('api auth and mercado pago routes', () => {
       })),
     } as never)
     expect((await mercadoPagoAccountRoute.GET()).status).toBe(500)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: false,
+      response: forbiddenResponse,
+    } as never)
+    expect((await mercadoPagoAccountRoute.DELETE()).status).toBe(403)
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    const deleteQueryWithError = {
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn()
+        .mockReturnValueOnce({
+          eq: vi.fn().mockResolvedValue({ error: new Error('delete failed') }),
+        }),
+    }
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn(() => deleteQueryWithError),
+    } as never)
+    expect((await mercadoPagoAccountRoute.DELETE()).status).toBe(500)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,

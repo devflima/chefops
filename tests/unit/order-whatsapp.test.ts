@@ -12,6 +12,7 @@ describe('order whatsapp helpers', () => {
     expect(normalizeBrazilPhone('5511912345678')).toBe('+5511912345678')
     expect(normalizeBrazilPhone('+55 (11) 91234-5678')).toBe('+5511912345678')
     expect(normalizeBrazilPhone('1199999999')).toBe('+551199999999')
+    expect(normalizeBrazilPhone('   ')).toBeNull()
     expect(normalizeBrazilPhone('abc')).toBeNull()
     expect(normalizeBrazilPhone('123')).toBe('+123')
     expect(normalizeBrazilPhone('')).toBeNull()
@@ -21,6 +22,7 @@ describe('order whatsapp helpers', () => {
     expect(normalizeWhatsappChannelAddress('+55 (11) 91234-5678')).toBe('whatsapp:+5511912345678')
     expect(normalizeWhatsappChannelAddress('whatsapp:+5511912345678')).toBe('whatsapp:+5511912345678')
     expect(normalizeWhatsappChannelAddress('5511912345678')).toBe('whatsapp:+5511912345678')
+    expect(normalizeWhatsappChannelAddress('abc')).toBe('abc')
     expect(normalizeWhatsappChannelAddress('   ')).toBe('')
   })
 

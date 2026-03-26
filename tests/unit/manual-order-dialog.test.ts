@@ -45,6 +45,15 @@ describe('manual order dialog helpers', () => {
 
     const ordered = orderManualOrderGroups(grouped)
     expect(ordered.map(([key]) => key)).toEqual(['c1', 'c2'])
+
+    const groupedWithFallback = groupManualOrderItems([
+      { id: '4', name: 'Brownie', price: 12, available: true, category: null },
+      { id: '5', name: 'Coca', price: 7, available: true, category: { id: 'c1', name: 'Bebidas' } },
+      { id: '6', name: 'Suco de uva', price: 9, available: true, category: { id: 'c1', name: 'Bebidas' } },
+    ])
+
+    expect(groupedWithFallback['sem-categoria'].label).toBe('Sem categoria')
+    expect(groupedWithFallback.c1.items).toHaveLength(2)
   })
 
   it('controla mutações de carrinho e total', () => {
@@ -55,8 +64,29 @@ describe('manual order dialog helpers', () => {
     const incremented = addManualOrderItem(withItem, item)
     expect(incremented[0].quantity).toBe(2)
 
+    expect(
+      addManualOrderItem(
+        [
+          { menu_item_id: '1', name: 'Pizza', price: 30, quantity: 1 },
+          { menu_item_id: '2', name: 'Suco', price: 8, quantity: 3 },
+        ],
+        item,
+      ),
+    ).toEqual([
+      { menu_item_id: '1', name: 'Pizza', price: 30, quantity: 2 },
+      { menu_item_id: '2', name: 'Suco', price: 8, quantity: 3 },
+    ])
+
     const changed = changeManualOrderItemQuantity(incremented, '1', -1)
     expect(changed[0].quantity).toBe(1)
+
+    expect(
+      changeManualOrderItemQuantity(
+        [{ menu_item_id: '1', name: 'Pizza', price: 30, quantity: 2 }],
+        'menu-inexistente',
+        -1,
+      ),
+    ).toEqual([{ menu_item_id: '1', name: 'Pizza', price: 30, quantity: 2 }])
 
     expect(changeManualOrderItemQuantity(changed, '1', -1)).toEqual([])
     expect(removeManualOrderItem([{ menu_item_id: '1', name: 'Pizza', price: 30, quantity: 1 }], '1')).toEqual([])
@@ -69,6 +99,7 @@ describe('manual order dialog helpers', () => {
       .toBe('Vinculado a Mesa 10')
     expect(getManualOrderSummaryLabel('tab', null, { id: 'tab-1', label: 'C-1', status: 'open' } as never))
       .toBe('Vinculado a comanda C-1')
+    expect(getManualOrderSummaryLabel('tab', null, null)).toBe('Selecione uma comanda')
 
     expect(validateManualOrderSubmission({
       tenantId: '',

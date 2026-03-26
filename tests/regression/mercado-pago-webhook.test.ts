@@ -25,6 +25,23 @@ function createWebhookRequest(
   }
 }
 
+function createInvalidJsonWebhookRequest(
+  url = 'https://chefops.test/api/mercado-pago/webhook?topic=payment&data.id=pay-invalid'
+) {
+  const headers = new Headers({
+    'x-request-id': 'req-invalid',
+    'x-signature': 'ts=1,v1=signature',
+  })
+
+  return {
+    json: async () => {
+      throw new Error('invalid json')
+    },
+    headers,
+    nextUrl: new URL(url),
+  }
+}
+
 describe('mercado pago webhook regression', () => {
   it('handleMercadoPagoWebhook rejeita assinatura inválida', async () => {
     const response = await handleMercadoPagoWebhook(
@@ -77,6 +94,60 @@ describe('mercado pago webhook regression', () => {
     expect(await response.json()).toEqual({ received: true })
   })
 
+  it('handleMercadoPagoWebhook aceita subscription_preapproval sem sync efetivo e usa body.id como fallback', async () => {
+    let syncedPreapprovalId: string | undefined
+
+    const response = await handleMercadoPagoWebhook(
+      createWebhookRequest(
+        { type: 'subscription_preapproval', id: 'pre-body-id' },
+        'https://chefops.test/api/mercado-pago/webhook'
+      ),
+      {
+        verifyMercadoPagoWebhookSignature: () => true,
+        getPreapprovalById: async (id) => ({ id, status: 'cancelled' }),
+        syncTenantFromSaasSubscription: async (preapproval) => {
+          syncedPreapprovalId = preapproval.id
+          return { synced: false, reason: 'missing-reference' as const }
+        },
+        getMercadoPagoAccessTokenBySellerUserId: async () => null,
+        getPaymentById: async () => ({ id: 1, status: 'approved' }),
+        getOrderIdFromExternalReference: () => null,
+        getCheckoutSessionIdFromExternalReference: () => null,
+        mapMercadoPagoStatusToOrderPaymentStatus: () => 'paid',
+        createAdminClient: () => createMockSupabaseClient({}) as never,
+        createOrderFromCheckoutSession: async () => undefined,
+      }
+    )
+
+    expect(response.status).toBe(200)
+    expect(syncedPreapprovalId).toBe('pre-body-id')
+    expect(await response.json()).toEqual({ received: true })
+  })
+
+  it('handleMercadoPagoWebhook aceita payment sem nenhum dataId e encerra com received', async () => {
+    const response = await handleMercadoPagoWebhook(
+      createWebhookRequest(
+        { type: 'payment', data: {}, user_id: 'seller-1' },
+        'https://chefops.test/api/mercado-pago/webhook?topic=payment'
+      ),
+      {
+        verifyMercadoPagoWebhookSignature: () => true,
+        getPreapprovalById: async () => ({ id: 'pre', status: 'authorized' }),
+        syncTenantFromSaasSubscription: async () => ({ synced: true, tenantId: 'tenant-1' }),
+        getMercadoPagoAccessTokenBySellerUserId: async () => 'seller-token',
+        getPaymentById: async () => ({ id: 1, status: 'approved' }),
+        getOrderIdFromExternalReference: () => null,
+        getCheckoutSessionIdFromExternalReference: () => null,
+        mapMercadoPagoStatusToOrderPaymentStatus: () => 'paid',
+        createAdminClient: () => createMockSupabaseClient({}) as never,
+        createOrderFromCheckoutSession: async () => undefined,
+      }
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ received: true })
+  })
+
   it('handleMercadoPagoWebhook ignora payment inexistente no Mercado Pago', async () => {
     const response = await handleMercadoPagoWebhook(
       createWebhookRequest({ type: 'payment', data: { id: 'pay-404' }, user_id: 'seller-1' }),
@@ -100,6 +171,58 @@ describe('mercado pago webhook regression', () => {
     expect(await response.json()).toEqual({
       received: true,
       ignored: 'payment_not_found',
+    })
+  })
+
+  it('handleMercadoPagoWebhook usa topic/data.id da query quando o body não parseia', async () => {
+    const response = await handleMercadoPagoWebhook(
+      createInvalidJsonWebhookRequest(),
+      {
+        verifyMercadoPagoWebhookSignature: () => true,
+        getPreapprovalById: async () => ({ id: 'pre', status: 'authorized' }),
+        syncTenantFromSaasSubscription: async () => ({ synced: true, tenantId: 'tenant-1' }),
+        getMercadoPagoAccessTokenBySellerUserId: async () => 'seller-token',
+        getPaymentById: async () => ({
+          id: 77,
+          status: 'approved',
+          external_reference: null,
+          metadata: {},
+          date_approved: '2026-03-20T15:00:00.000Z',
+        }),
+        getOrderIdFromExternalReference: () => null,
+        getCheckoutSessionIdFromExternalReference: () => null,
+        mapMercadoPagoStatusToOrderPaymentStatus: () => 'paid',
+        createAdminClient: () => createMockSupabaseClient({}) as never,
+        createOrderFromCheckoutSession: async () => undefined,
+      }
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ received: true })
+  })
+
+  it('handleMercadoPagoWebhook devolve 500 quando o pagamento falha com erro diferente de 404', async () => {
+    const response = await handleMercadoPagoWebhook(
+      createWebhookRequest({ type: 'payment', data: { id: 'pay-500' }, user_id: 'seller-1' }),
+      {
+        verifyMercadoPagoWebhookSignature: () => true,
+        getPreapprovalById: async () => ({ id: 'pre', status: 'authorized' }),
+        syncTenantFromSaasSubscription: async () => ({ synced: true, tenantId: 'tenant-1' }),
+        getMercadoPagoAccessTokenBySellerUserId: async () => 'seller-token',
+        getPaymentById: async () => {
+          throw new MercadoPagoApiError('gateway failed', 500)
+        },
+        getOrderIdFromExternalReference: () => null,
+        getCheckoutSessionIdFromExternalReference: () => null,
+        mapMercadoPagoStatusToOrderPaymentStatus: () => 'paid',
+        createAdminClient: () => createMockSupabaseClient({}) as never,
+        createOrderFromCheckoutSession: async () => undefined,
+      }
+    )
+
+    expect(response.status).toBe(500)
+    expect(await response.json()).toEqual({
+      error: 'Erro ao processar webhook do Mercado Pago.',
     })
   })
 
@@ -276,6 +399,126 @@ describe('mercado pago webhook regression', () => {
       status: 'rejected',
       mercado_pago_payment_id: '44',
       paid_at: '2026-03-20T13:00:00.000Z',
+    })
+    expect(createdOrderCalled).toBe(false)
+  })
+
+  it('handleMercadoPagoWebhook atualiza apenas o pedido quando não existe checkoutSessionId', async () => {
+    let orderUpdateValues: Record<string, unknown> | undefined
+
+    const admin = createMockSupabaseClient({
+      orders: (state) => {
+        orderUpdateValues = state.values
+        return { data: null, error: null }
+      },
+    })
+
+    const response = await handleMercadoPagoWebhook(
+      createWebhookRequest({
+        type: 'payment',
+        data: { id: 'pay-order-only' },
+        user_id: 'seller-1',
+      }),
+      {
+        verifyMercadoPagoWebhookSignature: () => true,
+        getPreapprovalById: async () => ({ id: 'pre', status: 'authorized' }),
+        syncTenantFromSaasSubscription: async () => ({ synced: true, tenantId: 'tenant-1' }),
+        getMercadoPagoAccessTokenBySellerUserId: async () => 'seller-token',
+        getPaymentById: async () => ({
+          id: 88,
+          status: 'approved',
+          external_reference: 'order:order-only-1',
+          metadata: {},
+          date_approved: '2026-03-20T16:00:00.000Z',
+        }),
+        getOrderIdFromExternalReference: () => 'order-only-1',
+        getCheckoutSessionIdFromExternalReference: () => null,
+        mapMercadoPagoStatusToOrderPaymentStatus: () => 'paid',
+        createAdminClient: () => admin as never,
+        createOrderFromCheckoutSession: async () => undefined,
+      }
+    )
+
+    expect(response.status).toBe(200)
+    expect(orderUpdateValues).toEqual({
+      payment_status: 'paid',
+      payment_provider: 'mercado_pago',
+      payment_transaction_id: '88',
+      refunded_at: null,
+    })
+    expect(await response.json()).toEqual({ received: true })
+  })
+
+  it('handleMercadoPagoWebhook usa metadados para atualizar pedido e checkout com datas nulas', async () => {
+    let orderUpdateValues: Record<string, unknown> | undefined
+    let sessionUpdateValues: Record<string, unknown> | undefined
+    let createdOrderCalled = false
+
+    const admin = createMockSupabaseClient({
+      orders: (state) => {
+        orderUpdateValues = state.values
+        return { data: null, error: null }
+      },
+      checkout_sessions: (state) => {
+        if (state.operation === 'select') {
+          return {
+            data: {
+              id: 'checkout-meta-1',
+              payload: { items: [{ name: 'Pizza' }] },
+              created_order_id: 'order-existing',
+            },
+            error: null,
+          }
+        }
+
+        sessionUpdateValues = state.values
+        return { data: null, error: null }
+      },
+    })
+
+    const response = await handleMercadoPagoWebhook(
+      createWebhookRequest({
+        type: 'payment',
+        data: { id: 'pay-meta-1' },
+        user_id: 'seller-1',
+      }),
+      {
+        verifyMercadoPagoWebhookSignature: () => true,
+        getPreapprovalById: async () => ({ id: 'pre', status: 'authorized' }),
+        syncTenantFromSaasSubscription: async () => ({ synced: true, tenantId: 'tenant-1' }),
+        getMercadoPagoAccessTokenBySellerUserId: async () => 'seller-token',
+        getPaymentById: async () => ({
+          id: 66,
+          status: 'in_process',
+          external_reference: null,
+          metadata: {
+            order_id: 'order-meta-1',
+            checkout_session_id: 'checkout-meta-1',
+          },
+          date_approved: null,
+          date_last_updated: null,
+        }),
+        getOrderIdFromExternalReference: () => null,
+        getCheckoutSessionIdFromExternalReference: () => null,
+        mapMercadoPagoStatusToOrderPaymentStatus: () => 'pending',
+        createAdminClient: () => admin as never,
+        createOrderFromCheckoutSession: async () => {
+          createdOrderCalled = true
+        },
+      }
+    )
+
+    expect(response.status).toBe(200)
+    expect(orderUpdateValues).toEqual({
+      payment_status: 'pending',
+      payment_provider: 'mercado_pago',
+      payment_transaction_id: '66',
+      refunded_at: null,
+    })
+    expect(sessionUpdateValues).toEqual({
+      status: 'in_process',
+      mercado_pago_payment_id: '66',
+      paid_at: null,
     })
     expect(createdOrderCalled).toBe(false)
   })

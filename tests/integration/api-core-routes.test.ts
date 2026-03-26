@@ -324,6 +324,113 @@ describe('api core routes', () => {
     )).status).toBe(200)
     expect(patchWithoutCompletedAt).not.toHaveProperty('completed_at')
 
+    let patchWithoutMenuItem: Record<string, unknown> | undefined
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: vi.fn((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1' } }),
+          }
+        }
+
+        return {
+          update: vi.fn((value) => {
+            patchWithoutMenuItem = value
+            return {
+              eq: vi.fn().mockReturnThis(),
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { id: 'step-1', ...value }, error: null }),
+            }
+          }),
+        }
+      }),
+    } as never)
+    expect((await onboardingRoute.PATCH(
+      new Request('https://chefops.test/api/onboarding', {
+        method: 'PATCH',
+        body: JSON.stringify({ has_category: true, has_product: true, has_table: true }),
+      }) as never
+    )).status).toBe(200)
+    expect(patchWithoutMenuItem).not.toHaveProperty('completed_at')
+
+    let patchWithoutTable: Record<string, unknown> | undefined
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: vi.fn((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1' } }),
+          }
+        }
+
+        return {
+          update: vi.fn((value) => {
+            patchWithoutTable = value
+            return {
+              eq: vi.fn().mockReturnThis(),
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { id: 'step-1', ...value }, error: null }),
+            }
+          }),
+        }
+      }),
+    } as never)
+    expect((await onboardingRoute.PATCH(
+      new Request('https://chefops.test/api/onboarding', {
+        method: 'PATCH',
+        body: JSON.stringify({ has_category: true, has_product: true, has_menu_item: true }),
+      }) as never
+    )).status).toBe(200)
+    expect(patchWithoutTable).not.toHaveProperty('completed_at')
+
+    let patchWithNullCategory: Record<string, unknown> | undefined
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: vi.fn((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1' } }),
+          }
+        }
+
+        return {
+          update: vi.fn((value) => {
+            patchWithNullCategory = value
+            return {
+              eq: vi.fn().mockReturnThis(),
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { id: 'step-1', ...value }, error: null }),
+            }
+          }),
+        }
+      }),
+    } as never)
+    expect((await onboardingRoute.PATCH(
+      new Request('https://chefops.test/api/onboarding', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          has_category: null,
+          has_product: true,
+          has_menu_item: true,
+          has_table: true,
+        }),
+      }) as never
+    )).status).toBe(200)
+    expect(patchWithNullCategory).not.toHaveProperty('completed_at')
+
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
@@ -352,9 +459,28 @@ describe('api core routes', () => {
         body: JSON.stringify({ has_category: true }),
       }) as never
     )).status).toBe(500)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
+    } as never)
+    expect((await onboardingRoute.PATCH(
+      new Request('https://chefops.test/api/onboarding', {
+        method: 'PATCH',
+        body: JSON.stringify({ has_category: true }),
+      }) as never
+    )).status).toBe(401)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn() },
+    } as never)
+    expect((await onboardingRoute.PATCH(
+      {
+        json: vi.fn().mockRejectedValue(new Error('invalid json')),
+      } as unknown as Request
+    )).status).toBe(500)
   })
 
-  it('public order status GET retorna 404 e sucesso', async () => {
+  it('public order status GET retorna 404, 500 e sucesso', async () => {
     vi.mocked(createAdminClient).mockReturnValueOnce(
       createMockSupabaseClient({
         orders: () => ({ data: null, error: new Error('missing') }),
@@ -366,6 +492,20 @@ describe('api core routes', () => {
         await publicOrderStatusRoute.GET({} as Request, { params: Promise.resolve({ id: 'order-1' }) })
       ).status
     ).toBe(404)
+
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockRejectedValue(new Error('status failed')),
+      })),
+    } as never)
+
+    expect(
+      (
+        await publicOrderStatusRoute.GET({} as Request, { params: Promise.resolve({ id: 'order-1' }) })
+      ).status
+    ).toBe(500)
 
     vi.mocked(createAdminClient).mockReturnValueOnce(
       createMockSupabaseClient({

@@ -59,6 +59,12 @@ describe('api public and table routes', () => {
         state: 'SP',
       },
     })
+
+    fetchMock.mockRejectedValueOnce(new Error('network failed'))
+    expect((await cepRoute.GET(
+      {} as never,
+      { params: Promise.resolve({ cep: '12345-678' }) },
+    )).status).toBe(500)
   })
 
   it('menu publico GET cobre 404 e agrupamento por categoria', async () => {
@@ -99,6 +105,12 @@ describe('api public and table routes', () => {
               category: { id: 'cat-1', name: 'Lanches' },
             },
             {
+              id: 'item-3',
+              name: 'Batata',
+              category_id: 'cat-1',
+              category: { id: 'cat-1', name: 'Lanches' },
+            },
+            {
               id: 'item-2',
               name: 'Suco',
               category_id: null,
@@ -124,7 +136,10 @@ describe('api public and table routes', () => {
         menu: [
           {
             category: { id: 'cat-1', name: 'Lanches' },
-            items: [{ id: 'item-1', name: 'Burger' }],
+            items: [
+              { id: 'item-1', name: 'Burger' },
+              { id: 'item-3', name: 'Batata' },
+            ],
           },
           {
             category: null,
@@ -133,6 +148,34 @@ describe('api public and table routes', () => {
         ],
       },
     })
+
+    const tenantQueryWithItemsError = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { id: 'tenant-1', name: 'ChefOps', slug: 'resto' },
+        error: null,
+      }),
+    }
+    const itemsErrorQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn()
+        .mockReturnThis()
+        .mockImplementationOnce(() => itemsErrorQuery)
+        .mockResolvedValueOnce({
+          data: null,
+          error: new Error('items failed'),
+        }),
+    }
+    vi.mocked(createClient).mockResolvedValueOnce({
+      from: vi.fn((table: string) => (table === 'tenants' ? tenantQueryWithItemsError : itemsErrorQuery)),
+    } as never)
+
+    expect((await menuRoute.GET(
+      {} as never,
+      { params: Promise.resolve({ slug: 'resto' }) },
+    )).status).toBe(500)
   })
 
   it('qrcode url e token cobrem validacao, 404 e sucesso', async () => {
@@ -183,6 +226,33 @@ describe('api public and table routes', () => {
           eq: vi.fn().mockReturnThis(),
           single: vi.fn().mockResolvedValue({
             data: {
+              token: 'qr-token-array',
+              table: [{ number: '11', tenants: [{ slug: 'resto-array' }] }],
+            },
+            error: null,
+          }),
+        })),
+      } as never)
+
+      const qrcodeUrlArrayResponse = await qrcodeUrlRoute.GET(
+        new Request('https://chefops.test/api/tables/qrcode-url?table_id=table-2') as never,
+      )
+      expect(qrcodeUrlArrayResponse.status).toBe(200)
+      await expect(qrcodeUrlArrayResponse.json()).resolves.toEqual({
+        url: 'https://chefops.test/resto-array/menu?table=qr-token-array',
+      })
+
+      vi.mocked(createClient).mockRejectedValueOnce(new Error('qrcode url down') as never)
+      expect((await qrcodeUrlRoute.GET(
+        new Request('https://chefops.test/api/tables/qrcode-url?table_id=table-1') as never,
+      )).status).toBe(500)
+
+      vi.mocked(createClient).mockResolvedValueOnce({
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
               token: 'qr-token',
               table: { id: 'table-1', number: '10', tenant_id: 'tenant-1', tenants: { slug: 'resto' } },
             },
@@ -202,6 +272,21 @@ describe('api public and table routes', () => {
           table: { id: 'table-1', number: '10', tenant_id: 'tenant-1' },
         },
       })
+
+      vi.mocked(createClient).mockResolvedValueOnce({
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: null,
+          }),
+        })),
+      } as never)
+      expect((await qrcodeRoute.GET(
+        {} as never,
+        { params: Promise.resolve({ token: 'qr-token' }) },
+      )).status).toBe(404)
 
       vi.mocked(createClient).mockRejectedValueOnce(new Error('db down') as never)
       expect((await qrcodeRoute.GET(
@@ -363,6 +448,37 @@ describe('api public and table routes', () => {
       { params: Promise.resolve({ id: 'sess-1' }) },
     )).status).toBe(404)
 
+    vi.mocked(createClient).mockResolvedValueOnce({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })),
+    } as never)
+    expect((await sessionByIdRoute.GET(
+      {} as never,
+      { params: Promise.resolve({ id: 'sess-1' }) },
+    )).status).toBe(404)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: 'sess-1',
+            table_id: 'table-1',
+            orders: [{ id: 'ord-1', total: 25 }],
+          },
+          error: null,
+        }),
+      })),
+    } as never)
+    expect((await sessionByIdRoute.GET(
+      {} as never,
+      { params: Promise.resolve({ id: 'sess-1' }) },
+    )).status).toBe(200)
+
     vi.mocked(createClient).mockRejectedValueOnce(new Error('db down') as never)
     expect((await sessionByIdRoute.GET(
       {} as never,
@@ -453,6 +569,55 @@ describe('api public and table routes', () => {
       }) as never,
       { params: Promise.resolve({ id: 'sess-1' }) },
     )).status).toBe(200)
+
+    const loadSessionWithoutOrdersQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          id: 'sess-2',
+          table_id: 'table-2',
+        },
+      }),
+    }
+    const updateSessionWithoutOrdersQuery = {
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { id: 'sess-2', total: 0 }, error: null }),
+    }
+    const freeSecondTableQuery = {
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    }
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: vi.fn((table: string) => {
+        if (table === 'table_sessions') {
+          return {
+            select: loadSessionWithoutOrdersQuery.select,
+            eq: loadSessionWithoutOrdersQuery.eq,
+            single: loadSessionWithoutOrdersQuery.single,
+            update: vi.fn(() => updateSessionWithoutOrdersQuery),
+          }
+        }
+
+        return {
+          update: vi.fn(() => freeSecondTableQuery),
+        }
+      }),
+    } as never)
+    const patchWithoutOrders = await sessionByIdRoute.PATCH(
+      new Request('https://chefops.test/api/tables/sessions/sess-2', {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'close' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'sess-2' }) },
+    )
+    expect(patchWithoutOrders.status).toBe(200)
+    await expect(patchWithoutOrders.json()).resolves.toMatchObject({
+      data: { id: 'sess-2', total: 0 },
+    })
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: {

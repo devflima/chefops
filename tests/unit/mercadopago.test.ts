@@ -5,6 +5,7 @@ import {
   createCheckoutPreference,
   createSaasSubscriptionLink,
   getCheckoutSessionIdFromExternalReference,
+  getPaymentById,
   getMercadoPagoAccessToken,
   getMercadoPagoWebhookUrl,
   getOrderIdFromExternalReference,
@@ -66,6 +67,52 @@ describe('mercadopago helpers', () => {
       notification_url: 'https://chefops.test/api/mercado-pago/webhook',
       statement_descriptor: 'CHEFOPS',
       auto_return: 'approved',
+    })
+  })
+
+  it('createCheckoutPreference respeita access token e payload customizado', async () => {
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = 'token-default'
+    process.env.NEXT_PUBLIC_APP_URL = 'https://chefops.test'
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'pref-custom',
+          init_point: 'https://pay.test/custom',
+          sandbox_init_point: null,
+        }),
+        { status: 200 }
+      )
+    )
+
+    await createCheckoutPreference({
+      external_reference: 'order:custom',
+      accessToken: 'tenant-token',
+      items: [{ title: 'Pizza', quantity: 1, unit_price: 50 }],
+      payer: { name: 'Felipe', email: 'owner@test.com' },
+      metadata: { source: 'menu' },
+      notificationUrl: 'https://callback.test/mp',
+      backUrls: {
+        success: 'https://chefops.test/success',
+        pending: 'https://chefops.test/pending',
+        failure: 'https://chefops.test/failure',
+      },
+    })
+
+    const request = fetchMock.mock.calls[0]?.[1]
+    const headers = request?.headers as Headers
+    const body = JSON.parse(String(request?.body))
+
+    expect(headers.get('Authorization')).toBe('Bearer tenant-token')
+    expect(body).toMatchObject({
+      payer: { name: 'Felipe', email: 'owner@test.com' },
+      metadata: { source: 'menu' },
+      notification_url: 'https://callback.test/mp',
+      back_urls: {
+        success: 'https://chefops.test/success',
+        pending: 'https://chefops.test/pending',
+        failure: 'https://chefops.test/failure',
+      },
     })
   })
 
@@ -144,6 +191,53 @@ describe('mercadopago helpers', () => {
     })
   })
 
+  it('getPaymentById usa token customizado e fallback global, e assinatura propaga erro padrão', async () => {
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = 'fallback-token'
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 10, status: 'approved' }), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 11, status: 'pending' }), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({}), { status: 500 })
+      )
+
+    await expect(getPaymentById('pay-10', 'tenant-token')).resolves.toMatchObject({
+      id: 10,
+      status: 'approved',
+    })
+
+    let request = fetchMock.mock.calls[0]?.[1]
+    let headers = request?.headers as Headers
+    expect(headers.get('Authorization')).toBe('Bearer tenant-token')
+
+    await expect(getPaymentById('pay-11')).resolves.toMatchObject({
+      id: 11,
+      status: 'pending',
+    })
+
+    request = fetchMock.mock.calls[1]?.[1]
+    headers = request?.headers as Headers
+    expect(headers.get('Authorization')).toBe('Bearer fallback-token')
+
+    await expect(
+      createSaasSubscriptionLink({
+        reason: 'ChefOps Premium',
+        payerEmail: 'owner@test.com',
+        externalReference: 'saas:tenant:1:plan:pro',
+        amount: 189,
+        backUrl: 'https://chefops.test/planos',
+      })
+    ).rejects.toMatchObject({
+      name: 'MercadoPagoApiError',
+      message: 'Mercado Pago request failed.',
+      status: 500,
+    })
+  })
+
   it('verifyMercadoPagoWebhookSignature valida manifesto assinado', () => {
     process.env.MERCADO_PAGO_WEBHOOK_SECRET = 'webhook-secret'
 
@@ -170,6 +264,42 @@ describe('mercadopago helpers', () => {
     ).toBe(false)
   })
 
+  it('verifyMercadoPagoWebhookSignature falha com header incompleto ou request/data ausentes', () => {
+    process.env.MERCADO_PAGO_WEBHOOK_SECRET = 'webhook-secret'
+
+    expect(
+      verifyMercadoPagoWebhookSignature({
+        xSignature: null,
+        xRequestId: 'req-1',
+        dataId: 'abc',
+      })
+    ).toBe(false)
+
+    expect(
+      verifyMercadoPagoWebhookSignature({
+        xSignature: 'ts=1710000000',
+        xRequestId: 'req-1',
+        dataId: 'abc',
+      })
+    ).toBe(false)
+
+    expect(
+      verifyMercadoPagoWebhookSignature({
+        xSignature: 'ts=1710000000,v1=abcd',
+        xRequestId: null,
+        dataId: 'abc',
+      })
+    ).toBe(false)
+
+    expect(
+      verifyMercadoPagoWebhookSignature({
+        xSignature: 'ts=1710000000,v1=abcd',
+        xRequestId: 'req-1',
+        dataId: '',
+      })
+    ).toBe(false)
+  })
+
   it('verifyMercadoPagoWebhookSignature aceita webhook quando secret não está configurado', () => {
     expect(
       verifyMercadoPagoWebhookSignature({
@@ -187,8 +317,14 @@ describe('mercadopago helpers', () => {
     expect(
       getCheckoutSessionIdFromExternalReference('checkout:123e4567-e89b-12d3-a456-426614174999')
     ).toBe('123e4567-e89b-12d3-a456-426614174999')
+    expect(getOrderIdFromExternalReference('tenant:abc')).toBeNull()
+    expect(getCheckoutSessionIdFromExternalReference('order:abc')).toBeNull()
+    expect(getOrderIdFromExternalReference(null)).toBeNull()
+    expect(getCheckoutSessionIdFromExternalReference(null)).toBeNull()
     expect(mapMercadoPagoStatusToOrderPaymentStatus('approved')).toBe('paid')
     expect(mapMercadoPagoStatusToOrderPaymentStatus('refunded')).toBe('refunded')
+    expect(mapMercadoPagoStatusToOrderPaymentStatus('charged_back')).toBe('refunded')
+    expect(mapMercadoPagoStatusToOrderPaymentStatus('cancelled')).toBe('refunded')
     expect(mapMercadoPagoStatusToOrderPaymentStatus('in_process')).toBe('pending')
   })
 })
