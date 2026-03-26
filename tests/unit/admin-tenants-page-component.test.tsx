@@ -252,7 +252,7 @@ describe('AdminTenantsPage component', () => {
 
     const { default: AdminTenantsPage } = await import('@/app/admin/tenants/page')
 
-    const tree = AdminTenantsPage()
+    const tree = React.createElement(AdminTenantsPage)
 
     expect(renderToStaticMarkup(tree)).toContain('Admin Tenant Management Dialog Mock')
     expect(capturedDialogProps).toBeTruthy()
