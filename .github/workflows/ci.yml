@@ -68,7 +68,10 @@ jobs:
         run: npm ci --omit=dev
 
       - name: Audit production dependencies
-        run: npm run audit:prod
+        run: |
+          trap 'mv package-lock.ci.backup package-lock.json' EXIT
+          mv package-lock.json package-lock.ci.backup
+          npm run audit:prod
 
   secrets-scan:
     name: Secrets Scan
