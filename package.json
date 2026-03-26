@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:regression": "vitest run tests/regression"
+    "test:regression": "vitest run tests/regression",
+    "audit:prod": "npm audit --omit=dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
