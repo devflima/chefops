@@ -15,10 +15,10 @@ type CurrentSubscription = {
 } | null
 
 type Props = {
-  currentPlan?: Plan['plan']
+  currentPlan?: Plan
   currentSubscription: CurrentSubscription
   loadingPlan: Plan | null
-  onSelectPlan: (plan: 'free' | 'basic' | 'pro') => void
+  onSelectPlan: (plan: Plan) => void
   onCancelSubscription: () => void
 }
 

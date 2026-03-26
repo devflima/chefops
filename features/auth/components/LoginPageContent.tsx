@@ -1,20 +1,20 @@
 import Link from 'next/link'
+import type { SubmitHandler, UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 
+type LoginFormValues = {
+  email: string
+  password: string
+}
+
 type Props = {
-  form: {
-    control: unknown
-    handleSubmit: (callback: (values: unknown) => unknown) => (event?: unknown) => unknown
-    formState: {
-      isSubmitting: boolean
-    }
-  }
+  form: UseFormReturn<LoginFormValues>
   error: string | null
-  onSubmit: (values: unknown) => unknown
+  onSubmit: SubmitHandler<LoginFormValues>
 }
 
 export function LoginPageContent({ form, error, onSubmit }: Props) {

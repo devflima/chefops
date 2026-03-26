@@ -1,7 +1,6 @@
-import type { Extra } from '@/features/orders/types'
 import { MenuEmptyState } from '@/features/menu/MenuEmptyState'
 import { MenuItemCard } from '@/features/menu/MenuItemCard'
-import type { PublicMenuItem } from '@/features/menu/public-menu'
+import type { MenuExtra, PublicMenuItem } from '@/features/menu/public-menu'
 
 type MenuGroup = {
   category: { id: string; name: string } | null
@@ -18,9 +17,9 @@ export function PublicMenuSections({
 }: {
   items: PublicMenuItem[]
   filteredGroups: MenuGroup[]
-  selectedBorders: Record<string, Extra | null>
+  selectedBorders: Record<string, MenuExtra | null>
   onAdd: (item: PublicMenuItem) => void
-  onBorderToggle: (item: PublicMenuItem, border: Extra | null) => void
+  onBorderToggle: (item: PublicMenuItem, border: MenuExtra | null) => void
   onHalfFlavor: (item: PublicMenuItem) => void
 }) {
   if (items.length === 0) {

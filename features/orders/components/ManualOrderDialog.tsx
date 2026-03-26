@@ -115,9 +115,10 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
   async function handleSubmit() {
     try {
       setErrorMessage('')
+      const tenantId = user?.profile.tenant_id
 
       const validationState = getManualOrderSubmitValidationState({
-        tenantId: user?.profile.tenant_id,
+        tenantId,
         cart,
         orderMode,
         selectedTable,
@@ -127,9 +128,10 @@ export default function ManualOrderDialog({ open, onOpenChange }: Props) {
         setErrorMessage(validationState.errorMessage)
         return
       }
+      if (!tenantId) return
 
       await createOrder.mutateAsync(buildManualOrderPayload({
-        tenantId: user.profile.tenant_id,
+        tenantId,
         customerName,
         customerPhone,
         orderMode,

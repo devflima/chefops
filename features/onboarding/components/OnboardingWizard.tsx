@@ -65,11 +65,13 @@ export default function OnboardingWizard() {
     defaultValues: { number: '' },
   })
 
-  if (!shouldRenderOnboardingWizard(onboarding ?? null, isLoading)) return null
+  const onboardingState = onboarding ?? null
+  if (!shouldRenderOnboardingWizard(onboardingState, isLoading)) return null
+  if (!onboardingState) return null
 
-  const completedCount = getOnboardingCompletedCount(onboarding)
-  const progress = getOnboardingProgress(onboarding)
-  const activeStep = getOnboardingActiveStep(onboarding)
+  const completedCount = getOnboardingCompletedCount(onboardingState)
+  const progress = getOnboardingProgress(onboardingState)
+  const activeStep = getOnboardingActiveStep(onboardingState)
 
   async function handleCategorySubmit(values: { name: string }) {
     try {
@@ -108,7 +110,7 @@ export default function OnboardingWizard() {
   }
 
   async function handleTableSubmit(values: { number: string }) {
-    if (!onboarding) return
+    if (!onboardingState) return
     try {
       await fetch('/api/tables', {
         method: 'POST',
@@ -116,7 +118,7 @@ export default function OnboardingWizard() {
         body: JSON.stringify(buildTablePayload(values)),
       })
       queryClient.invalidateQueries({ queryKey: ['tables'] })
-      await completeStep.mutateAsync(buildTableCompletionPayload(onboarding))
+      await completeStep.mutateAsync(buildTableCompletionPayload(onboardingState))
     } catch { /* empty */ }
   }
 
@@ -145,7 +147,7 @@ export default function OnboardingWizard() {
       {/* Passos */}
       <div className="space-y-3">
         {steps.map((step, idx) => {
-          const done = onboarding[step.key]
+          const done = onboardingState[step.key]
           const active = idx === activeStep && !done
           const Icon = step.icon
 

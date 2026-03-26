@@ -1,6 +1,5 @@
 import { Plus } from 'lucide-react'
-import { getBorders, type PublicMenuItem } from '@/features/menu/public-menu'
-import type { Extra } from '@/features/orders/types'
+import { getBorders, type MenuExtra, type PublicMenuItem } from '@/features/menu/public-menu'
 
 export function MenuItemCard({
   item,
@@ -10,9 +9,9 @@ export function MenuItemCard({
   onHalfFlavor,
 }: {
   item: PublicMenuItem
-  selectedBorder: Extra | null
+  selectedBorder: MenuExtra | null
   onAdd: () => void
-  onBorderToggle: (border: Extra | null) => void
+  onBorderToggle: (border: MenuExtra | null) => void
   onHalfFlavor: () => void
 }) {
   const borders = getBorders(item)

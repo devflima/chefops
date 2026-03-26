@@ -1,4 +1,4 @@
-import type { CartItem } from '@/features/orders/types'
+import type { CartItem, CreateOrderPayload } from '@/features/orders/types'
 import type { Table } from '@/features/tables/types'
 import type { Tab } from '@/features/tabs/types'
 
@@ -214,7 +214,7 @@ export function isManualOrderSubmitting(params: {
   return params.createOrderPending || params.createTabPending || params.menuLoading
 }
 
-export function buildManualOrderPayload(params: ManualOrderPayloadParams) {
+export function buildManualOrderPayload(params: ManualOrderPayloadParams): CreateOrderPayload {
   return {
     tenant_id: params.tenantId,
     customer_name: params.customerName.trim() || undefined,

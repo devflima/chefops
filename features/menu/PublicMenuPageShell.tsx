@@ -1,7 +1,6 @@
 import type { CartItem } from '@/features/orders/types'
-import type { Extra } from '@/features/orders/types'
-
 import type {
+  MenuExtra,
   PublicMenuItem,
   PublicOrderStatus,
 } from '@/features/menu/public-menu'
@@ -21,16 +20,16 @@ type Props = {
   checkoutNotice: string | null
   publicOrderStatus: PublicOrderStatus | null
   cartOpen: boolean
-  headline: string
+  headline: string | null
   onTrackOrder: () => void
   groups: ReturnType<typeof import('@/features/menu/public-menu').groupMenuItems>
   activeCategory: string | null
   onCategoryChange: (value: string | null) => void
   items: PublicMenuItem[]
   filteredGroups: ReturnType<typeof import('@/features/menu/public-menu').filterGroupsByCategory>
-  selectedBorders: Record<string, Extra | null>
+  selectedBorders: Record<string, MenuExtra | null>
   onAdd: (item: PublicMenuItem, halfFlavor?: PublicMenuItem) => void
-  onBorderToggle: (item: PublicMenuItem, border: Extra | null) => void
+  onBorderToggle: (item: PublicMenuItem, border: MenuExtra | null) => void
   onHalfFlavor: (item: PublicMenuItem) => void
   halfFlavorModal: { item: PublicMenuItem } | null
   halfFlavorOptions: PublicMenuItem[]

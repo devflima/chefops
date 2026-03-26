@@ -1,4 +1,4 @@
-import type { CartItem, CustomerAddress, Extra } from '@/features/orders/types'
+import type { CartItem, CustomerAddress } from '@/features/orders/types'
 
 export type MenuExtra = {
   id: string
@@ -107,7 +107,7 @@ export function getLookupCustomerMissingState() {
 
 export function createCartItem(
   item: PublicMenuItem,
-  selectedBorder?: Extra | null,
+  selectedBorder?: MenuExtra | null,
   halfFlavor?: PublicMenuItem
 ) {
   const itemName = halfFlavor ? `${item.name} / ${halfFlavor.name}` : item.name

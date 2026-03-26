@@ -56,7 +56,9 @@ export default function IntegracoesPage() {
       deliverySettingsData={deliverySettings.data ?? null}
       deliverySettingsPending={updateDeliverySettings.isPending}
       deliveryFeeValue={deliveryFeeValue}
-      onDeliveryToggle={(payload) => updateDeliverySettings.mutateAsync(payload)}
+      onDeliveryToggle={async (payload) => {
+        await updateDeliverySettings.mutateAsync(payload)
+      }}
       onDeliveryFeeInputChange={setDeliveryFeeInput}
       onDeliveryFeeSave={async (payload) => {
         await updateDeliverySettings.mutateAsync(payload)
@@ -67,7 +69,9 @@ export default function IntegracoesPage() {
       notificationSettingsData={notificationSettings.data ?? null}
       notificationSettingsPending={updateNotificationSettings.isPending}
       whatsappOptions={whatsappOptions}
-      onToggleWhatsappOption={(payload) => updateNotificationSettings.mutateAsync(payload)}
+      onToggleWhatsappOption={async (payload) => {
+        await updateNotificationSettings.mutateAsync(payload)
+      }}
     />
   )
 }
