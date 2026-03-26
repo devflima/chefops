@@ -69,9 +69,11 @@ jobs:
 
       - name: Audit production dependencies
         run: |
-          trap 'mv package-lock.ci.backup package-lock.json' EXIT
-          mv package-lock.json package-lock.ci.backup
-          npm run audit:prod
+          mkdir audit-prod
+          node -e "const fs=require('fs'); const pkg=require('./package.json'); const prodPkg={name:pkg.name, version:pkg.version, private:true, dependencies:pkg.dependencies ?? {}}; fs.writeFileSync('audit-prod/package.json', JSON.stringify(prodPkg, null, 2));"
+          cd audit-prod
+          npm install --package-lock-only
+          npm audit --omit=dev
 
   secrets-scan:
     name: Secrets Scan
