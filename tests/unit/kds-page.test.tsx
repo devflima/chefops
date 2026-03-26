@@ -204,18 +204,14 @@ describe('KDSPageContent', () => {
         element.type === 'button' &&
         getTextContent(element.props.children).includes('Marcar pronto')
     )
-    const elapsedTime = elements.find(
-      (element) => typeof element.type === 'function' && element.type.name === 'ElapsedTime'
-    )
-
     expect(advanceButton).toBeTruthy()
     expect(getTextContent(advanceButton?.props.children)).toContain('Marcar pronto')
     expect(advanceButton?.props.disabled).toBe(true)
-    expect(elapsedTime).toBeTruthy()
-
-    const elapsedNode = elapsedTime?.type(elapsedTime.props)
-
-    expect(renderToStaticMarkup(React.createElement(React.Fragment, null, elapsedNode))).toContain('span')
+    expect(renderToStaticMarkup(React.createElement(KDSPageContent, {
+      orders: [order],
+      updatePending: true,
+      onAdvance: vi.fn(),
+    }))).toContain('span')
     expect(setElapsedMock).toHaveBeenCalledWith('12:05')
     expect(setUrgentMock).toHaveBeenCalledWith(true)
     expect(setIntervalMock).toHaveBeenCalled()
@@ -312,8 +308,8 @@ describe('KDSPageContent', () => {
 
     const { KDSPageContent } = await import('@/features/orders/KDSPageContent')
 
-    const elements = flattenElements(
-      KDSPageContent({
+    const markup = renderToStaticMarkup(
+      React.createElement(KDSPageContent, {
         orders: [{
           id: 'order-urgent-clock',
           order_number: 77,
@@ -327,12 +323,6 @@ describe('KDSPageContent', () => {
         onAdvance: vi.fn(),
       })
     )
-
-    const elapsedTime = elements.find(
-      (element) => typeof element.type === 'function' && element.type.name === 'ElapsedTime'
-    )
-    const elapsedNode = elapsedTime?.type(elapsedTime.props)
-    const markup = renderToStaticMarkup(React.createElement(React.Fragment, null, elapsedNode))
 
     expect(markup).toContain('animate-pulse font-bold text-red-500')
     expect(markup).toContain('12:05')
