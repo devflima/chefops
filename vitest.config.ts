@@ -21,7 +21,6 @@ export default defineConfig({
         '**/*.d.ts',
         'app/**/*.css',
       ],
-      all: true,
     },
   },
   resolve: {
