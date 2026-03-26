@@ -92,4 +92,28 @@ describe('DashboardAccessGuard', () => {
     expect(markup).toContain('guard-child')
     expect(replaceMock).not.toHaveBeenCalled()
   })
+
+  it('redireciona quando a role permite, mas o plano não tem a feature da rota', async () => {
+    const { default: DashboardAccessGuard } = await import('@/features/auth/components/DashboardAccessGuard')
+
+    usePathnameMock.mockReturnValue('/mesas')
+    useUserMock.mockReturnValue({
+      user: {
+        profile: {
+          role: 'owner',
+          tenant: {
+            plan: 'free',
+          },
+        },
+      },
+      loading: false,
+    })
+
+    const markup = renderToStaticMarkup(
+      React.createElement(DashboardAccessGuard, null, 'guard-child')
+    )
+
+    expect(markup).toContain('Redirecionando')
+    expect(replaceMock).toHaveBeenCalledWith('/dashboard')
+  })
 })

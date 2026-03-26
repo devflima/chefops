@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/features/auth/hooks/useUser'
 import { canAccessDashboardPath } from '@/lib/rbac'
+import type { Plan } from '@/features/plans/types'
 
 export default function DashboardAccessGuard({
   children,
@@ -13,8 +14,9 @@ export default function DashboardAccessGuard({
   const pathname = usePathname()
   const router = useRouter()
   const { user, loading } = useUser()
+  const plan = (user?.profile.tenant?.plan as Plan | null | undefined) ?? null
 
-  const canAccess = canAccessDashboardPath(user?.profile.role, pathname)
+  const canAccess = canAccessDashboardPath(user?.profile.role, pathname, plan)
 
   useEffect(() => {
     if (!loading && !canAccess) {

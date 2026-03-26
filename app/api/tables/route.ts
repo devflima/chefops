@@ -1,4 +1,4 @@
-import { requireTenantRoles } from '@/lib/auth-guards'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -10,7 +10,7 @@ const tableSchema = z.object({
 
 export async function GET() {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager', 'cashier'])
+    const auth = await requireTenantFeature('tables', ['owner', 'manager', 'cashier'])
     if (!auth.ok) return auth.response
     const { supabase, profile } = auth
 
@@ -58,7 +58,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireTenantRoles(['owner', 'manager', 'cashier'])
+    const auth = await requireTenantFeature('tables', ['owner', 'manager', 'cashier'])
     if (!auth.ok) return auth.response
     const { supabase, profile } = auth
     const body = await request.json()

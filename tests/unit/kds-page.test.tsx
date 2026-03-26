@@ -308,8 +308,8 @@ describe('KDSPageContent', () => {
 
     const { KDSPageContent } = await import('@/features/orders/KDSPageContent')
 
-    const markup = renderToStaticMarkup(
-      React.createElement(KDSPageContent, {
+    const elements = flattenElements(
+      KDSPageContent({
         orders: [{
           id: 'order-urgent-clock',
           order_number: 77,
@@ -323,6 +323,12 @@ describe('KDSPageContent', () => {
         onAdvance: vi.fn(),
       })
     )
+
+    const elapsedTime = elements.find(
+      (element) => typeof element.type === 'function' && element.type.name === 'ElapsedTime'
+    )
+    const elapsedNode = elapsedTime?.type(elapsedTime.props)
+    const markup = renderToStaticMarkup(React.createElement(React.Fragment, null, elapsedNode))
 
     expect(markup).toContain('animate-pulse font-bold text-red-500')
     expect(markup).toContain('12:05')

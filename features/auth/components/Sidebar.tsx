@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { usePlan } from '@/features/plans/hooks/usePlan'
-import { PLAN_LABELS } from '@/features/plans/types'
+import { hasPlanFeature, PLAN_LABELS, type PlanFeature } from '@/features/plans/types'
 import {
   LayoutDashboard, Package, ArrowLeftRight,
   UtensilsCrossed, ClipboardList, BarChart2,
@@ -14,19 +14,19 @@ import {
 
 const navItems = [
   { href: '/dashboard',   label: 'Início',      icon: LayoutDashboard, roles: ['owner', 'manager', 'cashier'] },
-  { href: '/categorias',  label: 'Categorias',  icon: Tag,             roles: ['owner', 'manager'] },
-  { href: '/produtos',    label: 'Produtos',    icon: Package,         roles: ['owner', 'manager'] },
-  { href: '/estoque',     label: 'Estoque',     icon: ArrowLeftRight,  roles: ['owner', 'manager'] },
-  { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed, roles: ['owner', 'manager'] },
-  { href: '/extras',      label: 'Adicionais',  icon: Settings,        roles: ['owner', 'manager'] },
-  { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList,   roles: ['owner', 'manager', 'cashier', 'kitchen'] },
-  { href: '/entregadores',label: 'Entregadores',icon: Bike,            roles: ['owner', 'manager', 'cashier'] },
-  { href: '/comandas',    label: 'Comandas',    icon: ReceiptText,     roles: ['owner', 'manager', 'cashier'] },
-  { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid,      roles: ['owner', 'manager', 'cashier'] },
-  { href: '/kds',         label: 'Cozinha',     icon: MonitorCheck,    roles: ['owner', 'manager', 'kitchen'] },
-  { href: '/vendas',      label: 'Vendas',      icon: BarChart2,       roles: ['owner', 'manager'] },
-  { href: '/integracoes', label: 'Integrações', icon: PlugZap,         roles: ['owner'] },
-  { href: '/usuarios',    label: 'Usuários',    icon: Users,           roles: ['owner'] },
+  { href: '/categorias',  label: 'Categorias',  icon: Tag,             roles: ['owner', 'manager'], feature: 'menu' as PlanFeature },
+  { href: '/produtos',    label: 'Produtos',    icon: Package,         roles: ['owner', 'manager'], feature: 'menu' as PlanFeature },
+  { href: '/estoque',     label: 'Estoque',     icon: ArrowLeftRight,  roles: ['owner', 'manager'], feature: 'stock' as PlanFeature },
+  { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed, roles: ['owner', 'manager'], feature: 'menu' as PlanFeature },
+  { href: '/extras',      label: 'Adicionais',  icon: Settings,        roles: ['owner', 'manager'], feature: 'menu' as PlanFeature },
+  { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList,   roles: ['owner', 'manager', 'cashier', 'kitchen'], feature: 'orders' as PlanFeature },
+  { href: '/entregadores',label: 'Entregadores',icon: Bike,            roles: ['owner', 'manager', 'cashier'], feature: 'orders' as PlanFeature },
+  { href: '/comandas',    label: 'Comandas',    icon: ReceiptText,     roles: ['owner', 'manager', 'cashier'], feature: 'tables' as PlanFeature },
+  { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid,      roles: ['owner', 'manager', 'cashier'], feature: 'tables' as PlanFeature },
+  { href: '/kds',         label: 'Cozinha',     icon: MonitorCheck,    roles: ['owner', 'manager', 'kitchen'], feature: 'kds' as PlanFeature },
+  { href: '/vendas',      label: 'Vendas',      icon: BarChart2,       roles: ['owner', 'manager'], feature: 'sales' as PlanFeature },
+  { href: '/integracoes', label: 'Integrações', icon: PlugZap,         roles: ['owner'], feature: 'payments' as PlanFeature },
+  { href: '/usuarios',    label: 'Usuários',    icon: Users,           roles: ['owner'], feature: 'team' as PlanFeature },
   { href: '/planos',      label: 'Planos',      icon: CreditCard,      roles: ['owner'] },
 ]
 
@@ -48,7 +48,10 @@ export default function Sidebar({ profile }: Props) {
   const pathname = usePathname()
   const { data: plan } = usePlan()
   const allowedNavItems = navItems.filter((item) =>
-    profile?.role ? item.roles.includes(profile.role) : false
+    profile?.role
+      ? item.roles.includes(profile.role) &&
+        (!item.feature || !plan?.plan || hasPlanFeature(plan.plan, item.feature))
+      : false
   )
 
   return (
