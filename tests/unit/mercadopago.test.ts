@@ -25,6 +25,9 @@ describe('mercadopago helpers', () => {
   })
 
   it('lanca erro quando envs obrigatorias nao existem', () => {
+    delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+    delete process.env.NEXT_PUBLIC_APP_URL
+
     expect(() => getMercadoPagoAccessToken()).toThrow(/MERCADO_PAGO_ACCESS_TOKEN/)
     expect(() => getMercadoPagoWebhookUrl()).toThrow(/NEXT_PUBLIC_APP_URL/)
   })

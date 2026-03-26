@@ -1,4 +1,3 @@
-import type { CartItem } from '@/features/orders/types'
 import type {
   MenuExtra,
   PublicMenuItem,

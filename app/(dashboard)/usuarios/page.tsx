@@ -1,15 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import PaginationControls from '@/components/shared/PaginationControls'
 import { useUser } from '@/features/auth/hooks/useUser'
 import {
   useCreateUser,
@@ -19,11 +10,7 @@ import {
   type TeamUser,
 } from '@/features/users/hooks/useUsers'
 import { UsersPageContent } from '@/features/users/UsersPageContent'
-import {
-  type EstablishmentRole,
-  formatRoleLabel,
-  ROLE_LABELS,
-} from '@/lib/rbac'
+import { type EstablishmentRole } from '@/lib/rbac'
 import { toast } from 'sonner'
 import {
   canManageTeamUser,

@@ -7,7 +7,6 @@ import { MenuDashboardFilters } from '@/features/menu/MenuDashboardFilters'
 import { MenuDashboardEmptyState } from '@/features/menu/MenuDashboardEmptyState'
 import { MenuDashboardTable } from '@/features/menu/MenuDashboardTable'
 import { MenuItemDialog } from '@/features/menu/MenuItemDialog'
-import type { MenuItemIngredient } from '@/features/menu/dashboard-menu-page'
 
 type Props = {
   availableCount: number

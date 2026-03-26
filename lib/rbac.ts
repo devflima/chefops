@@ -1,4 +1,4 @@
-import type { Plan } from '@/features/plans/types'
+import { hasPlanFeature, type Plan, type PlanFeature } from '@/features/plans/types'
 
 export type EstablishmentRole = 'owner' | 'manager' | 'cashier' | 'kitchen'
 
@@ -41,19 +41,19 @@ export const PLAN_MAX_USERS: Record<Plan, number> = {
 
 export const DASHBOARD_ROUTE_ROLES = [
   { path: '/dashboard', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[] },
-  { path: '/categorias', roles: ['owner', 'manager'] as EstablishmentRole[] },
-  { path: '/produtos', roles: ['owner', 'manager'] as EstablishmentRole[] },
-  { path: '/estoque', roles: ['owner', 'manager'] as EstablishmentRole[] },
-  { path: '/cardapio', roles: ['owner', 'manager'] as EstablishmentRole[] },
-  { path: '/extras', roles: ['owner', 'manager'] as EstablishmentRole[] },
-  { path: '/pedidos', roles: ['owner', 'manager', 'cashier', 'kitchen'] as EstablishmentRole[] },
-  { path: '/entregadores', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[] },
-  { path: '/comandas', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[] },
-  { path: '/mesas', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[] },
-  { path: '/kds', roles: ['owner', 'manager', 'kitchen'] as EstablishmentRole[] },
-  { path: '/vendas', roles: ['owner', 'manager'] as EstablishmentRole[] },
-  { path: '/integracoes', roles: ['owner'] as EstablishmentRole[] },
-  { path: '/usuarios', roles: ['owner'] as EstablishmentRole[] },
+  { path: '/categorias', roles: ['owner', 'manager'] as EstablishmentRole[], feature: 'menu' as PlanFeature },
+  { path: '/produtos', roles: ['owner', 'manager'] as EstablishmentRole[], feature: 'menu' as PlanFeature },
+  { path: '/estoque', roles: ['owner', 'manager'] as EstablishmentRole[], feature: 'stock' as PlanFeature },
+  { path: '/cardapio', roles: ['owner', 'manager'] as EstablishmentRole[], feature: 'menu' as PlanFeature },
+  { path: '/extras', roles: ['owner', 'manager'] as EstablishmentRole[], feature: 'menu' as PlanFeature },
+  { path: '/pedidos', roles: ['owner', 'manager', 'cashier', 'kitchen'] as EstablishmentRole[], feature: 'orders' as PlanFeature },
+  { path: '/entregadores', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[], feature: 'orders' as PlanFeature },
+  { path: '/comandas', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[], feature: 'tables' as PlanFeature },
+  { path: '/mesas', roles: ['owner', 'manager', 'cashier'] as EstablishmentRole[], feature: 'tables' as PlanFeature },
+  { path: '/kds', roles: ['owner', 'manager', 'kitchen'] as EstablishmentRole[], feature: 'kds' as PlanFeature },
+  { path: '/vendas', roles: ['owner', 'manager'] as EstablishmentRole[], feature: 'sales' as PlanFeature },
+  { path: '/integracoes', roles: ['owner'] as EstablishmentRole[], feature: 'payments' as PlanFeature },
+  { path: '/usuarios', roles: ['owner'] as EstablishmentRole[], feature: 'team' as PlanFeature },
   { path: '/planos', roles: ['owner'] as EstablishmentRole[] },
 ]
 
@@ -103,11 +103,23 @@ export function formatRoleLabel(role: string | null | undefined) {
   return ROLE_LABELS[role as EstablishmentRole] ?? role
 }
 
-export function canAccessDashboardPath(role: string | null | undefined, pathname: string) {
+export function canAccessDashboardPath(
+  role: string | null | undefined,
+  pathname: string,
+  plan?: Plan | null
+) {
   if (!role) return false
 
   const match = DASHBOARD_ROUTE_ROLES.find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))
   if (!match) return true
 
-  return match.roles.includes(role as EstablishmentRole)
+  if (!match.roles.includes(role as EstablishmentRole)) {
+    return false
+  }
+
+  if (match.feature && plan && !hasPlanFeature(plan, match.feature)) {
+    return false
+  }
+
+  return true
 }

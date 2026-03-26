@@ -4,87 +4,103 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 let mockFieldState: { error?: { message?: string } } = {}
 
+function createForwardComponent(tag: string, displayName: string) {
+  const Component = React.forwardRef<HTMLElement, Record<string, unknown>>(
+    ({ children, ...props }, ref) => React.createElement(tag, { ref, ...props }, children)
+  )
+  Component.displayName = displayName
+  return Component
+}
+
+function createWrapperComponent(tag: string, displayName: string) {
+  const Component = ({ children, ...props }: Record<string, unknown>) =>
+    React.createElement(tag, props, children)
+  Component.displayName = displayName
+  return Component
+}
+
+const SlotRoot = React.forwardRef<HTMLElement, Record<string, unknown>>(
+  ({ children, ...props }, ref) => {
+    if (React.isValidElement(children)) {
+      return React.cloneElement(children, { ref, ...props })
+    }
+    return React.createElement('span', { ref, ...props }, children)
+  }
+)
+SlotRoot.displayName = 'SlotRoot'
+
+const LabelRoot = React.forwardRef<HTMLElement, Record<string, unknown>>(
+  ({ children, ...props }, ref) => React.createElement('label', { ref, ...props }, children)
+)
+LabelRoot.displayName = 'LabelRoot'
+
+const RadixSlot = React.forwardRef<HTMLElement, Record<string, unknown>>(
+  ({ children, ...props }, ref) => {
+    if (React.isValidElement(children)) {
+      return React.cloneElement(children, { ref, ...props })
+    }
+    return React.createElement('span', { ref, ...props }, children)
+  }
+)
+RadixSlot.displayName = 'RadixSlot'
+
+function createIcon(name: string) {
+  const Icon = (props: Record<string, unknown>) =>
+    React.createElement('svg', { 'data-icon': name, ...props })
+  Icon.displayName = `${name}-icon`
+  return Icon
+}
+
 vi.mock('radix-ui', () => {
-  const React = require('react') as typeof import('react')
-
-  function forward(tag: string, displayName: string) {
-    const Component = React.forwardRef(({ children, ...props }: Record<string, unknown>, ref) =>
-      React.createElement(tag, { ref, ...props }, children)
-    )
-    Component.displayName = displayName
-    return Component
-  }
-
-  const withChildren = (tag: string, displayName: string) => {
-    const Component = ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement(tag, props, children)
-    Component.displayName = displayName
-    return Component
-  }
-
   return {
     Dialog: {
-      Root: withChildren('div', 'DialogRoot'),
-      Trigger: forward('button', 'DialogTrigger'),
-      Portal: withChildren('div', 'DialogPortal'),
-      Close: forward('button', 'DialogClose'),
-      Overlay: forward('div', 'DialogOverlay'),
-      Content: forward('div', 'DialogContent'),
-      Title: forward('h2', 'DialogTitle'),
-      Description: forward('p', 'DialogDescription'),
+      Root: createWrapperComponent('div', 'DialogRoot'),
+      Trigger: createForwardComponent('button', 'DialogTrigger'),
+      Portal: createWrapperComponent('div', 'DialogPortal'),
+      Close: createForwardComponent('button', 'DialogClose'),
+      Overlay: createForwardComponent('div', 'DialogOverlay'),
+      Content: createForwardComponent('div', 'DialogContent'),
+      Title: createForwardComponent('h2', 'DialogTitle'),
+      Description: createForwardComponent('p', 'DialogDescription'),
     },
     Select: {
-      Root: withChildren('div', 'SelectRoot'),
-      Group: forward('div', 'SelectGroup'),
-      Value: forward('span', 'SelectValue'),
-      Trigger: forward('button', 'SelectTrigger'),
-      Icon: withChildren('span', 'SelectIcon'),
-      Portal: withChildren('div', 'SelectPortal'),
-      Content: forward('div', 'SelectContent'),
-      Viewport: forward('div', 'SelectViewport'),
-      Label: forward('div', 'SelectLabel'),
-      Item: forward('div', 'SelectItem'),
-      ItemIndicator: withChildren('span', 'SelectItemIndicator'),
-      ItemText: withChildren('span', 'SelectItemText'),
-      Separator: forward('div', 'SelectSeparator'),
-      ScrollUpButton: forward('button', 'SelectScrollUpButton'),
-      ScrollDownButton: forward('button', 'SelectScrollDownButton'),
+      Root: createWrapperComponent('div', 'SelectRoot'),
+      Group: createForwardComponent('div', 'SelectGroup'),
+      Value: createForwardComponent('span', 'SelectValue'),
+      Trigger: createForwardComponent('button', 'SelectTrigger'),
+      Icon: createWrapperComponent('span', 'SelectIcon'),
+      Portal: createWrapperComponent('div', 'SelectPortal'),
+      Content: createForwardComponent('div', 'SelectContent'),
+      Viewport: createForwardComponent('div', 'SelectViewport'),
+      Label: createForwardComponent('div', 'SelectLabel'),
+      Item: createForwardComponent('div', 'SelectItem'),
+      ItemIndicator: createWrapperComponent('span', 'SelectItemIndicator'),
+      ItemText: createWrapperComponent('span', 'SelectItemText'),
+      Separator: createForwardComponent('div', 'SelectSeparator'),
+      ScrollUpButton: createForwardComponent('button', 'SelectScrollUpButton'),
+      ScrollDownButton: createForwardComponent('button', 'SelectScrollDownButton'),
     },
     Separator: {
-      Root: forward('div', 'SeparatorRoot'),
+      Root: createForwardComponent('div', 'SeparatorRoot'),
     },
     Label: {
-      Root: forward('label', 'LabelRoot'),
+      Root: createForwardComponent('label', 'LabelRoot'),
     },
     Slot: {
-      Root: React.forwardRef(({ children, ...props }: Record<string, unknown>, ref) => {
-        if (React.isValidElement(children)) {
-          return React.cloneElement(children, { ref, ...props })
-        }
-        return React.createElement('span', { ref, ...props }, children)
-      }),
+      Root: SlotRoot,
     },
   }
 })
 
 vi.mock('@radix-ui/react-label', () => {
-  const React = require('react') as typeof import('react')
   return {
-    Root: React.forwardRef(({ children, ...props }: Record<string, unknown>, ref) =>
-      React.createElement('label', { ref, ...props }, children)
-    ),
+    Root: LabelRoot,
   }
 })
 
 vi.mock('@radix-ui/react-slot', () => {
-  const React = require('react') as typeof import('react')
   return {
-    Slot: React.forwardRef(({ children, ...props }: Record<string, unknown>, ref) => {
-      if (React.isValidElement(children)) {
-        return React.cloneElement(children, { ref, ...props })
-      }
-      return React.createElement('span', { ref, ...props }, children)
-    }),
+    Slot: RadixSlot,
   }
 })
 
@@ -110,20 +126,16 @@ vi.mock('sonner', () => ({
 }))
 
 vi.mock('lucide-react', () => {
-  const React = require('react') as typeof import('react')
-  const icon = (name: string) => (props: Record<string, unknown>) =>
-    React.createElement('svg', { 'data-icon': name, ...props })
-
   return {
-    XIcon: icon('x'),
-    ChevronDownIcon: icon('chevron-down'),
-    CheckIcon: icon('check'),
-    ChevronUpIcon: icon('chevron-up'),
-    CircleCheckIcon: icon('circle-check'),
-    InfoIcon: icon('info'),
-    TriangleAlertIcon: icon('triangle-alert'),
-    OctagonXIcon: icon('octagon-x'),
-    Loader2Icon: icon('loader-2'),
+    XIcon: createIcon('x'),
+    ChevronDownIcon: createIcon('chevron-down'),
+    CheckIcon: createIcon('check'),
+    ChevronUpIcon: createIcon('chevron-up'),
+    CircleCheckIcon: createIcon('circle-check'),
+    InfoIcon: createIcon('info'),
+    TriangleAlertIcon: createIcon('triangle-alert'),
+    OctagonXIcon: createIcon('octagon-x'),
+    Loader2Icon: createIcon('loader-2'),
   }
 })
 

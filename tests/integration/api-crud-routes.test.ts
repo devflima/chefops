@@ -2675,6 +2675,10 @@ describe('api crud routes', () => {
   })
 
   it('tables [id] cobre validacao, 404, comanda aberta e falha de exclusao', async () => {
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      supabase: {},
+    } as never)
     expect((await tableByIdRoute.PATCH(
       new Request('https://chefops.test/api/tables/table-1', {
         method: 'PATCH',
@@ -2683,14 +2687,17 @@ describe('api crud routes', () => {
       { params: Promise.resolve({ id: 'table-1' }) },
     )).status).toBe(400)
 
-    vi.mocked(createClient).mockResolvedValueOnce({
-      from: () => ({
-        update: vi.fn(() => ({
-          eq: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: null, error: new Error('missing') }),
-        })),
-      }),
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      supabase: {
+        from: () => ({
+          update: vi.fn(() => ({
+            eq: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: new Error('missing') }),
+          })),
+        }),
+      },
     } as never)
     expect((await tableByIdRoute.PATCH(
       new Request('https://chefops.test/api/tables/table-404', {
@@ -2700,7 +2707,7 @@ describe('api crud routes', () => {
       { params: Promise.resolve({ id: 'table-404' }) },
     )).status).toBe(404)
 
-    vi.mocked(createClient).mockRejectedValueOnce(new Error('patch failed') as never)
+    vi.mocked(requireTenantFeature).mockRejectedValueOnce(new Error('patch failed') as never)
     expect((await tableByIdRoute.PATCH(
       new Request('https://chefops.test/api/tables/table-500', {
         method: 'PATCH',
@@ -2709,31 +2716,36 @@ describe('api crud routes', () => {
       { params: Promise.resolve({ id: 'table-500' }) },
     )).status).toBe(500)
 
-    vi.mocked(createClient).mockResolvedValueOnce({
-      from: vi.fn((table: string) => {
-        if (table === 'table_sessions') {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: { id: 'session-1' } }),
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'table_sessions') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: { id: 'session-1' } }),
+            }
           }
-        }
 
-        return {}
-      }),
+          return {}
+        }),
+      },
     } as never)
     expect((await tableByIdRoute.DELETE(
       {} as never,
       { params: Promise.resolve({ id: 'table-1' }) },
     )).status).toBe(422)
 
-    vi.mocked(createClient).mockResolvedValueOnce({
-      from: vi.fn((table: string) => {
-        if (table === 'table_sessions') {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: null }),
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'table_sessions') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: null }),
           }
         }
 
@@ -2741,20 +2753,23 @@ describe('api crud routes', () => {
           delete: vi.fn().mockReturnThis(),
           eq: vi.fn().mockResolvedValue({ error: new Error('delete failed') }),
         }
-      }),
+        }),
+      },
     } as never)
     expect((await tableByIdRoute.DELETE(
       {} as never,
       { params: Promise.resolve({ id: 'table-1' }) },
     )).status).toBe(500)
 
-    vi.mocked(createClient).mockResolvedValueOnce({
-      from: vi.fn((table: string) => {
-        if (table === 'table_sessions') {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: null }),
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'table_sessions') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({ data: null }),
           }
         }
 
@@ -2762,7 +2777,8 @@ describe('api crud routes', () => {
           delete: vi.fn().mockReturnThis(),
           eq: vi.fn().mockResolvedValue({ error: null }),
         }
-      }),
+        }),
+      },
     } as never)
     expect((await tableByIdRoute.DELETE(
       {} as never,

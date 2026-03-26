@@ -77,7 +77,7 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
 }
 
 export const PLAN_INCLUDED_FEATURES: Record<Plan, PlanFeature[]> = {
-  free: ['orders', 'menu', 'tables', 'payments', 'team'],
+  free: ['orders', 'menu', 'payments', 'team'],
   basic: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'whatsapp_notifications', 'team'],
   pro: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'whatsapp_notifications', 'team', 'reports', 'white_label'],
 }

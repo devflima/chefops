@@ -134,6 +134,34 @@ describe('Sidebar component', () => {
     expect(globalThis.window.location.href).toBe('/login')
   })
 
+  it('oculta itens indisponíveis para o plano mesmo quando a role permite acesso', async () => {
+    const { default: Sidebar } = await import('@/features/auth/components/Sidebar')
+
+    usePlanMock.mockReturnValue({
+      data: {
+        plan: 'free',
+        features: ['orders', 'menu', 'payments', 'team'],
+      },
+    })
+
+    const tree = React.createElement(Sidebar, {
+      profile: {
+        full_name: 'Ana Owner',
+        role: 'owner',
+        tenants: { name: 'Casa da Ana', slug: 'casa-da-ana' },
+      },
+    })
+
+    const markup = renderToStaticMarkup(tree)
+    expect(markup).toContain('Pedidos')
+    expect(markup).toContain('Cardápio')
+    expect(markup).not.toContain('Mesas')
+    expect(markup).not.toContain('Comandas')
+    expect(markup).not.toContain('Estoque')
+    expect(markup).not.toContain('Cozinha')
+    expect(markup).not.toContain('Vendas')
+  })
+
   it('renderiza sem links quando o profile é nulo e usa fallback se o json do logout falhar', async () => {
     const { default: Sidebar } = await import('@/features/auth/components/Sidebar')
     const fetchMock = vi.fn().mockResolvedValue({

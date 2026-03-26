@@ -727,23 +727,17 @@ describe('page smoke', () => {
     expect(renderToStaticMarkup(React.createElement(Home))).toContain('To get started')
     expect(
       renderToStaticMarkup(
-        React.createElement(RootLayout, {
-          children: React.createElement('div', null, 'conteudo'),
-        }),
+        React.createElement(RootLayout, null, React.createElement('div', null, 'conteudo')),
       ),
     ).toContain('conteudo')
     expect(
       renderToStaticMarkup(
-        React.createElement(AuthLayout, {
-          children: React.createElement('div', null, 'autenticacao'),
-        }),
+        React.createElement(AuthLayout, null, React.createElement('div', null, 'autenticacao')),
       ),
     ).toContain('ChefOps')
     expect(
       renderToStaticMarkup(
-        React.createElement(Providers, {
-          children: React.createElement('span', null, 'provider-child'),
-        }),
+        React.createElement(Providers, null, React.createElement('span', null, 'provider-child')),
       ),
     ).toContain('provider-child')
   })

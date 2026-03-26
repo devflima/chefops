@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireTenantFeature } from '@/lib/auth-guards'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -13,7 +13,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantFeature('tables', ['owner', 'manager', 'cashier'])
+    if (!auth.ok) return auth.response
+    const { supabase } = auth
     const { id } = await params
     const body = await request.json()
     const parsed = updateSchema.safeParse(body)
@@ -54,7 +56,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const auth = await requireTenantFeature('tables', ['owner', 'manager', 'cashier'])
+    if (!auth.ok) return auth.response
+    const { supabase } = auth
     const { id } = await params
 
     // Verifica se tem sessão aberta

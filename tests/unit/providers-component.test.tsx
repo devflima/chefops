@@ -46,9 +46,7 @@ describe('Providers', () => {
     const { default: Providers } = await import('@/lib/providers')
 
     const markup = renderToStaticMarkup(
-      React.createElement(Providers, {
-        children: React.createElement('span', null, 'provider-child'),
-      }),
+      React.createElement(Providers, null, React.createElement('span', null, 'provider-child')),
     )
 
     expect(markup).toContain('provider-child')

@@ -54,7 +54,6 @@ jobs:
   dependency-audit:
     name: Dependency Audit
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,10 +65,15 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --omit=dev
 
       - name: Audit production dependencies
-        run: npm run audit:prod
+        run: |
+          mkdir audit-prod
+          node -e "const fs=require('fs'); const pkg=require('./package.json'); const prodPkg={name:pkg.name, version:pkg.version, private:true, dependencies:pkg.dependencies ?? {}}; fs.writeFileSync('audit-prod/package.json', JSON.stringify(prodPkg, null, 2));"
+          cd audit-prod
+          npm install --package-lock-only
+          npm audit --omit=dev
 
   secrets-scan:
     name: Secrets Scan
@@ -88,17 +92,23 @@ jobs:
   filesystem-scan:
     name: Filesystem Vulnerability Scan
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          scan-type: fs
-          scan-ref: .
-          format: table
-          exit-code: 1
-          ignore-unfixed: true
-          severity: CRITICAL,HIGH
+          node-version: 20
+          cache: npm
+
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
+            sh -s -- -b /usr/local/bin
+
+      - name: Run Trivy filesystem scan
+        run: trivy fs --format table --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH node_modules
