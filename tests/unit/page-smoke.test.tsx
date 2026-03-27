@@ -724,7 +724,9 @@ describe('page smoke', () => {
     const { default: AuthLayout } = await import('@/app/(auth)/layout')
     const { default: Providers } = await import('@/lib/providers')
 
-    expect(renderToStaticMarkup(React.createElement(Home))).toContain('Transforme a operação do seu restaurante')
+    expect(renderToStaticMarkup(React.createElement(Home))).toContain(
+      'Menos improviso. Mais controle para vender, atender e crescer.'
+    )
     expect(
       renderToStaticMarkup(
         React.createElement(RootLayout, null, React.createElement('div', null, 'conteudo')),

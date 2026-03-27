@@ -102,7 +102,7 @@ describe('Sidebar component', () => {
     expect(globalThis.window.location.href).toBe('/login')
   })
 
-  it('oculta itens sem permissão e usa fallback quando logout não retorna redirect', async () => {
+  it('oculta itens com feature quando o plano ainda não carregou e usa fallback no logout', async () => {
     const { default: Sidebar } = await import('@/features/auth/components/Sidebar')
     const fetchMock = vi.fn().mockResolvedValue({
       json: vi.fn().mockResolvedValue(null),
@@ -121,8 +121,10 @@ describe('Sidebar component', () => {
     })
 
     const markup = renderToStaticMarkup(tree)
-    expect(markup).toContain('Pedidos')
-    expect(markup).toContain('Comandas')
+    expect(markup).not.toContain('Pedidos')
+    expect(markup).not.toContain('Entregadores')
+    expect(markup).not.toContain('Comandas')
+    expect(markup).not.toContain('Mesas')
     expect(markup).not.toContain('Integrações')
     expect(markup).not.toContain('Usuários')
     expect(markup).not.toContain('Planos')

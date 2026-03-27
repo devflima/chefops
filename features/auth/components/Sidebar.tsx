@@ -50,7 +50,7 @@ export default function Sidebar({ profile }: Props) {
   const allowedNavItems = navItems.filter((item) =>
     profile?.role
       ? item.roles.includes(profile.role) &&
-        (!item.feature || !plan?.plan || hasPlanFeature(plan.plan, item.feature))
+        (!item.feature || (plan?.plan ? hasPlanFeature(plan.plan, item.feature) : false))
       : false
   )
 
