@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useCreateOrder } from '@/features/orders/hooks/useOrders'
+import { useCreatePublicOrder } from '@/features/orders/hooks/useOrders'
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { toast } from 'sonner'
 import {
@@ -115,7 +115,7 @@ export default function MenuClient({
   const [cancelOrderLoading, setCancelOrderLoading] = useState(false)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
-  const createOrder = useCreateOrder()
+  const createOrder = useCreatePublicOrder()
   const paymentOptions = tableInfo ? paymentOptionsByContext.table : paymentOptionsByContext.online
 
   const groupedValues = groupMenuItems(items)
