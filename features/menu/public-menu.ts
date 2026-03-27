@@ -230,6 +230,25 @@ export function getCheckoutConvertedNotice() {
   return 'Pagamento confirmado. Pedido enviado para o estabelecimento.'
 }
 
+export function getCreatedPublicOrderNotice(
+  paymentStatus?: PublicOrderStatus['payment_status'] | null,
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+) {
+  if (paymentStatus === 'paid') {
+    return getCheckoutConvertedNotice()
+  }
+
+  if (paymentMethod === 'delivery') {
+    return 'Pedido enviado para o estabelecimento. O pagamento será realizado na entrega.'
+  }
+
+  if (paymentMethod === 'counter' || paymentMethod === 'table') {
+    return 'Pedido enviado para o estabelecimento. O pagamento será realizado no local.'
+  }
+
+  return 'Pedido enviado para o estabelecimento.'
+}
+
 export function getCheckoutPollingErrorNotice() {
   return 'Nao foi possivel consultar o status do pagamento agora.'
 }
