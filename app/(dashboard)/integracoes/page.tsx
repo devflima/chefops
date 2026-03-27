@@ -21,6 +21,7 @@ import {
   useDeliverySettings,
   useUpdateDeliverySettings,
 } from '@/features/delivery/hooks/useDeliverySettings'
+import FeatureGate from '@/features/plans/components/FeatureGate'
 
 export default function IntegracoesPage() {
   const params = useSearchParams()
@@ -47,36 +48,38 @@ export default function IntegracoesPage() {
     hasWhatsappNotifications && notificationSettings.data ? whatsappOptionDefinitions : []
 
   return (
-    <IntegrationsPageContent
-      connected={connected}
-      accountLoading={account.isLoading}
-      accountData={account.data ?? null}
-      disconnectPending={disconnect.isPending}
-      onDisconnect={() => disconnect.mutate()}
-      deliverySettingsLoading={deliverySettings.isLoading}
-      deliverySettingsData={deliverySettings.data ?? null}
-      deliverySettingsPending={updateDeliverySettings.isPending}
-      deliveryFeeValue={deliveryFeeValue}
-      onDeliveryToggle={async (payload) => {
-        await updateDeliverySettings.mutateAsync(payload)
-      }}
-      onDeliveryFeeInputChange={setDeliveryFeeInput}
-      onDeliveryFeeSave={async (payload) => {
-        await updateDeliverySettings.mutateAsync(payload)
-        setDeliveryFeeInput(null)
-      }}
-      hasWhatsappNotifications={hasWhatsappNotifications}
-      notificationSettingsLoading={
-        hasWhatsappNotifications ? notificationSettings.isLoading : false
-      }
-      notificationSettingsData={
-        hasWhatsappNotifications ? notificationSettings.data ?? null : null
-      }
-      notificationSettingsPending={updateNotificationSettings.isPending}
-      whatsappOptions={whatsappOptions}
-      onToggleWhatsappOption={async (payload) => {
-        await updateNotificationSettings.mutateAsync(payload)
-      }}
-    />
+    <FeatureGate feature="payments">
+      <IntegrationsPageContent
+        connected={connected}
+        accountLoading={account.isLoading}
+        accountData={account.data ?? null}
+        disconnectPending={disconnect.isPending}
+        onDisconnect={() => disconnect.mutate()}
+        deliverySettingsLoading={deliverySettings.isLoading}
+        deliverySettingsData={deliverySettings.data ?? null}
+        deliverySettingsPending={updateDeliverySettings.isPending}
+        deliveryFeeValue={deliveryFeeValue}
+        onDeliveryToggle={async (payload) => {
+          await updateDeliverySettings.mutateAsync(payload)
+        }}
+        onDeliveryFeeInputChange={setDeliveryFeeInput}
+        onDeliveryFeeSave={async (payload) => {
+          await updateDeliverySettings.mutateAsync(payload)
+          setDeliveryFeeInput(null)
+        }}
+        hasWhatsappNotifications={hasWhatsappNotifications}
+        notificationSettingsLoading={
+          hasWhatsappNotifications ? notificationSettings.isLoading : false
+        }
+        notificationSettingsData={
+          hasWhatsappNotifications ? notificationSettings.data ?? null : null
+        }
+        notificationSettingsPending={updateNotificationSettings.isPending}
+        whatsappOptions={whatsappOptions}
+        onToggleWhatsappOption={async (payload) => {
+          await updateNotificationSettings.mutateAsync(payload)
+        }}
+      />
+    </FeatureGate>
   )
 }
