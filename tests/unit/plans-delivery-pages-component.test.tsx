@@ -84,6 +84,11 @@ vi.mock('@/features/delivery/DeliveryDriversPageContent', () => ({
   },
 }))
 
+vi.mock('@/features/plans/components/FeatureGate', () => ({
+  default: ({ children }: React.PropsWithChildren) =>
+    React.createElement(React.Fragment, null, children),
+}))
+
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
