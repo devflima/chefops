@@ -103,7 +103,7 @@ export default function MenuClient({
   const [isNewCustomer, setIsNewCustomer] = useState(false)
   const [address, setAddress] = useState<Partial<CustomerAddress>>({})
   const [loadingCep, setLoadingCep] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<string>(tableInfo ? 'table' : 'online')
+  const [paymentMethod, setPaymentMethod] = useState<string>(tableInfo ? 'table' : '')
   const [notes, setNotes] = useState('')
   const [orderNumber, setOrderNumber] = useState<number | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
@@ -201,14 +201,20 @@ export default function MenuClient({
   }
 
   function validateInfo() {
-    const errs = validateCustomerInfo(customerName, phone, customerCpf, tableInfo)
+    const errs = validateCustomerInfo(customerName, phone, customerCpf, tableInfo, paymentMethod)
     setErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      toast.error('Confira os campos obrigatórios antes de continuar.')
+    }
     return Object.keys(errs).length === 0
   }
 
   function validateAddress() {
     const errs = validateCustomerAddress(address)
     setErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      toast.error('Confira os campos obrigatórios antes de continuar.')
+    }
     return Object.keys(errs).length === 0
   }
 
