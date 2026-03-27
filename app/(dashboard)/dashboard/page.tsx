@@ -120,12 +120,17 @@ export default async function DashboardPage() {
   const stockLowItems = ((stockAlerts ?? []) as (StockAlert & { active?: boolean })[])
     .filter((item) => Number(item.current_stock) <= Number(item.min_stock))
   const activeOrders = orders.filter((order) => !['delivered', 'cancelled'].includes(order.status))
-  const deliveredOrders = orders.filter((order) => order.status === 'delivered')
   const paidOrders = orders.filter((order) => order.payment_status === 'paid' && order.status !== 'cancelled')
   const deliveryOrders = orders.filter((order) => order.payment_method === 'delivery' || order.delivery_fee)
+  const paidDeliveryOrders = deliveryOrders.filter(
+    (order) => order.payment_status === 'paid' && order.status !== 'cancelled'
+  )
   const waitingDispatch = deliveryOrders.filter((order) => order.delivery_status === 'waiting_dispatch').length
   const outForDelivery = deliveryOrders.filter((order) => order.delivery_status === 'out_for_delivery').length
-  const deliveryFeeRevenue = deliveryOrders.reduce((sum, order) => sum + Number(order.delivery_fee ?? 0), 0)
+  const deliveryFeeRevenue = paidDeliveryOrders.reduce(
+    (sum, order) => sum + Number(order.delivery_fee ?? 0),
+    0
+  )
   const revenueToday = paidOrders.reduce((sum, order) => sum + Number(order.total), 0)
   const averageTicket = paidOrders.length > 0 ? revenueToday / paidOrders.length : 0
 
@@ -173,7 +178,7 @@ export default async function DashboardPage() {
     {
       label: 'Ticket médio',
       value: formatCurrency(averageTicket),
-      hint: deliveredOrders.length > 0 ? `${deliveredOrders.length} entregues` : 'Ainda sem pedidos entregues',
+      hint: paidOrders.length > 0 ? `${paidOrders.length} vendas concluídas` : 'Ainda sem vendas concluídas',
       icon: TrendingUp,
       tone: 'bg-blue-50 text-blue-700',
     },

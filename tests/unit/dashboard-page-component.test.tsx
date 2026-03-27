@@ -172,6 +172,8 @@ describe('DashboardPage component', () => {
     expect(markup).toContain('Ver pedidos')
     expect(markup).toContain('Checar estoque')
     expect(markup).toContain('Pedidos que exigem atenção')
+    expect(markup).toContain('R$ 8,00')
+    expect(markup).not.toContain('R$ 14,00')
   })
 
   it('renderiza estados vazios quando nao ha estoque e entregas concluidas', async () => {
@@ -219,7 +221,7 @@ describe('DashboardPage component', () => {
     expect(markup).toContain('Nenhuma entrega concluída hoje')
     expect(markup).toContain('Nada crítico no momento. A operação está fluindo bem.')
     expect(markup).toContain('O controle de estoque completo está disponível a partir do plano Standard.')
-    expect(markup).toContain('Ainda sem pedidos entregues')
+    expect(markup).toContain('Ainda sem vendas concluídas')
     expect(markup).toContain('Disponível no painel operacional')
   })
 
@@ -310,6 +312,8 @@ describe('DashboardPage component', () => {
     expect(markup).toContain('Nenhuma entrega concluída hoje')
     expect(markup).toContain('Nenhum item com estoque crítico agora.')
     expect(markup).toContain('2 pedidos pagos')
+    expect(markup).toContain('2 vendas concluídas')
+    expect(markup).not.toContain('Ainda sem pedidos entregues')
     expect(markup).toContain('Nada crítico no momento. A operação está fluindo bem.')
     expect(markup).not.toContain('Queijo')
   })
@@ -406,7 +410,7 @@ describe('DashboardPage component', () => {
     expect(markup).toContain('Aguardando')
     expect(markup).toContain('Saiu para entrega')
     expect(markup).toContain('R$ 39,00')
-    expect(markup).toContain('2 entregues')
+    expect(markup).toContain('2 vendas concluídas')
   })
 
   it('ordena entregadores concluídos para destacar o líder do dia', async () => {
@@ -615,7 +619,7 @@ describe('DashboardPage component', () => {
     expect(markup).toContain('Visão rápida da operação do')
     expect(markup).toContain('R$ 7,00')
     expect(markup).toContain('2 pedidos pagos')
-    expect(markup).toContain('2 entregues')
+    expect(markup).toContain('2 vendas concluídas')
   })
 
   it('cobre perfil com tenant nulo no fallback da normalizacao', async () => {
