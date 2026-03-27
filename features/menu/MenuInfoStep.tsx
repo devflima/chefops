@@ -76,9 +76,22 @@ export function MenuInfoStep({
 
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-1">
+            Nome completo <span className="text-red-500">*</span>
+          </label>
+          <Input
+            placeholder="Ex: João Silva"
+            value={customerName}
+            onChange={(e) => onCustomerNameChange(e.target.value)}
+            disabled={isPaidPlan && !!existingCustomer}
+          />
+          {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-slate-700 block mb-1">
             Telefone <span className="text-red-500">*</span>
           </label>
-          <div className="flex gap-2">
+          <div className="space-y-2">
             <Input
               placeholder="(11) 99999-9999"
               value={phone}
@@ -91,8 +104,9 @@ export function MenuInfoStep({
                 variant="outline"
                 onClick={onPhoneLookup}
                 disabled={lookingUpPhone || phone.replace(/\D/g, '').length < 10}
+                className="w-full"
               >
-                {lookingUpPhone ? '...' : 'OK'}
+                {lookingUpPhone ? 'Validando...' : 'Validar telefone'}
               </Button>
             )}
           </div>
@@ -109,19 +123,6 @@ export function MenuInfoStep({
               <p className="text-xs text-blue-700">Primeiro pedido? Preencha seus dados.</p>
             </div>
           )}
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">
-            Nome completo <span className="text-red-500">*</span>
-          </label>
-          <Input
-            placeholder="Ex: João Silva"
-            value={customerName}
-            onChange={(e) => onCustomerNameChange(e.target.value)}
-            disabled={isPaidPlan && !!existingCustomer}
-          />
-          {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
         </div>
 
         {tableInfo && (
