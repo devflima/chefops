@@ -2177,9 +2177,6 @@ describe('menu components', () => {
     const nextButton = elements.find(
       (element) => element.type === 'button' && getTextContent(element) === 'Próxima'
     )
-    const mpButton = elements.find(
-      (element) => element.type === 'button' && getTextContent(element) === 'Cobrar com MP'
-    )
     const deliveryButton = elements.find(
       (element) => element.type === 'button' && getTextContent(element) === 'Saiu para entrega'
     )
@@ -2194,7 +2191,6 @@ describe('menu components', () => {
     expect(readyFilter).toBeTruthy()
     expect(previousButton).toBeTruthy()
     expect(nextButton).toBeTruthy()
-    expect(mpButton).toBeTruthy()
     expect(deliveryButton).toBeTruthy()
     expect(cancelButton).toBeTruthy()
     expect(select).toBeTruthy()
@@ -2203,7 +2199,6 @@ describe('menu components', () => {
     readyFilter!.props.onClick()
     previousButton!.props.onClick()
     nextButton!.props.onClick()
-    mpButton!.props.onClick()
     deliveryButton!.props.onClick()
     cancelButton!.props.onClick()
     select!.props.onChange({ target: { value: '' } })
@@ -2212,7 +2207,6 @@ describe('menu components', () => {
     expect(onStatusFilterChange).toHaveBeenCalledWith('ready')
     expect(onPageChange).toHaveBeenCalledWith(1)
     expect(onPageChange).toHaveBeenCalledWith(3)
-    expect(onMercadoPagoCheckout).toHaveBeenCalledWith(order)
     expect(onAdvanceDelivery).toHaveBeenCalledWith(order)
     expect(onCancel).toHaveBeenCalledWith(order)
     expect(onAssignDriver).toHaveBeenCalledWith(order, '')
@@ -3297,7 +3291,7 @@ describe('menu components', () => {
     expect(emptyMarkup).toContain('Nenhum pedido encontrado.')
   })
 
-  it('renderiza card de pedido com entrega, whatsapp e ações', async () => {
+  it('renderiza card de pedido com entrega, whatsapp e ações sem cobrança manual por MP', async () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
@@ -3380,7 +3374,7 @@ describe('menu components', () => {
     expect(markup).toContain('Endereço de entrega')
     expect(markup).toContain('WhatsApp')
     expect(markup).toContain('Saiu para entrega')
-    expect(markup).toContain('Cobrar com MP')
+    expect(markup).not.toContain('Cobrar com MP')
     expect(markup).toContain('Cancelar')
   })
 
@@ -3519,7 +3513,6 @@ describe('menu components', () => {
     expect(markup).toContain('Falhou')
     expect(markup).toContain('Motivo: Número inválido')
     expect(markup).toContain('Pedido recebido')
-    expect(markup).toContain('Gerando...')
     expect(markup).toContain('Iniciar preparo')
   })
 
@@ -3899,9 +3892,6 @@ describe('menu components', () => {
     const select = elements.find(
       (element) => element.type === 'select' && typeof element.props.onChange === 'function'
     )
-    const chargeButton = elements.find(
-      (element) => element.type === 'button' && getTextContent(element) === 'Cobrar com MP'
-    )
     const deliveryButton = elements.find(
       (element) => element.type === 'button' && getTextContent(element) === 'Saiu para entrega'
     )
@@ -3910,17 +3900,14 @@ describe('menu components', () => {
     )
 
     expect(select).toBeTruthy()
-    expect(chargeButton).toBeTruthy()
     expect(deliveryButton).toBeTruthy()
     expect(cancelButton).toBeTruthy()
 
     select!.props.onChange({ target: { value: 'driver-2' } })
-    chargeButton!.props.onClick()
     deliveryButton!.props.onClick()
     cancelButton!.props.onClick()
 
     expect(onAssignDriver).toHaveBeenCalledWith(order, 'driver-2')
-    expect(onMercadoPagoCheckout).toHaveBeenCalledWith(order)
     expect(onAdvance).not.toHaveBeenCalled()
     expect(onAdvanceDelivery).toHaveBeenCalledWith(order)
     expect(onCancel).toHaveBeenCalledWith(order)

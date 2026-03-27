@@ -14,14 +14,10 @@ import {
   buildAdvanceOrderPayload,
   buildCancelOrderPayload,
   buildConfirmPaymentRequest,
-  buildMercadoPagoCheckoutRequest,
   buildDriverAssignmentPayload,
   getOrderFilterChangeState,
   getOrdersInvalidationQueryKey,
-  getMercadoPagoCheckoutErrorMessage,
-  getMercadoPagoWindowOpenFeatures,
   getOrderFilters,
-  resolveMercadoPagoCheckoutUrl,
 } from '@/features/orders/orders-page'
 import { OrdersPageContent } from '@/features/orders/OrdersPageContent'
 
@@ -31,7 +27,6 @@ export default function PedidosPage() {
   const [page, setPage] = useState(1)
   const pageSize = 10
   const [manualOrderOpen, setManualOrderOpen] = useState(false)
-  const [chargingOrderId, setChargingOrderId] = useState<string | null>(null)
   const { data, isLoading } = useOrders({ status: statusFilter, page, pageSize })
   const { data: deliveryDrivers } = useDeliveryDrivers()
   const hasWhatsappNotifications = useHasFeature('whatsapp_notifications')
@@ -47,27 +42,6 @@ export default function PedidosPage() {
     const reason = prompt('Motivo do cancelamento:')
     if (reason === null) return
     await updateStatus.mutateAsync(buildCancelOrderPayload(order, reason))
-  }
-
-  async function handleMercadoPagoCheckout(order: Order) {
-    try {
-      setChargingOrderId(order.id)
-      const request = buildMercadoPagoCheckoutRequest(order)
-      const res = await fetch(request.url, request.init)
-      const json = await res.json()
-
-      if (!res.ok) {
-        throw new Error(json.error)
-      }
-
-      const url = resolveMercadoPagoCheckoutUrl(json.data)
-
-      window.open(url, getMercadoPagoWindowOpenFeatures())
-    } catch (error) {
-      alert(getMercadoPagoCheckoutErrorMessage(error))
-    } finally {
-      setChargingOrderId(null)
-    }
   }
 
   async function handleAssignDriver(order: Order, deliveryDriverId: string) {
@@ -102,11 +76,9 @@ export default function PedidosPage() {
       deliveryDrivers={deliveryDrivers ?? []}
       hasWhatsappNotifications={hasWhatsappNotifications}
       updatePending={updateStatus.isPending}
-      chargingOrderId={chargingOrderId}
       onAssignDriver={handleAssignDriver}
       onAdvance={handleAdvance}
       onAdvanceDelivery={handleAdvanceDelivery}
-      onMercadoPagoCheckout={handleMercadoPagoCheckout}
       onConfirmPayment={async (targetOrder) => {
         const request = buildConfirmPaymentRequest(targetOrder)
         await fetch(request.url, request.init)

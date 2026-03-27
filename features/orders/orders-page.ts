@@ -139,19 +139,6 @@ export function getDeliveryActionLabel(order: Pick<Order, 'status' | 'delivery_s
     : 'Saiu para entrega'
 }
 
-export function resolveMercadoPagoCheckoutUrl(payload: {
-  checkout_url?: string | null
-  sandbox_init_point?: string | null
-  init_point?: string | null
-} | null | undefined) {
-  const url = payload?.checkout_url || payload?.sandbox_init_point || payload?.init_point
-  if (!url) {
-    throw new Error('Mercado Pago não retornou um link de pagamento.')
-  }
-
-  return url
-}
-
 export function buildDriverAssignmentPayload(order: Pick<Order, 'id' | 'status'>, deliveryDriverId: string) {
   return {
     id: order.id,
@@ -219,19 +206,6 @@ export function getOrderFilterChangeState(value: string) {
     statusFilter: value,
     page: 1,
   }
-}
-
-export function buildMercadoPagoCheckoutRequest(order: Pick<Order, 'id'>) {
-  return {
-    url: `/api/orders/${order.id}/mercado-pago`,
-    init: {
-      method: 'POST',
-    },
-  }
-}
-
-export function getMercadoPagoWindowOpenFeatures() {
-  return '_blank,noopener,noreferrer'
 }
 
 export function getOrdersInvalidationQueryKey() {
