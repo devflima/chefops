@@ -43,6 +43,7 @@ import {
   getPublicOrderHeadline,
   getPublicOrderStatusNotice,
   getPublicOrderTrackingMessage,
+  getValidationErrorToastMessage,
   getLookupCustomerFoundState,
   getLookupCustomerMissingState,
   getOnlineCheckoutErrorMessage,
@@ -654,6 +655,12 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       delivery_status: 'assigned',
     })).toContain('vai aparecer aqui')
+    expect(
+      getValidationErrorToastMessage({
+        name: 'Nome obrigatório',
+        phone: 'Telefone inválido',
+      })
+    ).toBe('Confira os campos obrigatórios: Nome obrigatório, Telefone inválido')
   })
 
   it('monta payloads e decide o fluxo do checkout público', () => {
