@@ -1380,6 +1380,116 @@ describe('MenuClient component', () => {
     expect(stateSetters[10]).toHaveBeenCalledWith(true)
   })
 
+  it('limpa o código e volta para reenvio quando a verificação expira', async () => {
+    stateValues[5] = '(11) 99999-9999'
+    stateValues[25] = '123456'
+    stateValues[26] = true
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/phone-verification/verify') {
+        return {
+          ok: false,
+          json: vi.fn().mockResolvedValue({ error: 'O código expirou. Solicite um novo.' }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onVerifyPhoneCode: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
+
+    expect(stateSetters[25]).toHaveBeenCalledWith('')
+    expect(stateSetters[26]).toHaveBeenCalledWith(false)
+    expect(toastErrorMock).toHaveBeenCalledWith('O código expirou. Solicite um novo.')
+  })
+
+  it('limpa o código e volta para reenvio quando atinge o limite de tentativas', async () => {
+    stateValues[5] = '(11) 99999-9999'
+    stateValues[25] = '123456'
+    stateValues[26] = true
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/phone-verification/verify') {
+        return {
+          ok: false,
+          json: vi.fn().mockResolvedValue({
+            error: 'Muitas tentativas inválidas. Solicite um novo código.',
+          }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onVerifyPhoneCode: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
+
+    expect(stateSetters[25]).toHaveBeenCalledWith('')
+    expect(stateSetters[26]).toHaveBeenCalledWith(false)
+    expect(toastErrorMock).toHaveBeenCalledWith('Muitas tentativas inválidas. Solicite um novo código.')
+  })
+
   it('barra avancos quando validacoes falham', async () => {
     stateValues[0] = [
       {

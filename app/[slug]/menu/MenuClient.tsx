@@ -267,7 +267,17 @@ export default function MenuClient({
         await lookupCustomer(cleanPhone)
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível validar o código.')
+      const message = error instanceof Error ? error.message : 'Não foi possível validar o código.'
+
+      if (
+        message === 'O código expirou. Solicite um novo.' ||
+        message === 'Muitas tentativas inválidas. Solicite um novo código.'
+      ) {
+        setVerificationCode('')
+        setCodeSent(false)
+      }
+
+      toast.error(message)
     } finally {
       setVerifyingPhoneCode(false)
       setLookingUpPhone(false)
