@@ -382,7 +382,9 @@ describe('MenuClient component', () => {
 
     await props.drawerProps.infoStepProps.onContinue()
 
-    expect(toastErrorMock).toHaveBeenCalledWith('Confira os campos obrigatórios antes de continuar.')
+    expect(toastErrorMock).toHaveBeenCalledWith(
+      'Confira os campos obrigatórios: Nome obrigatório, Telefone inválido, Selecione uma forma de pagamento'
+    )
     expect(createOrderMutateAsyncMock).not.toHaveBeenCalled()
   })
 
@@ -1401,6 +1403,14 @@ describe('MenuClient component', () => {
       number: 'Número obrigatório',
       city: 'Cidade obrigatória',
     })
+    expect(toastErrorMock).toHaveBeenNthCalledWith(
+      1,
+      'Confira os campos obrigatórios: Nome obrigatório, Telefone inválido'
+    )
+    expect(toastErrorMock).toHaveBeenNthCalledWith(
+      2,
+      'Confira os campos obrigatórios: CEP obrigatório, Rua obrigatória, Número obrigatório, Cidade obrigatória'
+    )
     expect(stateSetters[2]).not.toHaveBeenCalledWith('address')
   })
 

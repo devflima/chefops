@@ -50,6 +50,7 @@ import {
   serializeStoredActiveOrder,
   getAddressFlowTarget,
   getTrackOrderState,
+  getValidationErrorToastMessage,
   shouldContinueCheckoutPolling,
   shouldContinueOrderPolling,
   shouldPersistActiveOrder,
@@ -210,7 +211,7 @@ export default function MenuClient({
     const errs = validateCustomerInfo(customerName, phone, customerCpf, tableInfo, paymentMethod)
     setErrors(errs)
     if (Object.keys(errs).length > 0) {
-      toast.error('Confira os campos obrigatórios antes de continuar.')
+      toast.error(getValidationErrorToastMessage(errs))
     }
     return Object.keys(errs).length === 0
   }
@@ -219,7 +220,7 @@ export default function MenuClient({
     const errs = validateCustomerAddress(address)
     setErrors(errs)
     if (Object.keys(errs).length > 0) {
-      toast.error('Confira os campos obrigatórios antes de continuar.')
+      toast.error(getValidationErrorToastMessage(errs))
     }
     return Object.keys(errs).length === 0
   }

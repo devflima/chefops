@@ -683,6 +683,15 @@ export function validateCustomerAddress(address: Partial<CustomerAddress>) {
   return errors
 }
 
+export function getValidationErrorToastMessage(errors: Record<string, string>) {
+  const messages = Object.values(errors).filter(Boolean)
+  if (messages.length === 0) {
+    return 'Confira os campos obrigatórios antes de continuar.'
+  }
+
+  return `Confira os campos obrigatórios: ${messages.join(', ')}`
+}
+
 export function getOrderStepState(
   currentStatus: PublicOrderStatus['status'] | null,
   stepKeys: PublicOrderStatus['status'][],
