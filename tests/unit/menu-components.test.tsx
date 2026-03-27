@@ -3807,6 +3807,127 @@ describe('menu components', () => {
     expect(tabMarkup).toContain('Entregador atribuído')
   })
 
+  it('nao renderiza historico de whatsapp para pedidos locais mesmo com notificacoes', async () => {
+    const { OrderCard } = await import('@/features/orders/OrderCard')
+
+    const counterMarkup = renderToStaticMarkup(
+      React.createElement(OrderCard, {
+        order: {
+          id: 'order-local-1',
+          tenant_id: 'tenant-1',
+          order_number: 125,
+          customer_name: 'Paulo',
+          customer_phone: '11988887777',
+          customer_cpf: null,
+          customer_id: null,
+          table_number: null,
+          tab: null,
+          status: 'confirmed',
+          payment_method: 'counter',
+          payment_status: 'pending',
+          subtotal: 28,
+          total: 28,
+          notes: null,
+          cancelled_reason: null,
+          delivery_address: null,
+          created_at: '2026-03-21T18:30:00.000Z',
+          updated_at: '2026-03-21T18:30:00.000Z',
+          items: [
+            {
+              id: 'item-local-1',
+              order_id: 'order-local-1',
+              menu_item_id: 'menu-local-1',
+              name: 'Hambúrguer',
+              price: 28,
+              quantity: 1,
+              notes: null,
+            },
+          ],
+          notifications: [
+            {
+              id: 'notif-local-1',
+              channel: 'whatsapp',
+              event_key: 'order_received',
+              status: 'sent',
+              recipient: '11988887777',
+              created_at: '2026-03-21T18:31:00.000Z',
+            },
+          ],
+        } as never,
+        config: { label: 'Confirmado', color: 'bg-blue-100 text-blue-800', nextLabel: 'Iniciar preparo' },
+        deliveryDrivers: [],
+        hasWhatsappNotifications: true,
+        updatePending: false,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    const tableMarkup = renderToStaticMarkup(
+      React.createElement(OrderCard, {
+        order: {
+          id: 'order-local-2',
+          tenant_id: 'tenant-1',
+          order_number: 126,
+          customer_name: 'Lara',
+          customer_phone: '11977776655',
+          customer_cpf: null,
+          customer_id: null,
+          table_number: '12',
+          tab: null,
+          status: 'pending',
+          payment_method: 'table',
+          payment_status: 'pending',
+          subtotal: 22,
+          total: 22,
+          notes: null,
+          cancelled_reason: null,
+          delivery_address: null,
+          created_at: '2026-03-21T18:40:00.000Z',
+          updated_at: '2026-03-21T18:40:00.000Z',
+          items: [
+            {
+              id: 'item-local-2',
+              order_id: 'order-local-2',
+              menu_item_id: 'menu-local-2',
+              name: 'Suco natural',
+              price: 22,
+              quantity: 1,
+              notes: null,
+            },
+          ],
+          notifications: [
+            {
+              id: 'notif-local-2',
+              channel: 'whatsapp',
+              event_key: 'order_received',
+              status: 'sent',
+              recipient: '11977776655',
+              created_at: '2026-03-21T18:41:00.000Z',
+            },
+          ],
+        } as never,
+        config: { label: 'Aguardando', color: 'bg-amber-100 text-amber-800', nextLabel: 'Confirmar' },
+        deliveryDrivers: [],
+        hasWhatsappNotifications: true,
+        updatePending: false,
+        onAssignDriver: vi.fn(),
+        onAdvance: vi.fn(),
+        onAdvanceDelivery: vi.fn(),
+        onConfirmPayment: vi.fn(),
+        onCancel: vi.fn(),
+      })
+    )
+
+    expect(counterMarkup).not.toContain('WhatsApp')
+    expect(counterMarkup).not.toContain('Pedido recebido')
+    expect(tableMarkup).not.toContain('WhatsApp')
+    expect(tableMarkup).not.toContain('Pedido recebido')
+  })
+
   it('aciona handlers do card de pedido com entrega e pagamento pendente', async () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
