@@ -117,6 +117,10 @@ export default function MenuClient({
   const [publicOrderStatus, setPublicOrderStatus] = useState<PublicOrderStatus | null>(null)
   const [cancelOrderLoading, setCancelOrderLoading] = useState(false)
   const [confirmDeliveryLoading, setConfirmDeliveryLoading] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [codeSent, setCodeSent] = useState(false)
+  const [sendingPhoneCode, setSendingPhoneCode] = useState(false)
+  const [verifyingPhoneCode, setVerifyingPhoneCode] = useState(false)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreatePublicOrder()
@@ -167,33 +171,105 @@ export default function MenuClient({
     setCart([])
   }
 
+  async function lookupCustomer(cleanPhone: string) {
+    const res = await fetch(`/api/customers?phone=${cleanPhone}&tenant_id=${tenant.id}`)
+    const json = await res.json()
+
+    if (json.data) {
+      const nextState = getLookupCustomerFoundState(json.data)
+      setExistingCustomer(nextState.existingCustomer)
+      setCustomerName(nextState.customerName)
+      setIsNewCustomer(nextState.isNewCustomer)
+      setPhoneVerified(nextState.phoneVerified)
+      const def = json.data.addresses?.find((a: CustomerAddress) => a.is_default)
+      if (def) setAddress(def)
+      return
+    }
+
+    const nextState = getLookupCustomerMissingState()
+    setExistingCustomer(nextState.existingCustomer)
+    setIsNewCustomer(nextState.isNewCustomer)
+    setCustomerName(nextState.customerName)
+    setPhoneVerified(nextState.phoneVerified)
+  }
+
   async function handlePhoneLookup() {
     const cleanPhone = phone.replace(/\D/g, '')
     if (cleanPhone.length < 10) {
       toast.error('Informe um telefone válido para continuar.')
       return
     }
-    if (!isPaidPlan) { setPhoneVerified(true); return }
-    setLookingUpPhone(true)
+    if (!isPaidPlan) {
+      setPhoneVerified(true)
+      return
+    }
+    setSendingPhoneCode(true)
     try {
-      const res = await fetch(`/api/customers?phone=${cleanPhone}&tenant_id=${tenant.id}`)
+      const res = await fetch('/api/public/phone-verification/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenant.id,
+          phone: cleanPhone,
+        }),
+      })
       const json = await res.json()
-      if (json.data) {
-        const nextState = getLookupCustomerFoundState(json.data)
-        setExistingCustomer(nextState.existingCustomer)
-        setCustomerName(nextState.customerName)
-        setIsNewCustomer(nextState.isNewCustomer)
-        setPhoneVerified(nextState.phoneVerified)
-        const def = json.data.addresses?.find((a: CustomerAddress) => a.is_default)
-        if (def) setAddress(def)
-      } else {
-        const nextState = getLookupCustomerMissingState()
-        setExistingCustomer(nextState.existingCustomer)
-        setIsNewCustomer(nextState.isNewCustomer)
-        setCustomerName(nextState.customerName)
-        setPhoneVerified(nextState.phoneVerified)
+
+      if (!res.ok) {
+        throw new Error(json.error || 'Não foi possível enviar o código.')
       }
-    } finally { setLookingUpPhone(false) }
+
+      setCodeSent(true)
+      setVerificationCode('')
+      toast.success('Enviamos um código de verificação para o seu WhatsApp.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível enviar o código.')
+    } finally {
+      setSendingPhoneCode(false)
+      setLookingUpPhone(false)
+    }
+  }
+
+  async function handlePhoneCodeVerify() {
+    const cleanPhone = phone.replace(/\D/g, '')
+    const cleanCode = verificationCode.replace(/\D/g, '')
+
+    if (cleanCode.length !== 6) {
+      toast.error('Informe o código de 6 dígitos para continuar.')
+      return
+    }
+
+    setVerifyingPhoneCode(true)
+    try {
+      const res = await fetch('/api/public/phone-verification/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenant.id,
+          phone: cleanPhone,
+          code: cleanCode,
+        }),
+      })
+      const json = await res.json()
+
+      if (!res.ok) {
+        throw new Error(json.error || 'Não foi possível validar o código.')
+      }
+
+      setPhoneVerified(true)
+      setCodeSent(false)
+      toast.success('Telefone validado com sucesso.')
+
+      if (isPaidPlan) {
+        setLookingUpPhone(true)
+        await lookupCustomer(cleanPhone)
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível validar o código.')
+    } finally {
+      setVerifyingPhoneCode(false)
+      setLookingUpPhone(false)
+    }
   }
 
   async function handleCepLookup(cep: string) {
@@ -594,10 +670,17 @@ export default function MenuClient({
             setExistingCustomer(nextState.existingCustomer)
             setIsNewCustomer(nextState.isNewCustomer)
             setCustomerName(nextState.customerName)
+            setVerificationCode('')
+            setCodeSent(false)
           },
           phoneVerified,
           onPhoneLookup: handlePhoneLookup,
-          lookingUpPhone,
+          verificationCode,
+          onVerificationCodeChange: setVerificationCode,
+          onVerifyPhoneCode: handlePhoneCodeVerify,
+          codeSent,
+          lookingUpPhone: lookingUpPhone || sendingPhoneCode,
+          verifyingPhoneCode,
           errors,
           isPaidPlan,
           existingCustomer,
