@@ -61,6 +61,7 @@ import {
   removeCartItem,
   resolvePublicCheckoutUrl,
   serializeStoredActiveOrder,
+  shouldRequirePhoneVerification,
   shouldShowCancelOrderButton,
   shouldShowDeliveryStep,
   shouldContinueCheckoutPolling,
@@ -800,6 +801,9 @@ describe('public menu helpers', () => {
     expect(getCustomerBannerState(true, { id: 'customer-1' }, false)).toBe('existing')
     expect(getCustomerBannerState(true, null, true)).toBe('new')
     expect(getCustomerBannerState(false, null, true)).toBeNull()
+    expect(shouldRequirePhoneVerification(true, null)).toBe(true)
+    expect(shouldRequirePhoneVerification(true, { id: 'table-1', number: '7' })).toBe(false)
+    expect(shouldRequirePhoneVerification(false, null)).toBe(false)
     expect(getInfoContinueLabel(true)).toBe('Processando...')
     expect(getInfoContinueLabel(false)).toBe('Continuar')
     expect(getAddressSubmitLabel('online', false)).toBe('Ir para pagamento')

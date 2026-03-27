@@ -50,6 +50,7 @@ import {
   serializeStoredActiveOrder,
   getAddressFlowTarget,
   getTrackOrderState,
+  shouldRequirePhoneVerification,
   getValidationErrorToastMessage,
   shouldContinueCheckoutPolling,
   shouldContinueOrderPolling,
@@ -91,6 +92,7 @@ export default function MenuClient({
   checkoutResult,
 }: Props) {
   const isPaidPlan = tenant.plan !== 'free'
+  const requirePhoneVerification = shouldRequirePhoneVerification(isPaidPlan, tableInfo)
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
@@ -199,7 +201,7 @@ export default function MenuClient({
       toast.error('Informe um telefone válido para continuar.')
       return
     }
-    if (!isPaidPlan) {
+    if (!requirePhoneVerification) {
       setPhoneVerified(true)
       return
     }

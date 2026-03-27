@@ -523,9 +523,57 @@ describe('menu components', () => {
     expect(markup).toContain('Nome obrigatório')
     expect(markup).toContain('Pix')
     expect(markup).toContain('Dinheiro')
-    expect(markup).toContain('Enviar código')
+    expect(markup).not.toContain('Enviar código')
     expect(markup).not.toContain('Taxa de entrega')
     expect(markup).not.toContain('Primeiro pedido? Preencha seus dados.')
+  })
+
+  it('nao exige codigo de telefone em pedido de mesa no plano pago', async () => {
+    const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuInfoStep, {
+        tableInfo: { id: 'table-1', number: '7' },
+        phone: '(11) 99999-9999',
+        onPhoneChange: vi.fn(),
+        phoneVerified: false,
+        onPhoneLookup: vi.fn(),
+        verificationCode: '',
+        onVerificationCodeChange: vi.fn(),
+        onVerifyPhoneCode: vi.fn(),
+        codeSent: false,
+        lookingUpPhone: false,
+        verifyingPhoneCode: false,
+        errors: {},
+        isPaidPlan: true,
+        existingCustomer: null,
+        isNewCustomer: false,
+        customerName: 'Maria',
+        onCustomerNameChange: vi.fn(),
+        customerCpf: '123.456.789-09',
+        onCustomerCpfChange: vi.fn(),
+        paymentOptions: [{ value: 'table', label: 'Na mesa' }],
+        paymentMethod: 'table',
+        onPaymentMethodChange: vi.fn(),
+        notes: '',
+        onNotesChange: vi.fn(),
+        cartTotal: 30,
+        deliveryFee: 0,
+        orderTotal: 30,
+        isProcessing: false,
+        onContinue: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+    const continueButton = buttons.find((element) => getTextContent(element) === 'Continuar')
+
+    expect(getTextContent(elements)).not.toContain('Enviar código')
+    expect(getTextContent(elements)).not.toContain('Confirmar código')
+    expect(continueButton?.props.disabled).toBe(false)
   })
 
   it('aciona handlers e estados do passo de dados', async () => {
@@ -544,7 +592,7 @@ describe('menu components', () => {
 
     const elements = flattenElements(
       React.createElement(MenuInfoStep, {
-        tableInfo: { id: 'table-1', number: '4' },
+        tableInfo: null,
         phone: '1199999',
         onPhoneChange,
         phoneVerified: false,
@@ -555,13 +603,13 @@ describe('menu components', () => {
         codeSent: true,
         lookingUpPhone: true,
         verifyingPhoneCode: false,
-        errors: { cpf: 'CPF obrigatório' },
+        errors: {},
         isPaidPlan: true,
         existingCustomer: null,
         isNewCustomer: true,
         customerName: '',
         onCustomerNameChange,
-        customerCpf: '',
+        customerCpf: '123.456.789-00',
         onCustomerCpfChange,
         paymentOptions: [
           { value: 'online', label: 'Online' },
@@ -585,9 +633,9 @@ describe('menu components', () => {
       (element) => element.type === 'button' && typeof element.props.onClick === 'function'
     )
     const backButton = buttons.find((element) => getTextContent(element) === 'Voltar')
+    const continueButton = buttons.find((element) => getTextContent(element) === 'Continuar')
 
     expect(getTextContent(elements)).toContain('Primeiro pedido? Preencha seus dados.')
-    expect(getTextContent(elements)).toContain('CPF obrigatório')
     expect(getTextContent(elements)).toContain('Taxa de entrega')
     expect(buttons[0].props.disabled).toBe(true)
     expect(getTextContent(buttons[0])).toContain('Enviando')
@@ -595,28 +643,25 @@ describe('menu components', () => {
     inputs[0].props.onChange({ target: { value: 'Cliente Teste' } })
     inputs[1].props.onChange({ target: { value: '(11) 98888-7777' } })
     inputs[2].props.onChange({ target: { value: '123456' } })
-    inputs[3].props.onChange({ target: { value: '123.456.789-00' } })
-    inputs[4].props.onChange({ target: { value: 'Sem gelo' } })
+    inputs[3].props.onChange({ target: { value: 'Sem gelo' } })
     buttons[0].props.onClick()
     buttons[1].props.onClick()
     buttons[2].props.onClick()
     buttons[3].props.onClick()
-    buttons[4].props.onClick()
 
     expect(onCustomerNameChange).toHaveBeenCalledWith('Cliente Teste')
     expect(onPhoneChange).toHaveBeenCalledWith('(11) 98888-7777')
     expect(onVerificationCodeChange).toHaveBeenCalledWith('123456')
     expect(onVerifyPhoneCode).toHaveBeenCalledOnce()
-    expect(onCustomerCpfChange).toHaveBeenCalledWith('123.456.789-00')
     expect(onNotesChange).toHaveBeenCalledWith('Sem gelo')
     expect(onPhoneLookup).toHaveBeenCalledOnce()
     expect(onPaymentMethodChange).toHaveBeenNthCalledWith(1, 'online')
     expect(onPaymentMethodChange).toHaveBeenNthCalledWith(2, 'cash')
-    expect(onContinue).toHaveBeenCalledOnce()
+    expect(onContinue).not.toHaveBeenCalled()
     expect(backButton).toBeTruthy()
     backButton?.props.onClick()
     expect(onBack).toHaveBeenCalledOnce()
-    expect(buttons[4].props.disabled).toBe(true)
+    expect(continueButton?.props.disabled).toBe(true)
     expect(getTextContent(buttons[1])).toContain('Confirmar código')
   })
 
