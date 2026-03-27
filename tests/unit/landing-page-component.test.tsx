@@ -42,8 +42,8 @@ describe('landing page', () => {
 
     const markup = renderToStaticMarkup(React.createElement(Home))
 
-    expect(markup).toContain('bg-[#F7F5EF]')
-    expect(markup).toContain('text-[#25262B]')
+    expect(markup).toContain('bg-[#FBFBFB]')
+    expect(markup).toContain('text-[#3D3D3E]')
     expect(markup).toContain('text-[#FA680B]')
   })
 
@@ -91,6 +91,17 @@ describe('landing page', () => {
     expect(markup).toContain('FAQ')
   })
 
+  it('renderiza atalhos de navegação para leitura mobile da landing', async () => {
+    const { default: Home } = await import('@/app/page')
+
+    const markup = renderToStaticMarkup(React.createElement(Home))
+
+    expect(markup).toContain('Acesso rápido')
+    expect(markup).toContain('href="#produto"')
+    expect(markup).toContain('href="#planos"')
+    expect(markup).toContain('href="#faq"')
+  })
+
   it('renderiza um rodape mais corporativo com contato e sinais de confianca', async () => {
     const { default: Home } = await import('@/app/page')
 
@@ -101,6 +112,7 @@ describe('landing page', () => {
     expect(markup).toContain('Produto')
     expect(markup).toContain('Empresa')
     expect(markup).toContain('Plataforma para operação de restaurantes')
+    expect(markup).toContain('/brand/chefops-logo-dark.svg')
   })
 
   it('renderiza um fechamento comercial mais forte no bloco final de conversao', async () => {

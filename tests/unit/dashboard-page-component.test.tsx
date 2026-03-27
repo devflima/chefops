@@ -68,7 +68,7 @@ describe('DashboardPage component', () => {
   it('renderiza resumo da operacao com top entregador e alertas de estoque', async () => {
     hasPlanFeatureMock.mockImplementation((plan: string, feature: string) => {
       expect(plan).toBe('basic')
-      return feature === 'stock' || feature === 'sales'
+      return ['orders', 'tables', 'stock', 'sales'].includes(feature)
     })
 
     createClientMock.mockReturnValue({
@@ -223,12 +223,15 @@ describe('DashboardPage component', () => {
     expect(markup).toContain('O controle de estoque completo está disponível a partir do plano Standard.')
     expect(markup).toContain('Ainda sem vendas concluídas')
     expect(markup).toContain('Disponível no painel operacional')
+    expect(markup).not.toContain('Abrir mesas')
+    expect(markup).not.toContain('Checar estoque')
+    expect(markup).not.toContain('Gerir entregadores')
   })
 
   it('cobre estoque habilitado sem alerta crítico e top entregador sem nome disponível', async () => {
     hasPlanFeatureMock.mockImplementation((plan: string, feature: string) => {
       expect(plan).toBe('basic')
-      return feature === 'stock' || feature === 'sales'
+      return ['orders', 'tables', 'stock', 'sales'].includes(feature)
     })
 
     createClientMock.mockReturnValue({
@@ -321,7 +324,7 @@ describe('DashboardPage component', () => {
   it('cobre plural do top entregador e detalhes de atenção com entrega em rota', async () => {
     hasPlanFeatureMock.mockImplementation((plan: string, feature: string) => {
       expect(plan).toBe('basic')
-      return feature === 'stock' || feature === 'sales'
+      return ['orders', 'tables', 'stock', 'sales'].includes(feature)
     })
 
     createClientMock.mockReturnValue({
@@ -416,7 +419,7 @@ describe('DashboardPage component', () => {
   it('ordena entregadores concluídos para destacar o líder do dia', async () => {
     hasPlanFeatureMock.mockImplementation((plan: string, feature: string) => {
       expect(plan).toBe('basic')
-      return feature === 'stock' || feature === 'sales'
+      return ['orders', 'tables', 'stock', 'sales'].includes(feature)
     })
 
     createClientMock.mockReturnValue({
