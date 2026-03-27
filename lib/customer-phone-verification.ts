@@ -6,6 +6,7 @@ import {
 } from '@/lib/order-whatsapp'
 
 const VERIFICATION_TTL_MINUTES = 10
+const MAX_VERIFICATION_ATTEMPTS = 5
 
 function getTwilioVerificationConfig() {
   const accountSid = process.env.TWILIO_ACCOUNT_SID
@@ -166,6 +167,10 @@ export async function verifyCustomerPhoneVerificationCode(params: {
     return { verified: false as const, reason: 'missing' as const }
   }
 
+  if (Number(record.attempts ?? 0) >= MAX_VERIFICATION_ATTEMPTS) {
+    return { verified: false as const, reason: 'too_many_attempts' as const }
+  }
+
   if (new Date(record.expires_at).getTime() < Date.now()) {
     return { verified: false as const, reason: 'expired' as const }
   }
@@ -177,10 +182,16 @@ export async function verifyCustomerPhoneVerificationCode(params: {
   })
 
   if (record.code_hash !== expectedHash) {
+    const nextAttempts = Number(record.attempts ?? 0) + 1
+
     await admin
       .from('customer_phone_verifications')
-      .update({ attempts: Number(record.attempts ?? 0) + 1 })
+      .update({ attempts: nextAttempts })
       .eq('id', record.id)
+
+    if (nextAttempts >= MAX_VERIFICATION_ATTEMPTS) {
+      return { verified: false as const, reason: 'too_many_attempts' as const }
+    }
 
     return { verified: false as const, reason: 'invalid' as const }
   }
