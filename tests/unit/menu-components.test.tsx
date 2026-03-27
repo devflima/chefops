@@ -513,6 +513,7 @@ describe('menu components', () => {
     expect(markup).toContain('Nome obrigatório')
     expect(markup).toContain('Pix')
     expect(markup).toContain('Dinheiro')
+    expect(markup).toContain('Validar')
     expect(markup).not.toContain('Taxa de entrega')
     expect(markup).not.toContain('Primeiro pedido? Preencha seus dados.')
   })
@@ -573,8 +574,8 @@ describe('menu components', () => {
     expect(buttons[0].props.disabled).toBe(true)
     expect(getTextContent(buttons[0])).toContain('...')
 
-    inputs[0].props.onChange({ target: { value: '(11) 98888-7777' } })
-    inputs[1].props.onChange({ target: { value: 'Cliente Teste' } })
+    inputs[0].props.onChange({ target: { value: 'Cliente Teste' } })
+    inputs[1].props.onChange({ target: { value: '(11) 98888-7777' } })
     inputs[2].props.onChange({ target: { value: '123.456.789-00' } })
     inputs[3].props.onChange({ target: { value: 'Sem gelo' } })
     buttons[0].props.onClick()
@@ -583,8 +584,8 @@ describe('menu components', () => {
     buttons[3].props.onClick()
     buttons[4].props.onClick()
 
-    expect(onPhoneChange).toHaveBeenCalledWith('(11) 98888-7777')
     expect(onCustomerNameChange).toHaveBeenCalledWith('Cliente Teste')
+    expect(onPhoneChange).toHaveBeenCalledWith('(11) 98888-7777')
     expect(onCustomerCpfChange).toHaveBeenCalledWith('123.456.789-00')
     expect(onNotesChange).toHaveBeenCalledWith('Sem gelo')
     expect(onPhoneLookup).toHaveBeenCalledOnce()
@@ -593,6 +594,7 @@ describe('menu components', () => {
     expect(onContinue).toHaveBeenCalledOnce()
     expect(onBack).toHaveBeenCalledOnce()
     expect(buttons[3].props.disabled).toBe(true)
+    expect(getTextContent(buttons[0])).toContain('Validando')
   })
 
   it('renderiza passo de endereço com loading de CEP', async () => {
