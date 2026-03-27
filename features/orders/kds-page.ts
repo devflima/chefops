@@ -38,3 +38,14 @@ export function getKdsAdvancePayload(order: Pick<Order, 'id' | 'status'>) {
     status: config.next,
   }
 }
+
+export function getElapsedTimeState(since: string, now = Date.now()) {
+  const diff = Math.floor((now - new Date(since).getTime()) / 1000)
+  const minutes = Math.floor(diff / 60)
+  const seconds = diff % 60
+
+  return {
+    elapsed: `${minutes}:${seconds.toString().padStart(2, '0')}`,
+    urgent: minutes >= 10,
+  }
+}
