@@ -684,4 +684,78 @@ describe('DashboardPage component', () => {
     expect(markup).toContain('1 pedidos pagos')
     expect(markup).toContain('O controle de estoque completo está disponível a partir do plano Standard.')
   })
+
+  it('ignora deliveries cancelados nos cards e na lista de atenção', async () => {
+    hasPlanFeatureMock.mockImplementation((plan: string, feature: string) => {
+      expect(plan).toBe('basic')
+      return ['orders', 'tables', 'stock', 'sales'].includes(feature)
+    })
+
+    createClientMock.mockReturnValue({
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: 'user-cancelled' } },
+        })),
+      },
+      from: vi.fn((table: string) => {
+        if (table === 'profiles') {
+          return queryBuilder({
+            full_name: 'Nina Rocha',
+            tenant_id: 'tenant-cancelled',
+            tenants: { name: 'Delivery Teste', plan: 'basic' },
+          })
+        }
+
+        if (table === 'orders') {
+          return queryBuilder([
+            {
+              id: 'order-c1',
+              order_number: 601,
+              customer_name: 'Cliente Cancelado',
+              status: 'cancelled',
+              payment_status: 'pending',
+              payment_method: 'delivery',
+              total: 50,
+              delivery_fee: 9,
+              delivery_status: 'waiting_dispatch',
+              delivery_driver_id: null,
+              created_at: '2026-03-22T10:00:00.000Z',
+            },
+            {
+              id: 'order-c2',
+              order_number: 602,
+              customer_name: 'Cliente Pago',
+              status: 'confirmed',
+              payment_status: 'paid',
+              payment_method: 'delivery',
+              total: 42,
+              delivery_fee: 6,
+              delivery_status: 'waiting_dispatch',
+              delivery_driver_id: null,
+              created_at: '2026-03-22T10:30:00.000Z',
+            },
+          ])
+        }
+
+        if (table === 'delivery_drivers') {
+          return queryBuilder(null)
+        }
+
+        throw new Error(`Unexpected table ${table}`)
+      }),
+    })
+
+    createAdminClientMock.mockReturnValue({
+      from: vi.fn(() => queryBuilder([])),
+    })
+
+    const { default: DashboardPage } = await import('@/app/(dashboard)/dashboard/page')
+    const markup = renderToStaticMarkup(await DashboardPage())
+
+    expect(markup).toContain('Delivery Teste')
+    expect(markup).toContain('R$ 6,00')
+    expect(markup).toContain('#602')
+    expect(markup).not.toContain('#601')
+    expect(markup).not.toContain('R$ 9,00')
+  })
 })
