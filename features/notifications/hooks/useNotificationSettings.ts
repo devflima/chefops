@@ -13,9 +13,10 @@ export type NotificationSettings = {
   whatsapp_order_cancelled: boolean
 }
 
-export function useNotificationSettings() {
+export function useNotificationSettings(enabled = true) {
   return useQuery({
     queryKey: ['notification-settings'],
+    enabled,
     queryFn: async () => {
       const res = await fetch('/api/notification-settings')
       const json = await res.json()

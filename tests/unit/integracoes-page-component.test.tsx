@@ -236,7 +236,7 @@ describe('IntegracoesPage component', () => {
     expect(props.deliverySettingsLoading).toBe(true)
     expect(props.deliverySettingsData).toBeNull()
     expect(props.hasWhatsappNotifications).toBe(false)
-    expect(props.notificationSettingsLoading).toBe(true)
+    expect(props.notificationSettingsLoading).toBe(false)
     expect(props.notificationSettingsData).toBeNull()
     expect(props.whatsappOptions).toEqual([])
   })
