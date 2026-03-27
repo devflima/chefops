@@ -24,6 +24,7 @@ import {
   getCartItemLineTotal,
   getCancelledOrderMessage,
   getCartTotals,
+  getCreatedPublicOrderNotice,
   getCheckoutConvertedNotice,
   getCheckoutPollingErrorNotice,
   getCheckoutStepTitle,
@@ -535,6 +536,15 @@ describe('public menu helpers', () => {
     expect(getPublicCheckoutProcessingState(true, false)).toBe(true)
     expect(getPublicCheckoutProcessingState(false, true)).toBe(true)
     expect(getPublicCheckoutProcessingState(false, false)).toBe(false)
+    expect(getCreatedPublicOrderNotice('pending', 'delivery')).toBe(
+      'Pedido enviado para o estabelecimento. O pagamento será realizado na entrega.'
+    )
+    expect(getCreatedPublicOrderNotice('pending', 'counter')).toBe(
+      'Pedido enviado para o estabelecimento. O pagamento será realizado no local.'
+    )
+    expect(getCreatedPublicOrderNotice('paid', 'online')).toBe(
+      'Pagamento confirmado. Pedido enviado para o estabelecimento.'
+    )
   })
 
   it('monta steps do pedido conforme contexto de mesa', () => {

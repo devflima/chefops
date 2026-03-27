@@ -1661,6 +1661,9 @@ describe('MenuClient component', () => {
     )
     expect(stateSetters[17]).toHaveBeenCalledWith('order-created')
     expect(stateSetters[16]).toHaveBeenCalledWith(77)
+    expect(stateSetters[21]).toHaveBeenCalledWith(
+      'Pedido enviado para o estabelecimento. O pagamento será realizado na entrega.'
+    )
     expect(stateSetters[2]).toHaveBeenCalledWith('done')
   })
 

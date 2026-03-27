@@ -21,6 +21,7 @@ import {
   getCheckoutPollingErrorNotice,
   getCheckoutStepTitle,
   getCheckoutNoticeFromResult,
+  getCreatedPublicOrderNotice,
   getContinueFlowTarget,
   getHalfFlavorOptions,
   getOrderStepState,
@@ -435,6 +436,12 @@ export default function MenuClient({
       setPublicOrderStatus(nextState.publicOrderStatus)
       setCheckoutStep(nextState.checkoutStep)
       setCart(nextState.cart)
+      setCheckoutNotice(
+        getCreatedPublicOrderNotice(
+          order.payment_status ?? nextState.publicOrderStatus.payment_status,
+          order.payment_method ?? nextState.publicOrderStatus.payment_method ?? (paymentMethod as PublicOrderStatus['payment_method'])
+        )
+      )
     } catch (e: unknown) {
       alert(getPublicOrderPlacementErrorMessage(e))
     }
