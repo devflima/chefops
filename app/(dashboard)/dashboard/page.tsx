@@ -15,8 +15,11 @@ import {
   Wallet,
 } from 'lucide-react'
 
+type DashboardRole = 'owner' | 'manager' | 'cashier' | 'kitchen'
+
 type TenantProfile = {
   full_name: string | null
+  role?: DashboardRole | null
   tenant_id: string
   tenants: { name: string; plan: 'free' | 'basic' | 'pro' } | null
 }
@@ -74,13 +77,14 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, tenant_id, tenants(name, plan)')
+    .select('full_name, role, tenant_id, tenants(name, plan)')
     .eq('id', user!.id)
     .single()
 
   const normalizedProfile: TenantProfile | null = profile
     ? {
         full_name: profile.full_name,
+        role: profile.role ?? 'owner',
         tenant_id: profile.tenant_id,
         tenants: Array.isArray(profile.tenants)
           ? (profile.tenants[0] ?? null)
@@ -191,12 +195,23 @@ export default async function DashboardPage() {
     },
   ]
 
-  const quickActions = [
-    { href: '/pedidos', label: 'Ver pedidos', icon: ClipboardList },
-    { href: '/entregadores', label: 'Gerir entregadores', icon: Bike },
-    { href: '/mesas', label: 'Abrir mesas', icon: LayoutGrid },
-    { href: '/estoque', label: 'Checar estoque', icon: Package },
+  const quickActions: Array<{
+    href: string
+    label: string
+    icon: typeof ClipboardList
+    roles: DashboardRole[]
+    feature: 'orders' | 'tables' | 'stock'
+  }> = [
+    { href: '/pedidos', label: 'Ver pedidos', icon: ClipboardList, roles: ['owner', 'manager', 'cashier', 'kitchen'], feature: 'orders' },
+    { href: '/entregadores', label: 'Gerir entregadores', icon: Bike, roles: ['owner', 'manager', 'cashier'], feature: 'orders' },
+    { href: '/mesas', label: 'Abrir mesas', icon: LayoutGrid, roles: ['owner', 'manager', 'cashier'], feature: 'tables' },
+    { href: '/estoque', label: 'Checar estoque', icon: Package, roles: ['owner', 'manager'], feature: 'stock' },
   ]
+  const allowedQuickActions = quickActions.filter((action) => {
+    const role = normalizedProfile?.role ?? null
+    if (!role || !action.roles.includes(role)) return false
+    return hasPlanFeature(tenantPlan, action.feature)
+  })
 
   return (
     <div>
@@ -373,7 +388,7 @@ export default async function DashboardPage() {
               </p>
 
               <div className="mt-5 grid gap-3">
-                {quickActions.map(({ href, label, icon: Icon }) => (
+                {allowedQuickActions.map(({ href, label, icon: Icon }) => (
                   <Link
                     key={href}
                     href={href}
