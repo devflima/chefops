@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PLAN_FEATURES, PLAN_LABELS, PLAN_PRICES, type Plan } from '@/features/plans/types'
 
 const capabilities = [
   'Pedidos, mesas, comandas, cozinha, estoque e cobrança em um fluxo único.',
@@ -12,7 +13,7 @@ const pillars = [
   {
     title: 'Atendimento sem ruído',
     description:
-      'Do salão ao delivery, o time acompanha a operação com menos atrito e mais contexto.',
+      'Salão, delivery e cozinha passam a trabalhar com o mesmo contexto, sem ruído entre pedido, preparo e entrega.',
   },
   {
     title: 'Gestão mais clara',
@@ -43,6 +44,8 @@ const faqs = [
       'Os dois. Ele melhora o fluxo do atendimento e, ao mesmo tempo, dá visibilidade para estoque, cobrança, vendas e gargalos do dia a dia.',
   },
 ]
+
+const landingPlans: Plan[] = ['free', 'basic', 'pro']
 
 export default function Home() {
   return (
@@ -211,6 +214,53 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="border-y border-[#25262B]/10 bg-white">
+          <div className="mx-auto max-w-6xl px-6 py-18 lg:px-8">
+            <div className="max-w-3xl">
+              <p className="text-sm font-medium uppercase tracking-[0.24em] text-[#FA680B]">
+                Prova social
+              </p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] text-[#25262B]">
+                Resultados percebidos por quem vive a operação
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-[#25262B]/72">
+                São ganhos operacionais que o restaurante sente na rotina e consegue
+                perceber rápido.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-5 lg:grid-cols-3">
+              <div className="rounded-[1.75rem] bg-[#F7F5EF] p-6">
+                <h3 className="text-xl font-bold text-[#25262B]">
+                  Menos atraso entre pedido e preparo
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-[#25262B]/72">
+                  O fluxo deixa de depender de recado e a cozinha trabalha com mais
+                  contexto desde o início.
+                </p>
+              </div>
+              <div className="rounded-[1.75rem] bg-[#F7F5EF] p-6">
+                <h3 className="text-xl font-bold text-[#25262B]">
+                  Mais clareza para cobrar, entregar e girar mesa
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-[#25262B]/72">
+                  Atendimento, cobrança e gestão passam a enxergar o mesmo estado da
+                  operação no mesmo fluxo.
+                </p>
+              </div>
+              <div className="rounded-[1.75rem] bg-[#F7F5EF] p-6">
+                <h3 className="text-xl font-bold text-[#25262B]">
+                  Usado para organizar rotinas de atendimento, cozinha e gestão
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-[#25262B]/72">
+                  O ChefOps entra para dar clareza operacional, não para criar mais uma
+                  camada de ruído no dia a dia.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="faq" className="border-t border-[#25262B]/10 bg-white">
           <div className="mx-auto grid max-w-6xl gap-12 px-6 py-18 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
             <div>
@@ -233,6 +283,137 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-6xl px-6 py-18 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-sm font-medium uppercase tracking-[0.24em] text-[#FA680B]">
+              Planos
+            </p>
+            <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] text-[#25262B]">
+              Planos para o estágio atual da sua operação
+            </h2>
+          </div>
+
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {landingPlans.map((plan) => {
+              const isHighlighted = plan === 'basic'
+              const isPremium = plan === 'pro'
+
+              return (
+                <div
+                  key={plan}
+                  className={`relative rounded-[2rem] border p-8 ${
+                    isPremium
+                      ? 'border-[#25262B] bg-[#25262B] text-white'
+                      : isHighlighted
+                        ? 'border-[#25262B] bg-white'
+                        : 'border-[#25262B]/10 bg-white'
+                  }`}
+                >
+                  {isHighlighted && (
+                    <div className="absolute -top-3 left-8 rounded-full bg-[#25262B] px-3 py-1 text-xs font-medium text-white">
+                      Mais popular
+                    </div>
+                  )}
+
+                  <p
+                    className={`text-sm font-medium uppercase tracking-[0.24em] ${
+                      isPremium ? 'text-[#FA680B]' : 'text-[#FA680B]'
+                    }`}
+                  >
+                    {PLAN_LABELS[plan]}
+                  </p>
+
+                  <div className="mt-4 flex items-baseline gap-1">
+                    {PLAN_PRICES[plan] === 0 ? (
+                      <span className={`text-3xl font-black ${isPremium ? 'text-white' : 'text-[#25262B]'}`}>
+                        Grátis
+                      </span>
+                    ) : (
+                      <>
+                        <span className={`text-sm ${isPremium ? 'text-white/60' : 'text-[#25262B]/55'}`}>R$</span>
+                        <span className={`text-4xl font-black ${isPremium ? 'text-white' : 'text-[#25262B]'}`}>
+                          {PLAN_PRICES[plan]}
+                        </span>
+                        <span className={`text-sm ${isPremium ? 'text-white/60' : 'text-[#25262B]/55'}`}>/mês</span>
+                      </>
+                    )}
+                  </div>
+
+                  <ul className="mt-6 space-y-3">
+                    {PLAN_FEATURES[plan].map((feature) => (
+                      <li
+                        key={feature}
+                        className={`flex items-start gap-3 text-sm leading-6 ${
+                          isPremium ? 'text-white/78' : 'text-[#25262B]/72'
+                        }`}
+                      >
+                        <div className="mt-2 h-2 w-2 rounded-full bg-[#FA680B]" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {isHighlighted && (
+                    <p className="mt-6 text-sm font-medium text-[#25262B]/72">
+                      Recomendado para operação em crescimento
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-8 rounded-[1.75rem] border border-[#25262B]/10 bg-white p-6">
+            <h3 className="text-lg font-bold text-[#25262B]">Precisa de ajuda para escolher?</h3>
+            <p className="mt-2 text-sm leading-7 text-[#25262B]/72">
+              Entre em contato pelo email{' '}
+              <a
+                href="mailto:suporte@chefops.com.br"
+                className="font-medium text-[#25262B] underline underline-offset-4"
+              >
+                suporte@chefops.com.br
+              </a>{' '}
+              e nossa equipe te ajuda a encontrar o melhor plano para o seu negócio.
+            </p>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-6 py-18 lg:px-8">
+          <div className="rounded-[2rem] border border-[#25262B]/10 bg-white p-8 sm:p-10">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div className="max-w-3xl">
+                <p className="text-sm font-medium uppercase tracking-[0.24em] text-[#FA680B]">
+                  Decisão comercial
+                </p>
+                <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] text-[#25262B]">
+                  Escolha o melhor próximo passo para sua operação.
+                </h2>
+                <p className="mt-5 text-lg leading-8 text-[#25262B]/72">
+                  Se você quer conhecer a plataforma no seu ritmo, pode criar a conta.
+                  Se prefere entender primeiro como o ChefOps entra na rotina do seu
+                  restaurante, vale começar por uma demonstração comercial.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:min-w-[18rem]">
+                <Button asChild size="lg" className="h-12 bg-[#25262B] px-6 text-white hover:bg-[#1d1e22]">
+                  <Link href="/register">Criar conta e explorar a plataforma</Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-12 border-[#25262B]/15 bg-transparent px-6 text-[#25262B] hover:bg-[#25262B]/5"
+                >
+                  <a href="mailto:contato@chefops.com.br?subject=Demonstra%C3%A7%C3%A3o%20ChefOps">
+                    Agendar demonstração comercial
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="px-6 py-18 lg:px-8">
           <div className="mx-auto max-w-6xl rounded-[2.5rem] bg-[#25262B] px-8 py-10 text-white sm:px-10 sm:py-12">
             <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -241,12 +422,12 @@ export default function Home() {
                   Próximo passo
                 </p>
                 <h2 className="mt-4 text-4xl font-black tracking-[-0.05em]">
-                  Comece pelo ponto que mais trava seu atendimento, sua cozinha ou sua
-                  gestão hoje.
+                  Leve a operação para um fluxo mais claro, com menos ruído e mais
+                  capacidade de crescer.
                 </h2>
                 <p className="mt-5 max-w-2xl text-lg leading-8 text-white/72">
-                  O ChefOps foi feito para restaurante que quer parar de perder eficiência
-                  no improviso e ganhar tração com uma operação mais clara.
+                  Escolha entre começar sozinho na plataforma ou conversar com o time
+                  comercial para entender o melhor encaixe para a sua operação.
                 </p>
               </div>
 
