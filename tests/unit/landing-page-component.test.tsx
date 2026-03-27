@@ -108,8 +108,58 @@ describe('landing page', () => {
 
     const markup = renderToStaticMarkup(React.createElement(Home))
 
-    expect(markup).toContain('Comece pelo ponto que mais trava seu atendimento, sua cozinha ou sua gestão hoje.')
-    expect(markup).toContain('O ChefOps foi feito para restaurante que quer parar de perder eficiência no improviso e ganhar tração com uma operação mais clara.')
+    expect(markup).toContain('Leve a operação para um fluxo mais claro, com menos ruído e mais capacidade de crescer.')
+    expect(markup).toContain('Escolha entre começar sozinho na plataforma ou conversar com o time comercial para entender o melhor encaixe para a sua operação.')
     expect(markup).toContain('Criar conta')
+  })
+
+  it('renderiza uma secao de proximo passo com opcao de demonstracao comercial', async () => {
+    const { default: Home } = await import('@/app/page')
+
+    const markup = renderToStaticMarkup(React.createElement(Home))
+
+    expect(markup).toContain('Escolha o melhor próximo passo para sua operação.')
+    expect(markup).toContain('Criar conta e explorar a plataforma')
+    expect(markup).toContain('Agendar demonstração comercial')
+    expect(markup).toContain('href="mailto:contato@chefops.com.br?subject=Demonstra%C3%A7%C3%A3o%20ChefOps"')
+  })
+
+  it('renderiza prova social com resultados percebidos e sinais de confianca operacional', async () => {
+    const { default: Home } = await import('@/app/page')
+
+    const markup = renderToStaticMarkup(React.createElement(Home))
+
+    expect(markup).toContain('Resultados percebidos por quem vive a operação')
+    expect(markup).toContain('Menos atraso entre pedido e preparo')
+    expect(markup).toContain('Mais clareza para cobrar, entregar e girar mesa')
+    expect(markup).toContain('Usado para organizar rotinas de atendimento, cozinha e gestão')
+    expect(markup).toContain('São ganhos operacionais que o restaurante sente na rotina e consegue perceber rápido.')
+  })
+
+  it('renderiza uma secao de planos para orientar a decisao comercial', async () => {
+    const { default: Home } = await import('@/app/page')
+
+    const markup = renderToStaticMarkup(React.createElement(Home))
+
+    expect(markup).toContain('Planos para o estágio atual da sua operação')
+    expect(markup).toContain('Basic')
+    expect(markup).toContain('Standard')
+    expect(markup).toContain('Premium')
+    expect(markup).toContain('Até 20 produtos')
+    expect(markup).toContain('KDS — tela da cozinha')
+    expect(markup).toContain('White-label')
+    expect(markup).toContain('Mais popular')
+    expect(markup).toContain('Recomendado para operação em crescimento')
+    expect(markup).toContain('Precisa de ajuda para escolher?')
+    expect(markup).toContain('suporte@chefops.com.br')
+  })
+
+  it('reforca o bloco final sem repetir a mesma mensagem do bloco anterior', async () => {
+    const { default: Home } = await import('@/app/page')
+
+    const markup = renderToStaticMarkup(React.createElement(Home))
+
+    expect(markup).toContain('Leve a operação para um fluxo mais claro, com menos ruído e mais capacidade de crescer.')
+    expect(markup).toContain('Escolha entre começar sozinho na plataforma ou conversar com o time comercial para entender o melhor encaixe para a sua operação.')
   })
 })
