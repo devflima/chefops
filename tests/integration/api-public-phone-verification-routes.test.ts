@@ -134,4 +134,27 @@ describe('api public phone verification routes', () => {
       error: 'Muitas tentativas inválidas. Solicite um novo código.',
     })
   })
+
+  it('retorna erro claro quando não existe código ativo para validar', async () => {
+    vi.mocked(verifyCustomerPhoneVerificationCode).mockResolvedValueOnce({
+      verified: false,
+      reason: 'missing',
+    } as never)
+
+    const verifyResponse = await verifyRoute.POST(
+      new Request('https://chefops.test/api/public/phone-verification/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+          phone: '11999999999',
+          code: '123456',
+        }),
+      }) as never,
+    )
+
+    expect(verifyResponse.status).toBe(400)
+    await expect(verifyResponse.json()).resolves.toEqual({
+      error: 'Solicite um código primeiro.',
+    })
+  })
 })

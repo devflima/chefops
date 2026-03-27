@@ -1546,6 +1546,60 @@ describe('MenuClient component', () => {
     expect(toastErrorMock).toHaveBeenCalledWith('Aguarde 1 minuto para solicitar um novo código.')
   })
 
+  it('limpa o código e volta para solicitar envio quando não existe código ativo', async () => {
+    stateValues[5] = '(11) 99999-9999'
+    stateValues[25] = '123456'
+    stateValues[26] = true
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/phone-verification/verify') {
+        return {
+          ok: false,
+          json: vi.fn().mockResolvedValue({ error: 'Solicite um código primeiro.' }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onVerifyPhoneCode: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
+
+    expect(stateSetters[25]).toHaveBeenCalledWith('')
+    expect(stateSetters[26]).toHaveBeenCalledWith(false)
+    expect(toastErrorMock).toHaveBeenCalledWith('Solicite um código primeiro.')
+  })
+
   it('barra avancos quando validacoes falham', async () => {
     stateValues[0] = [
       {

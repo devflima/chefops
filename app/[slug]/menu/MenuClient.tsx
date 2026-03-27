@@ -270,6 +270,7 @@ export default function MenuClient({
       const message = error instanceof Error ? error.message : 'Não foi possível validar o código.'
 
       if (
+        message === 'Solicite um código primeiro.' ||
         message === 'O código expirou. Solicite um novo.' ||
         message === 'Muitas tentativas inválidas. Solicite um novo código.'
       ) {
