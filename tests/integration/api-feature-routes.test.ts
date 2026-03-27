@@ -153,6 +153,7 @@ describe('api feature routes', () => {
               { id: '1', status: 'delivered', total: 30, payment_status: 'paid' },
               { id: '2', status: 'delivered', total: 50, payment_status: 'pending' },
               { id: '3', status: 'confirmed', total: 20, payment_status: 'pending' },
+              { id: '4', status: 'confirmed', total: 45, payment_status: 'paid' },
             ],
             error: null,
           }),
@@ -168,9 +169,10 @@ describe('api feature routes', () => {
     expect(response.status).toBe(200)
     expect(json.data.period).toBe('month')
     expect(json.data.delivered).toBe(2)
-    expect(json.data.pending).toBe(1)
-    expect(json.data.revenue).toBe(30)
-    expect(json.data.average_ticket).toBe(15)
+    expect(json.data.pending).toBe(2)
+    expect(json.data.paid_orders).toBe(2)
+    expect(json.data.revenue).toBe(75)
+    expect(json.data.average_ticket).toBe(37.5)
   })
 
   it('sales metrics GET cobre período custom sem from e to', async () => {

@@ -25,8 +25,8 @@ export default function VendasPage() {
           bg: 'bg-green-50',
         },
         {
-          label: 'Pedidos entregues',
-          value: metrics.delivered,
+          label: 'Vendas concluídas',
+          value: metrics.paid_orders,
           icon: ShoppingBag,
           color: 'text-blue-600',
           bg: 'bg-blue-50',

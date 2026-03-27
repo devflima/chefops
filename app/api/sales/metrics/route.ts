@@ -48,11 +48,10 @@ export async function GET(request: NextRequest) {
     const pending = orders.filter((o) =>
       ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status)
     )
-    const revenue = delivered
-      .filter((o) => o.payment_status === 'paid')
+    const paidOrders = orders.filter((o) => o.payment_status === 'paid' && o.status !== 'cancelled')
+    const revenue = paidOrders
       .reduce((sum, o) => sum + Number(o.total), 0)
-
-    const average_ticket = delivered.length > 0 ? revenue / delivered.length : 0
+    const average_ticket = paidOrders.length > 0 ? revenue / paidOrders.length : 0
 
     return NextResponse.json({
       data: {
@@ -60,6 +59,7 @@ export async function GET(request: NextRequest) {
         from,
         to,
         total_orders,
+        paid_orders: paidOrders.length,
         delivered: delivered.length,
         cancelled: cancelled.length,
         pending: pending.length,
