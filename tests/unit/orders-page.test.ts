@@ -72,6 +72,18 @@ describe('orders-page helpers', () => {
       notifications: [{ id: '1', created_at: '2026-03-21T12:00:00.000Z' }],
     } as never, false)).toBe(false)
 
+    expect(shouldShowWhatsappCard({
+      payment_method: 'counter',
+      table_number: null,
+      notifications: [{ id: '1', created_at: '2026-03-21T12:00:00.000Z' }],
+    } as never, true)).toBe(false)
+
+    expect(shouldShowWhatsappCard({
+      payment_method: 'table',
+      table_number: '7',
+      notifications: [{ id: '1', created_at: '2026-03-21T12:00:00.000Z' }],
+    } as never, true)).toBe(false)
+
     expect(shouldShowAdvanceButton({
       status: 'confirmed',
       delivery_address: null,

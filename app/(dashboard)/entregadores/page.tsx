@@ -10,6 +10,7 @@ import {
 } from '@/features/delivery/hooks/useDeliveryDrivers'
 import { useUser } from '@/features/auth/hooks/useUser'
 import { DeliveryDriversPageContent } from '@/features/delivery/DeliveryDriversPageContent'
+import FeatureGate from '@/features/plans/components/FeatureGate'
 import { toast } from 'sonner'
 
 export default function EntregadoresPage() {
@@ -98,29 +99,31 @@ export default function EntregadoresPage() {
   const activeDrivers = drivers?.filter((driver) => driver.active).length ?? 0
 
   return (
-    <DeliveryDriversPageContent
-      canManage={canManage}
-      activeDrivers={activeDrivers}
-      isLoading={isLoading}
-      drivers={drivers}
-      openCreate={openCreate}
-      openEdit={openEdit}
-      onDelete={handleDelete}
-      open={open}
-      onOpenChange={setOpen}
-      editingDriver={editingDriver}
-      name={name}
-      onNameChange={setName}
-      phone={phone}
-      onPhoneChange={setPhone}
-      vehicleType={vehicleType}
-      onVehicleTypeChange={setVehicleType}
-      notes={notes}
-      onNotesChange={setNotes}
-      active={active}
-      onActiveChange={setActive}
-      onSubmit={handleSubmit}
-      submitDisabled={createDriver.isPending || updateDriver.isPending}
-    />
+    <FeatureGate feature="orders">
+      <DeliveryDriversPageContent
+        canManage={canManage}
+        activeDrivers={activeDrivers}
+        isLoading={isLoading}
+        drivers={drivers}
+        openCreate={openCreate}
+        openEdit={openEdit}
+        onDelete={handleDelete}
+        open={open}
+        onOpenChange={setOpen}
+        editingDriver={editingDriver}
+        name={name}
+        onNameChange={setName}
+        phone={phone}
+        onPhoneChange={setPhone}
+        vehicleType={vehicleType}
+        onVehicleTypeChange={setVehicleType}
+        notes={notes}
+        onNotesChange={setNotes}
+        active={active}
+        onActiveChange={setActive}
+        onSubmit={handleSubmit}
+        submitDisabled={createDriver.isPending || updateDriver.isPending}
+      />
+    </FeatureGate>
   )
 }
