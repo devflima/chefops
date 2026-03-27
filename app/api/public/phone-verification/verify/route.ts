@@ -28,9 +28,11 @@ export async function POST(request: NextRequest) {
 
     if (!result.verified) {
       const errorMessage =
-        result.reason === 'expired'
-          ? 'O código expirou. Solicite um novo.'
-          : 'Código inválido.'
+        result.reason === 'too_many_attempts'
+          ? 'Muitas tentativas inválidas. Solicite um novo código.'
+          : result.reason === 'expired'
+            ? 'O código expirou. Solicite um novo.'
+            : 'Código inválido.'
 
       return NextResponse.json({ error: errorMessage }, { status: 400 })
     }

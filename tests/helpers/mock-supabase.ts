@@ -1,5 +1,5 @@
 type QueryFilter = {
-  type: 'eq' | 'in' | 'limit' | 'order'
+  type: 'eq' | 'in' | 'is' | 'limit' | 'order'
   column: string
   value: unknown
 }
@@ -72,6 +72,11 @@ export function createMockSupabaseClient(handlers: Record<string, TableHandler>)
 
     in(column: string, value: unknown) {
       this.state.filters.push({ type: 'in', column, value })
+      return this
+    }
+
+    is(column: string, value: unknown) {
+      this.state.filters.push({ type: 'is', column, value })
       return this
     }
 
