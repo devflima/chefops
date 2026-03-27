@@ -117,8 +117,11 @@ export function canAccessDashboardPath(
     return false
   }
 
-  if (match.feature && plan && !hasPlanFeature(plan, match.feature)) {
-    return false
+  if (match.feature) {
+    if (!plan) return false
+    if (!hasPlanFeature(plan, match.feature)) {
+      return false
+    }
   }
 
   return true
