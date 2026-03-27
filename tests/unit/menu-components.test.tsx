@@ -444,7 +444,12 @@ describe('menu components', () => {
         onPhoneChange: vi.fn(),
         phoneVerified: true,
         onPhoneLookup: vi.fn(),
+        verificationCode: '',
+        onVerificationCodeChange: vi.fn(),
+        onVerifyPhoneCode: vi.fn(),
+        codeSent: false,
         lookingUpPhone: false,
+        verifyingPhoneCode: false,
         errors: {},
         isPaidPlan: true,
         existingCustomer: { id: 'cust-1', name: 'Maria', phone: '11999999999' },
@@ -483,7 +488,12 @@ describe('menu components', () => {
         onPhoneChange: vi.fn(),
         phoneVerified: false,
         onPhoneLookup: vi.fn(),
+        verificationCode: '',
+        onVerificationCodeChange: vi.fn(),
+        onVerifyPhoneCode: vi.fn(),
+        codeSent: false,
         lookingUpPhone: false,
+        verifyingPhoneCode: false,
         errors: { phone: 'Telefone inválido', name: 'Nome obrigatório' },
         isPaidPlan: false,
         existingCustomer: null,
@@ -513,7 +523,7 @@ describe('menu components', () => {
     expect(markup).toContain('Nome obrigatório')
     expect(markup).toContain('Pix')
     expect(markup).toContain('Dinheiro')
-    expect(markup).toContain('Validar')
+    expect(markup).toContain('Enviar código')
     expect(markup).not.toContain('Taxa de entrega')
     expect(markup).not.toContain('Primeiro pedido? Preencha seus dados.')
   })
@@ -523,6 +533,8 @@ describe('menu components', () => {
 
     const onPhoneChange = vi.fn()
     const onPhoneLookup = vi.fn()
+    const onVerificationCodeChange = vi.fn()
+    const onVerifyPhoneCode = vi.fn()
     const onCustomerNameChange = vi.fn()
     const onCustomerCpfChange = vi.fn()
     const onPaymentMethodChange = vi.fn()
@@ -537,7 +549,12 @@ describe('menu components', () => {
         onPhoneChange,
         phoneVerified: false,
         onPhoneLookup,
+        verificationCode: '123456',
+        onVerificationCodeChange,
+        onVerifyPhoneCode,
+        codeSent: true,
         lookingUpPhone: true,
+        verifyingPhoneCode: false,
         errors: { cpf: 'CPF obrigatório' },
         isPaidPlan: true,
         existingCustomer: null,
@@ -567,17 +584,19 @@ describe('menu components', () => {
     const buttons = elements.filter(
       (element) => element.type === 'button' && typeof element.props.onClick === 'function'
     )
+    const backButton = buttons.find((element) => getTextContent(element) === 'Voltar')
 
     expect(getTextContent(elements)).toContain('Primeiro pedido? Preencha seus dados.')
     expect(getTextContent(elements)).toContain('CPF obrigatório')
     expect(getTextContent(elements)).toContain('Taxa de entrega')
     expect(buttons[0].props.disabled).toBe(true)
-    expect(getTextContent(buttons[0])).toContain('...')
+    expect(getTextContent(buttons[0])).toContain('Enviando')
 
     inputs[0].props.onChange({ target: { value: 'Cliente Teste' } })
     inputs[1].props.onChange({ target: { value: '(11) 98888-7777' } })
-    inputs[2].props.onChange({ target: { value: '123.456.789-00' } })
-    inputs[3].props.onChange({ target: { value: 'Sem gelo' } })
+    inputs[2].props.onChange({ target: { value: '123456' } })
+    inputs[3].props.onChange({ target: { value: '123.456.789-00' } })
+    inputs[4].props.onChange({ target: { value: 'Sem gelo' } })
     buttons[0].props.onClick()
     buttons[1].props.onClick()
     buttons[2].props.onClick()
@@ -586,15 +605,19 @@ describe('menu components', () => {
 
     expect(onCustomerNameChange).toHaveBeenCalledWith('Cliente Teste')
     expect(onPhoneChange).toHaveBeenCalledWith('(11) 98888-7777')
+    expect(onVerificationCodeChange).toHaveBeenCalledWith('123456')
+    expect(onVerifyPhoneCode).toHaveBeenCalledOnce()
     expect(onCustomerCpfChange).toHaveBeenCalledWith('123.456.789-00')
     expect(onNotesChange).toHaveBeenCalledWith('Sem gelo')
     expect(onPhoneLookup).toHaveBeenCalledOnce()
     expect(onPaymentMethodChange).toHaveBeenNthCalledWith(1, 'online')
     expect(onPaymentMethodChange).toHaveBeenNthCalledWith(2, 'cash')
     expect(onContinue).toHaveBeenCalledOnce()
+    expect(backButton).toBeTruthy()
+    backButton?.props.onClick()
     expect(onBack).toHaveBeenCalledOnce()
-    expect(buttons[3].props.disabled).toBe(true)
-    expect(getTextContent(buttons[0])).toContain('Validando')
+    expect(buttons[4].props.disabled).toBe(true)
+    expect(getTextContent(buttons[1])).toContain('Confirmar código')
   })
 
   it('renderiza passo de endereço com loading de CEP', async () => {

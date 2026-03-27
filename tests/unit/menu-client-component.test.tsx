@@ -401,6 +401,7 @@ describe('MenuClient component', () => {
     stateValues[15] = 'Sem cebola'
     stateValues[17] = 'order-1'
     stateValues[22] = createPublicOrderStatus()
+    stateValues[25] = '123456'
 
     const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
 
@@ -424,6 +425,7 @@ describe('MenuClient component', () => {
       drawerProps: {
         infoStepProps: {
           onPhoneLookup: () => Promise<void>
+          onVerifyPhoneCode: () => Promise<void>
           onContinue: () => Promise<void>
         }
         addressStepProps: {
@@ -436,10 +438,13 @@ describe('MenuClient component', () => {
     }
 
     await props.drawerProps.infoStepProps.onPhoneLookup()
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
     await props.drawerProps.addressStepProps.onCepLookup('12345-678')
     await props.drawerProps.infoStepProps.onContinue()
     await props.drawerProps.doneStepProps.onCancelOrder()
 
+    expect(fetch).toHaveBeenCalledWith('/api/public/phone-verification/send', expect.anything())
+    expect(fetch).toHaveBeenCalledWith('/api/public/phone-verification/verify', expect.anything())
     expect(fetch).toHaveBeenCalledWith('/api/customers?phone=11999999999&tenant_id=tenant-1')
     expect(fetch).toHaveBeenCalledWith('/api/cep/12345678')
     expect(fetch).toHaveBeenCalledWith('/api/customers', {
@@ -1221,8 +1226,23 @@ describe('MenuClient component', () => {
 
   it('marca cliente como novo quando lookup pago nao encontra cadastro', async () => {
     stateValues[5] = '(11) 99999-9999'
+    stateValues[25] = '123456'
 
     const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/phone-verification/send') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({ data: { sent: true } }),
+        }
+      }
+
+      if (url === '/api/public/phone-verification/verify') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({ data: { verified: true } }),
+        }
+      }
+
       if (url.startsWith('/api/customers?')) {
         return {
           ok: true,
@@ -1260,12 +1280,16 @@ describe('MenuClient component', () => {
       drawerProps: {
         infoStepProps: {
           onPhoneLookup: () => Promise<void>
+          onVerifyPhoneCode: () => Promise<void>
         }
       }
     }
 
     await props.drawerProps.infoStepProps.onPhoneLookup()
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
 
+    expect(fetchMock).toHaveBeenCalledWith('/api/public/phone-verification/send', expect.anything())
+    expect(fetchMock).toHaveBeenCalledWith('/api/public/phone-verification/verify', expect.anything())
     expect(fetchMock).toHaveBeenCalledWith('/api/customers?phone=11999999999&tenant_id=tenant-1')
     expect(stateSetters[9]).toHaveBeenCalledWith(true)
     expect(stateSetters[9]).toHaveBeenCalledWith(false)
@@ -1277,8 +1301,23 @@ describe('MenuClient component', () => {
 
   it('nao define endereco quando lookup pago encontra cliente sem endereco padrao', async () => {
     stateValues[5] = '(11) 99999-9999'
+    stateValues[25] = '123456'
 
     const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/phone-verification/send') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({ data: { sent: true } }),
+        }
+      }
+
+      if (url === '/api/public/phone-verification/verify') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({ data: { verified: true } }),
+        }
+      }
+
       if (url.startsWith('/api/customers?')) {
         return {
           ok: true,
@@ -1331,11 +1370,13 @@ describe('MenuClient component', () => {
       drawerProps: {
         infoStepProps: {
           onPhoneLookup: () => Promise<void>
+          onVerifyPhoneCode: () => Promise<void>
         }
       }
     }
 
     await props.drawerProps.infoStepProps.onPhoneLookup()
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
 
     expect(fetchMock).toHaveBeenCalledWith('/api/customers?phone=11999999999&tenant_id=tenant-1')
     expect(stateSetters[12]).not.toHaveBeenCalled()
