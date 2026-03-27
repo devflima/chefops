@@ -2380,6 +2380,70 @@ describe('MenuClient component', () => {
     expect(setTimeoutMock).not.toHaveBeenCalled()
   })
 
+  it('atualiza o aviso quando o polling do pedido retorna preparo', async () => {
+    stateValues[17] = 'order-preparing'
+
+    const setTimeoutMock = vi.fn()
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/orders/order-preparing/status') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({
+            data: createPublicOrderStatus({
+              id: 'order-preparing',
+              status: 'preparing',
+              payment_status: 'pending',
+              payment_method: 'delivery',
+              delivery_status: 'waiting_dispatch',
+            }),
+          }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('window', {
+      location: { href: '' },
+      prompt: vi.fn(),
+      setTimeout: setTimeoutMock,
+      localStorage: {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      },
+    })
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/public/orders/order-preparing/status')
+    expect(stateSetters[21]).toHaveBeenCalledWith('Seu pedido está em preparo.')
+    expect(setTimeoutMock).toHaveBeenCalled()
+  })
+
   it('permite confirmar o recebimento no acompanhamento do pedido', async () => {
     stateValues[16] = 123
     stateValues[17] = 'order-3'
