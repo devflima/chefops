@@ -125,7 +125,11 @@ export default async function DashboardPage() {
     .filter((item) => Number(item.current_stock) <= Number(item.min_stock))
   const activeOrders = orders.filter((order) => !['delivered', 'cancelled'].includes(order.status))
   const paidOrders = orders.filter((order) => order.payment_status === 'paid' && order.status !== 'cancelled')
-  const deliveryOrders = orders.filter((order) => order.payment_method === 'delivery' || order.delivery_fee)
+  const deliveryOrders = orders.filter(
+    (order) =>
+      order.status !== 'cancelled' &&
+      (order.payment_method === 'delivery' || order.delivery_fee)
+  )
   const paidDeliveryOrders = deliveryOrders.filter(
     (order) => order.payment_status === 'paid' && order.status !== 'cancelled'
   )
