@@ -2373,6 +2373,7 @@ describe('MenuClient component', () => {
         payment_status: 'paid',
       }),
     )
+    expect(stateSetters[21]).toHaveBeenCalledWith('Pedido entregue com sucesso.')
     expect(setTimeoutMock).not.toHaveBeenCalled()
   })
 

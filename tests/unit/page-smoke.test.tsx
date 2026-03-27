@@ -68,7 +68,7 @@ vi.mock('next/link', () => ({
 }))
 
 vi.mock('next/image', () => ({
-  default: ({ alt, src, ...props }: { alt: string; src: string }) =>
+  default: ({ alt, src, ...props }: { alt: string; src: string; priority?: boolean }) =>
     React.createElement('img', { alt, src, ...props }),
 }))
 
@@ -724,7 +724,7 @@ describe('page smoke', () => {
     const { default: AuthLayout } = await import('@/app/(auth)/layout')
     const { default: Providers } = await import('@/lib/providers')
 
-    expect(renderToStaticMarkup(React.createElement(Home))).toContain('To get started')
+    expect(renderToStaticMarkup(React.createElement(Home))).toContain('Transforme a operação do seu restaurante')
     expect(
       renderToStaticMarkup(
         React.createElement(RootLayout, null, React.createElement('div', null, 'conteudo')),

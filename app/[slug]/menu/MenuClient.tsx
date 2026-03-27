@@ -28,6 +28,7 @@ import {
   getPhoneChangeState,
   getPublicOrderPlacementErrorMessage,
   getPublicOrderHeadline,
+  getPublicOrderStatusNotice,
   getOpenCartState,
   getSuccessfulPublicOrderState,
   groupMenuItems,
@@ -294,6 +295,10 @@ export default function MenuClient({
         if (!res.ok || cancelled) return
 
         setPublicOrderStatus(json.data)
+        const statusNotice = getPublicOrderStatusNotice(json.data)
+        if (statusNotice) {
+          setCheckoutNotice(statusNotice)
+        }
 
         if (shouldContinueOrderPolling(json.data.status)) {
           window.setTimeout(pollOrderStatus, 10000)

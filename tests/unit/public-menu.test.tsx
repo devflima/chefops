@@ -40,6 +40,8 @@ import {
   getPaymentStatusLabel,
   getPhoneChangeState,
   getPublicOrderHeadline,
+  getPublicOrderStatusNotice,
+  getPublicOrderTrackingMessage,
   getLookupCustomerFoundState,
   getLookupCustomerMissingState,
   getOnlineCheckoutErrorMessage,
@@ -489,6 +491,8 @@ describe('public menu helpers', () => {
       order_number: 43,
       status: 'pending',
       payment_status: 'pending',
+      payment_method: 'delivery',
+      delivery_status: 'waiting_dispatch',
       created_at: '2026-03-21T00:00:00.000Z',
       updated_at: '2026-03-21T00:00:00.000Z',
     })).toEqual({
@@ -496,6 +500,8 @@ describe('public menu helpers', () => {
       order_number: 43,
       status: 'pending',
       payment_status: 'pending',
+      payment_method: 'delivery',
+      delivery_status: 'waiting_dispatch',
       created_at: '2026-03-21T00:00:00.000Z',
       updated_at: '2026-03-21T00:00:00.000Z',
     })
@@ -579,6 +585,33 @@ describe('public menu helpers', () => {
     expect(getPaymentStatusLabel('paid')).toBe('Aprovado')
     expect(getPaymentStatusLabel('refunded')).toBe('Reembolsado')
     expect(getPaymentStatusLabel('pending')).toBe('Pendente')
+    expect(getPaymentStatusLabel('pending', 'delivery')).toBe('Na entrega')
+    expect(getPaymentStatusLabel('pending', 'counter')).toBe('No local')
+    expect(getPublicOrderTrackingMessage({
+      ...publicOrderStatus,
+      status: 'confirmed',
+      delivery_status: 'waiting_dispatch',
+    }, 'confirmado')).toBe('Seu pedido foi confirmado.')
+    expect(getPublicOrderTrackingMessage({
+      ...publicOrderStatus,
+      status: 'preparing',
+      delivery_status: 'waiting_dispatch',
+    }, 'em preparo')).toBe('Seu pedido está em preparo.')
+    expect(getPublicOrderTrackingMessage({
+      ...publicOrderStatus,
+      status: 'delivered',
+      delivery_status: 'delivered',
+    }, 'entregue')).toBe('Seu pedido foi entregue.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
+      status: 'delivered',
+      delivery_status: 'delivered',
+    })).toBe('Pedido entregue com sucesso.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
+      status: 'ready',
+      delivery_status: 'out_for_delivery',
+    })).toBe('Seu pedido saiu para entrega.')
     expect(getOnlineCheckoutErrorMessage(new Error('mp error'))).toBe('mp error')
     expect(getOnlineCheckoutErrorMessage(null)).toBe('Erro ao iniciar pagamento online.')
     expect(getPublicOrderPlacementErrorMessage(new Error('order error'))).toBe('order error')

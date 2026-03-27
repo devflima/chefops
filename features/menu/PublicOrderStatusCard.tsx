@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import type { PublicOrderStatus } from '@/features/menu/public-menu'
+import { getPublicOrderTrackingMessage, type PublicOrderStatus } from '@/features/menu/public-menu'
 
 export function PublicOrderStatusCard({
   publicOrderStatus,
@@ -18,7 +18,7 @@ export function PublicOrderStatusCard({
             Pedido em andamento #{publicOrderStatus.order_number}
           </p>
           <p className="mt-1 text-sm text-emerald-700">
-            Seu pedido está em {headline}.
+            {getPublicOrderTrackingMessage(publicOrderStatus, headline)}
           </p>
         </div>
         <Button
