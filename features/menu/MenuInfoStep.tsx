@@ -1,6 +1,10 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getCustomerBannerState, getInfoContinueLabel } from '@/features/menu/public-menu'
+import {
+  getCustomerBannerState,
+  getInfoContinueLabel,
+  shouldRequirePhoneVerification,
+} from '@/features/menu/public-menu'
 import type { CustomerAddress } from '@/features/orders/types'
 
 type ExistingCustomer = {
@@ -74,6 +78,7 @@ export function MenuInfoStep({
   onBack: () => void
 }) {
   const customerBannerState = getCustomerBannerState(isPaidPlan, existingCustomer, isNewCustomer)
+  const requirePhoneVerification = shouldRequirePhoneVerification(isPaidPlan, tableInfo)
 
   return (
     <div className="flex-1 flex flex-col">
@@ -108,7 +113,7 @@ export function MenuInfoStep({
               onChange={(e) => onPhoneChange(e.target.value)}
               className="flex-1"
             />
-            {!phoneVerified && (
+            {requirePhoneVerification && !phoneVerified && (
               <Button
                 size="sm"
                 variant="outline"
@@ -121,7 +126,7 @@ export function MenuInfoStep({
             )}
           </div>
           {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
-          {!phoneVerified && codeSent && (
+          {requirePhoneVerification && !phoneVerified && codeSent && (
             <div className="mt-3 space-y-2">
               <Input
                 placeholder="Digite o código de 6 dígitos"
@@ -207,7 +212,11 @@ export function MenuInfoStep({
           <span className="text-slate-500">Total</span>
           <span className="font-semibold">R$ {orderTotal.toFixed(2)}</span>
         </div>
-        <Button className="w-full" onClick={onContinue} disabled={isProcessing || (isPaidPlan && !phoneVerified)}>
+        <Button
+          className="w-full"
+          onClick={onContinue}
+          disabled={isProcessing || (requirePhoneVerification && !phoneVerified)}
+        >
           {getInfoContinueLabel(isProcessing)}
         </Button>
         <Button variant="outline" className="w-full" onClick={onBack}>

@@ -438,14 +438,13 @@ describe('MenuClient component', () => {
     }
 
     await props.drawerProps.infoStepProps.onPhoneLookup()
-    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
     await props.drawerProps.addressStepProps.onCepLookup('12345-678')
     await props.drawerProps.infoStepProps.onContinue()
     await props.drawerProps.doneStepProps.onCancelOrder()
 
-    expect(fetch).toHaveBeenCalledWith('/api/public/phone-verification/send', expect.anything())
-    expect(fetch).toHaveBeenCalledWith('/api/public/phone-verification/verify', expect.anything())
-    expect(fetch).toHaveBeenCalledWith('/api/customers?phone=11999999999&tenant_id=tenant-1')
+    expect(fetch).not.toHaveBeenCalledWith('/api/public/phone-verification/send', expect.anything())
+    expect(fetch).not.toHaveBeenCalledWith('/api/public/phone-verification/verify', expect.anything())
+    expect(fetch).not.toHaveBeenCalledWith('/api/customers?phone=11999999999&tenant_id=tenant-1')
     expect(fetch).toHaveBeenCalledWith('/api/cep/12345678')
     expect(fetch).toHaveBeenCalledWith('/api/customers', {
       method: 'POST',
@@ -471,8 +470,6 @@ describe('MenuClient component', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cancelled_reason: 'Cliente desistiu' }),
     })
-    expect(stateSetters[9]).toHaveBeenCalledWith(true)
-    expect(stateSetters[9]).toHaveBeenCalledWith(false)
     expect(stateSetters[13]).toHaveBeenCalledWith(true)
     expect(stateSetters[13]).toHaveBeenCalledWith(false)
     expect(stateSetters[17]).toHaveBeenCalledWith('order-created')
@@ -2753,5 +2750,43 @@ describe('MenuClient component', () => {
     expect(stateSetters[6]).toHaveBeenCalledWith('Maria')
     expect(stateSetters[14]).toHaveBeenCalledWith('delivery')
     expect(stateSetters[15]).toHaveBeenCalledWith('Sem cebola')
+  })
+
+  it('nao envia codigo de telefone para pedidos de mesa no plano pago', async () => {
+    stateValues[5] = '(11) 99999-9999'
+
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'standard',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: { id: 'table-1', number: '12' },
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onPhoneLookup: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.infoStepProps.onPhoneLookup()
+
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/public/phone-verification/send', expect.anything())
+    expect(stateSetters[10]).toHaveBeenCalledWith(true)
   })
 })

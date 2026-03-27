@@ -430,6 +430,13 @@ export function getCustomerBannerState(
   return null
 }
 
+export function shouldRequirePhoneVerification(
+  isPaidPlan: boolean,
+  tableInfo: { id: string; number: string } | null
+) {
+  return isPaidPlan && !tableInfo
+}
+
 export function getInfoContinueLabel(isProcessing: boolean) {
   return isProcessing ? 'Processando...' : 'Continuar'
 }
