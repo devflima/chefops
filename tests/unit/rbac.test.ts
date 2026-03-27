@@ -50,8 +50,9 @@ describe('rbac', () => {
   })
 
   it('canAccessDashboardPath protege rotas aninhadas e libera rotas sem mapeamento', () => {
-    expect(canAccessDashboardPath('cashier', '/pedidos/123')).toBe(true)
-    expect(canAccessDashboardPath('cashier', '/usuarios')).toBe(false)
+    expect(canAccessDashboardPath('cashier', '/pedidos/123', 'free')).toBe(true)
+    expect(canAccessDashboardPath('cashier', '/pedidos/123')).toBe(false)
+    expect(canAccessDashboardPath('cashier', '/usuarios', 'basic')).toBe(false)
     expect(canAccessDashboardPath('kitchen', '/rota-sem-regra')).toBe(true)
     expect(canAccessDashboardPath(null, '/dashboard')).toBe(false)
   })

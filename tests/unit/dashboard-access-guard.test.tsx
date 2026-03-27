@@ -80,6 +80,9 @@ describe('DashboardAccessGuard', () => {
       user: {
         profile: {
           role: 'owner',
+          tenant: {
+            plan: 'basic',
+          },
         },
       },
       loading: false,
@@ -104,6 +107,28 @@ describe('DashboardAccessGuard', () => {
           tenant: {
             plan: 'free',
           },
+        },
+      },
+      loading: false,
+    })
+
+    const markup = renderToStaticMarkup(
+      React.createElement(DashboardAccessGuard, null, 'guard-child')
+    )
+
+    expect(markup).toContain('Redirecionando')
+    expect(replaceMock).toHaveBeenCalledWith('/dashboard')
+  })
+
+  it('redireciona quando a rota exige feature e o plano ainda não carregou', async () => {
+    const { default: DashboardAccessGuard } = await import('@/features/auth/components/DashboardAccessGuard')
+
+    usePathnameMock.mockReturnValue('/comandas')
+    useUserMock.mockReturnValue({
+      user: {
+        profile: {
+          role: 'cashier',
+          tenant: null,
         },
       },
       loading: false,
