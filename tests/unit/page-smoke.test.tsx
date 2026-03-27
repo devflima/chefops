@@ -725,7 +725,7 @@ describe('page smoke', () => {
     const { default: Providers } = await import('@/lib/providers')
 
     expect(renderToStaticMarkup(React.createElement(Home))).toContain(
-      'Menos improviso. Mais controle para vender, atender e crescer.'
+      'Organize a operação do seu restaurante para vender mais, atender melhor e crescer com controle.'
     )
     expect(
       renderToStaticMarkup(
