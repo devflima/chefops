@@ -104,7 +104,7 @@ describe('menu components', () => {
     )
 
     expect(markup).toContain('Pedido em andamento #42')
-    expect(markup).toContain('Seu pedido está em em preparo.')
+    expect(markup).toContain('Seu pedido está em preparo.')
     expect(markup).toContain('Acompanhar')
   })
 
@@ -854,7 +854,7 @@ describe('menu components', () => {
 
     expect(getTextContent(elements)).toContain('Saiu para entrega')
     expect(getTextContent(elements)).toContain('Seu pedido saiu para entrega com João.')
-    expect(getTextContent(elements)).toContain('Pendente')
+    expect(getTextContent(elements)).toContain('Na entrega')
     expect(getTextContent(elements)).not.toContain('Cancelar pedido')
 
     const buttons = elements.filter(

@@ -180,6 +180,8 @@ export function createPublicOrderStatusFromOrder(data: {
   order_number: number
   status: PublicOrderStatus['status']
   payment_status: PublicOrderStatus['payment_status']
+  payment_method?: PublicOrderStatus['payment_method']
+  delivery_status?: PublicOrderStatus['delivery_status']
   created_at: string
   updated_at: string
 }) {
@@ -188,6 +190,8 @@ export function createPublicOrderStatusFromOrder(data: {
     order_number: data.order_number,
     status: data.status,
     payment_status: data.payment_status,
+    payment_method: data.payment_method,
+    delivery_status: data.delivery_status ?? null,
     created_at: data.created_at,
     updated_at: data.updated_at,
   } satisfies PublicOrderStatus
@@ -453,9 +457,47 @@ export function getCancelOrderErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Erro ao cancelar pedido.'
 }
 
-export function getPaymentStatusLabel(paymentStatus?: PublicOrderStatus['payment_status'] | null) {
+export function getPublicOrderTrackingMessage(
+  publicOrderStatus: PublicOrderStatus,
+  headline: string
+) {
+  if (publicOrderStatus.status === 'pending') return 'Seu pedido foi recebido.'
+  if (publicOrderStatus.status === 'confirmed') return 'Seu pedido foi confirmado.'
+  if (publicOrderStatus.status === 'preparing') return 'Seu pedido está em preparo.'
+  if (publicOrderStatus.status === 'delivered') return 'Seu pedido foi entregue.'
+  if (
+    publicOrderStatus.payment_method === 'delivery' &&
+    publicOrderStatus.status === 'ready' &&
+    publicOrderStatus.delivery_status === 'out_for_delivery'
+  ) {
+    return 'Seu pedido saiu para entrega.'
+  }
+  if (publicOrderStatus.status === 'ready') return 'Seu pedido está pronto.'
+  return `Seu pedido está em ${headline}.`
+}
+
+export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus | null) {
+  if (!publicOrderStatus) return null
+  if (publicOrderStatus.status === 'delivered') return 'Pedido entregue com sucesso.'
+  if (
+    publicOrderStatus.payment_method === 'delivery' &&
+    publicOrderStatus.status === 'ready' &&
+    publicOrderStatus.delivery_status === 'out_for_delivery'
+  ) {
+    return 'Seu pedido saiu para entrega.'
+  }
+
+  return null
+}
+
+export function getPaymentStatusLabel(
+  paymentStatus?: PublicOrderStatus['payment_status'] | null,
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+) {
   if (paymentStatus === 'paid') return 'Aprovado'
   if (paymentStatus === 'refunded') return 'Reembolsado'
+  if (paymentMethod === 'delivery') return 'Na entrega'
+  if (paymentMethod === 'counter' || paymentMethod === 'table') return 'No local'
   return 'Pendente'
 }
 

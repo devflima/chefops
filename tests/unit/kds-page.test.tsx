@@ -189,11 +189,6 @@ describe('KDSPageContent', () => {
       onAdvance: vi.fn(),
     })
     const elements = flattenElements(tree)
-    const elapsedTime = elements.find(
-      (element) =>
-        typeof element.type === 'function' &&
-        (element.type as { name?: string }).name === 'ElapsedTime'
-    )
     const advanceButton = elements.find(
       (element) =>
         element.type === 'button' &&
