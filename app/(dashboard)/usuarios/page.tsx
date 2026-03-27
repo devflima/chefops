@@ -21,6 +21,7 @@ import {
   paginateTeamUsers,
   type UsersRoleFilter,
 } from '@/features/users/users-page'
+import FeatureGate from '@/features/plans/components/FeatureGate'
 
 export default function UsuariosPage() {
   const { user } = useUser()
@@ -109,44 +110,48 @@ export default function UsuariosPage() {
   }
 
   return (
-    <UsersPageContent
-      isOwner={!!isOwner}
-      isLoading={isLoading}
-      data={data ?? null}
-      nameFilter={nameFilter}
-      onNameFilterChange={(value) => {
-        setNameFilter(value)
-        setPage(1)
-      }}
-      roleFilter={roleFilter}
-      onRoleFilterChange={(value) => {
-        setRoleFilter(value)
-        setPage(1)
-      }}
-      paginatedUsers={paginatedUsers}
-      canManageUser={(teamUser) => canManageTeamUser(!!isOwner, data?.current_user_id ?? '', teamUser.id)}
-      onOpenCreate={openCreate}
-      onOpenEdit={openEdit}
-      onDeleteUser={handleDeleteUser}
-      updatePending={updateUserRole.isPending}
-      deletePending={deleteUser.isPending}
-      page={page}
-      totalPages={getUsersTotalPages(filteredUsers.length, pageSize)}
-      onPageChange={setPage}
-      open={open}
-      onOpenChange={setOpen}
-      editingUser={editingUser}
-      fullName={fullName}
-      onFullNameChange={setFullName}
-      email={email}
-      onEmailChange={setEmail}
-      password={password}
-      onPasswordChange={setPassword}
-      role={role}
-      onRoleChange={setRole}
-      availableRoles={availableRoles}
-      onSubmit={handleSubmit}
-      createPending={createUser.isPending}
-    />
+    <FeatureGate feature="team">
+      <UsersPageContent
+        isOwner={!!isOwner}
+        isLoading={isLoading}
+        data={data ?? null}
+        nameFilter={nameFilter}
+        onNameFilterChange={(value) => {
+          setNameFilter(value)
+          setPage(1)
+        }}
+        roleFilter={roleFilter}
+        onRoleFilterChange={(value) => {
+          setRoleFilter(value)
+          setPage(1)
+        }}
+        paginatedUsers={paginatedUsers}
+        canManageUser={(teamUser) =>
+          canManageTeamUser(!!isOwner, data?.current_user_id ?? '', teamUser.id)
+        }
+        onOpenCreate={openCreate}
+        onOpenEdit={openEdit}
+        onDeleteUser={handleDeleteUser}
+        updatePending={updateUserRole.isPending}
+        deletePending={deleteUser.isPending}
+        page={page}
+        totalPages={getUsersTotalPages(filteredUsers.length, pageSize)}
+        onPageChange={setPage}
+        open={open}
+        onOpenChange={setOpen}
+        editingUser={editingUser}
+        fullName={fullName}
+        onFullNameChange={setFullName}
+        email={email}
+        onEmailChange={setEmail}
+        password={password}
+        onPasswordChange={setPassword}
+        role={role}
+        onRoleChange={setRole}
+        availableRoles={availableRoles}
+        onSubmit={handleSubmit}
+        createPending={createUser.isPending}
+      />
+    </FeatureGate>
   )
 }

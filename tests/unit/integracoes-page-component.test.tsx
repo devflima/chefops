@@ -53,6 +53,11 @@ vi.mock('@/features/delivery/hooks/useDeliverySettings', () => ({
   useUpdateDeliverySettings: () => useUpdateDeliverySettingsMock(),
 }))
 
+vi.mock('@/features/plans/components/FeatureGate', () => ({
+  default: ({ children }: React.PropsWithChildren) =>
+    React.createElement(React.Fragment, null, children),
+}))
+
 vi.mock('@/features/payments/IntegrationsPageContent', () => ({
   IntegrationsPageContent: (props: Record<string, unknown>) => {
     capturedContentProps = props
