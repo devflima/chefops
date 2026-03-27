@@ -194,10 +194,14 @@ describe('public menu helpers', () => {
   })
 
   it('valida dados do cliente, endereco, steps e normalizacao de joins', () => {
-    expect(validateCustomerInfo('', '1199', '', { id: 'table-1', number: '10' })).toEqual({
+    expect(validateCustomerInfo('', '1199', '', { id: 'table-1', number: '10' }, 'table')).toEqual({
       name: 'Nome obrigatório',
       phone: 'Telefone inválido',
       cpf: 'CPF inválido',
+    })
+
+    expect(validateCustomerInfo('Maria', '(11) 99999-9999', '', null, '')).toEqual({
+      payment_method: 'Selecione uma forma de pagamento',
     })
 
     expect(validateCustomerAddress({ street: 'Rua A' })).toEqual({
@@ -294,7 +298,7 @@ describe('public menu helpers', () => {
     })
     expect(getBorders(plainItem as never)).toEqual([])
 
-    expect(validateCustomerInfo('Maria', '(11) 99999-9999', '', null)).toEqual({})
+    expect(validateCustomerInfo('Maria', '(11) 99999-9999', '', null, 'delivery')).toEqual({})
     expect(validateCustomerAddress({
       zip_code: '12345-678',
       street: 'Rua A',

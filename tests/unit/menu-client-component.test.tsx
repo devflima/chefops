@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 const useStateMock = vi.fn()
 const createOrderMutateAsyncMock = vi.fn()
 const toastSuccessMock = vi.fn()
+const toastErrorMock = vi.fn()
 const toastSuccessCalls: Array<{ title: string; options?: Record<string, unknown> }> = []
 const effectCleanups: Array<() => void> = []
 
@@ -34,6 +35,9 @@ vi.mock('sonner', () => ({
         title: args[0] as string,
         options: args[1] as Record<string, unknown> | undefined,
       })
+    },
+    error: (...args: Parameters<typeof toastErrorMock>) => {
+      toastErrorMock(...args)
     },
   },
 }))
@@ -91,6 +95,7 @@ describe('MenuClient component', () => {
     stateValues = []
     stateSetters = []
     toastSuccessCalls.length = 0
+    toastErrorMock.mockReset()
     effectCleanups.length = 0
 
     useStateMock.mockImplementation((initial: unknown) => {
@@ -303,6 +308,82 @@ describe('MenuClient component', () => {
     expect(stateSetters[7]).toHaveBeenCalledWith('123.456.789-09')
     expect(stateSetters[0]).toHaveBeenCalledTimes(2)
     expect(toastSuccessMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('não pré-seleciona pagamento no fluxo público sem mesa', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          paymentMethod: string
+        }
+      }
+    }
+
+    expect(props.drawerProps.infoStepProps.paymentMethod).toBe('')
+  })
+
+  it('mostra toast quando campos obrigatórios impedem o avanço no checkout público', async () => {
+    stateValues[0] = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza Margherita',
+        price: 32,
+        quantity: 1,
+        extras: [],
+      },
+    ]
+    stateValues[5] = ''
+    stateValues[6] = ''
+    stateValues[14] = ''
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onContinue: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.infoStepProps.onContinue()
+
+    expect(toastErrorMock).toHaveBeenCalledWith('Confira os campos obrigatórios antes de continuar.')
+    expect(createOrderMutateAsyncMock).not.toHaveBeenCalled()
   })
 
   it('executa lookup, CEP, submit do pedido e cancelamento', async () => {

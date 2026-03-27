@@ -583,7 +583,8 @@ export function validateCustomerInfo(
   customerName: string,
   phone: string,
   customerCpf: string,
-  tableInfo: { id: string; number: string } | null
+  tableInfo: { id: string; number: string } | null,
+  paymentMethod?: string
 ) {
   const errors: Record<string, string> = {}
 
@@ -595,6 +596,9 @@ export function validateCustomerInfo(
   }
   if (tableInfo && (!customerCpf || !validateCPF(customerCpf))) {
     errors.cpf = 'CPF inválido'
+  }
+  if (!paymentMethod) {
+    errors.payment_method = 'Selecione uma forma de pagamento'
   }
 
   return errors
