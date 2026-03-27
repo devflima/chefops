@@ -17,7 +17,9 @@ export function MenuDoneStep({
   orderSteps,
   getStepState,
   cancelOrderLoading,
+  confirmDeliveryLoading,
   onCancelOrder,
+  onConfirmDelivery,
   onClose,
 }: {
   orderNumber: number | null
@@ -26,7 +28,9 @@ export function MenuDoneStep({
   orderSteps: Array<{ key: PublicOrderStatus['status']; label: string; description: string }>
   getStepState: (stepKey: PublicOrderStatus['status']) => 'done' | 'current' | 'upcoming'
   cancelOrderLoading: boolean
+  confirmDeliveryLoading: boolean
   onCancelOrder: () => void
+  onConfirmDelivery: () => void
   onClose: () => void
 }) {
   return (
@@ -108,6 +112,17 @@ export function MenuDoneStep({
               {getPaymentStatusLabel(publicOrderStatus?.payment_status, publicOrderStatus?.payment_method)}
             </span>
           </div>
+
+          {publicOrderStatus?.payment_method === 'delivery' &&
+            publicOrderStatus?.delivery_status === 'out_for_delivery' && (
+              <Button
+                className="mt-4 w-full"
+                onClick={onConfirmDelivery}
+                disabled={confirmDeliveryLoading}
+              >
+                {confirmDeliveryLoading ? 'Confirmando...' : 'Confirmar recebimento'}
+              </Button>
+            )}
 
           {shouldShowCancelOrderButton(publicOrderStatus?.status) && (
             <Button
