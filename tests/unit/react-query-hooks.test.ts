@@ -147,6 +147,11 @@ describe('react-query hooks', () => {
     await expect(
       notifMutation.mutationFn({ whatsapp_order_received: true })
     ).rejects.toThrow('Falha ao atualizar notificações')
+
+    const notifQueryDisabled = notificationSettings.useNotificationSettings(false) as {
+      enabled: boolean
+    }
+    expect(notifQueryDisabled.enabled).toBe(false)
   })
 
   it('configura hooks de onboarding e pagamentos', async () => {

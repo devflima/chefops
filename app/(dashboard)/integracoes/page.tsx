@@ -27,7 +27,7 @@ export default function IntegracoesPage() {
   const account = useMercadoPagoAccount()
   const disconnect = useDisconnectMercadoPagoAccount()
   const hasWhatsappNotifications = useHasFeature('whatsapp_notifications')
-  const notificationSettings = useNotificationSettings()
+  const notificationSettings = useNotificationSettings(hasWhatsappNotifications)
   const updateNotificationSettings = useUpdateNotificationSettings()
   const deliverySettings = useDeliverySettings()
   const updateDeliverySettings = useUpdateDeliverySettings()
@@ -43,7 +43,8 @@ export default function IntegracoesPage() {
 
   const connected = !!account.data
   const deliveryFeeValue = getDeliveryFeeValue(deliveryFeeInput, deliverySettings.data?.flat_fee)
-  const whatsappOptions = notificationSettings.data ? whatsappOptionDefinitions : []
+  const whatsappOptions =
+    hasWhatsappNotifications && notificationSettings.data ? whatsappOptionDefinitions : []
 
   return (
     <IntegrationsPageContent
@@ -65,8 +66,12 @@ export default function IntegracoesPage() {
         setDeliveryFeeInput(null)
       }}
       hasWhatsappNotifications={hasWhatsappNotifications}
-      notificationSettingsLoading={notificationSettings.isLoading}
-      notificationSettingsData={notificationSettings.data ?? null}
+      notificationSettingsLoading={
+        hasWhatsappNotifications ? notificationSettings.isLoading : false
+      }
+      notificationSettingsData={
+        hasWhatsappNotifications ? notificationSettings.data ?? null : null
+      }
       notificationSettingsPending={updateNotificationSettings.isPending}
       whatsappOptions={whatsappOptions}
       onToggleWhatsappOption={async (payload) => {

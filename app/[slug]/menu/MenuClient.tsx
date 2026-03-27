@@ -168,7 +168,10 @@ export default function MenuClient({
 
   async function handlePhoneLookup() {
     const cleanPhone = phone.replace(/\D/g, '')
-    if (cleanPhone.length < 10) return
+    if (cleanPhone.length < 10) {
+      toast.error('Informe um telefone válido para continuar.')
+      return
+    }
     if (!isPaidPlan) { setPhoneVerified(true); return }
     setLookingUpPhone(true)
     try {
