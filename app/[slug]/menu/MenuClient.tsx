@@ -114,6 +114,7 @@ export default function MenuClient({
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null)
   const [publicOrderStatus, setPublicOrderStatus] = useState<PublicOrderStatus | null>(null)
   const [cancelOrderLoading, setCancelOrderLoading] = useState(false)
+  const [confirmDeliveryLoading, setConfirmDeliveryLoading] = useState(false)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreatePublicOrder()
@@ -479,6 +480,31 @@ export default function MenuClient({
     }
   }
 
+  async function handleConfirmDelivery() {
+    if (!orderId) return
+
+    try {
+      setConfirmDeliveryLoading(true)
+
+      const res = await fetch(`/api/public/orders/${orderId}/confirm-delivery`, {
+        method: 'POST',
+      })
+      const json = await res.json()
+
+      if (!res.ok) {
+        throw new Error(json.error)
+      }
+
+      setPublicOrderStatus(json.data)
+      setCheckoutNotice('Pedido entregue com sucesso.')
+      toast.success('Entrega confirmada com sucesso.')
+    } catch (error) {
+      alert(getPublicOrderPlacementErrorMessage(error))
+    } finally {
+      setConfirmDeliveryLoading(false)
+    }
+  }
+
   const orderSteps = getOrderSteps(tableInfo)
   const isCheckoutProcessing = getPublicCheckoutProcessingState(
     createOrder.isPending,
@@ -599,7 +625,9 @@ export default function MenuClient({
           orderSteps,
           getStepState,
           cancelOrderLoading,
+          confirmDeliveryLoading,
           onCancelOrder: handleCancelOrder,
+          onConfirmDelivery: handleConfirmDelivery,
           onClose: () => setCartOpen(false),
         },
       }}

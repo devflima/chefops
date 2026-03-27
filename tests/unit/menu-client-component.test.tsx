@@ -2377,6 +2377,83 @@ describe('MenuClient component', () => {
     expect(setTimeoutMock).not.toHaveBeenCalled()
   })
 
+  it('permite confirmar o recebimento no acompanhamento do pedido', async () => {
+    stateValues[16] = 123
+    stateValues[17] = 'order-3'
+    stateValues[22] = createPublicOrderStatus({
+      id: 'order-3',
+      order_number: 123,
+      status: 'ready',
+      payment_status: 'pending',
+      payment_method: 'delivery',
+      delivery_status: 'out_for_delivery',
+    })
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url === '/api/public/orders/order-3/confirm-delivery') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({
+            data: createPublicOrderStatus({
+              id: 'order-3',
+              order_number: 123,
+              status: 'delivered',
+              payment_status: 'pending',
+              payment_method: 'delivery',
+              delivery_status: 'delivered',
+            }),
+          }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    }))
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        doneStepProps: {
+          onConfirmDelivery: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.doneStepProps.onConfirmDelivery()
+
+    expect(fetch).toHaveBeenCalledWith('/api/public/orders/order-3/confirm-delivery', {
+      method: 'POST',
+    })
+    expect(stateSetters[22]).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'order-3',
+        status: 'delivered',
+        delivery_status: 'delivered',
+      }),
+    )
+    expect(stateSetters[21]).toHaveBeenCalledWith('Pedido entregue com sucesso.')
+    expect(toastSuccessMock).toHaveBeenCalledWith('Entrega confirmada com sucesso.')
+  })
+
   it('executa cleanups dos pollings de checkout e pedido', async () => {
     stateValues[17] = 'order-1'
 

@@ -823,6 +823,7 @@ describe('menu components', () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
     const onCancelOrder = vi.fn()
+    const onConfirmDelivery = vi.fn()
     const onClose = vi.fn()
     const elements = flattenElements(
       React.createElement(MenuDoneStep, {
@@ -847,7 +848,9 @@ describe('menu components', () => {
         getStepState: (key: 'pending' | 'confirmed' | 'ready') =>
           key === 'ready' ? 'current' : 'done',
         cancelOrderLoading: true,
+        confirmDeliveryLoading: false,
         onCancelOrder,
+        onConfirmDelivery,
         onClose,
       }),
     )
@@ -861,11 +864,14 @@ describe('menu components', () => {
       (element) => element.type === 'button' && typeof element.props.onClick === 'function',
     )
 
-    expect(buttons).toHaveLength(1)
-    expect(getTextContent(buttons[0])).toContain('Fechar')
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[0])).toContain('Confirmar recebimento')
+    expect(getTextContent(buttons[1])).toContain('Fechar')
 
     buttons[0].props.onClick()
+    buttons[1].props.onClick()
 
+    expect(onConfirmDelivery).toHaveBeenCalledOnce()
     expect(onClose).toHaveBeenCalledOnce()
     expect(onCancelOrder).not.toHaveBeenCalled()
   })
@@ -895,7 +901,9 @@ describe('menu components', () => {
         getStepState: (key: 'pending' | 'confirmed' | 'ready') =>
           key === 'ready' ? 'current' : 'done',
         cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
         onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
         onClose: vi.fn(),
       })
     )
@@ -933,7 +941,9 @@ describe('menu components', () => {
         getStepState: (key: 'pending' | 'confirmed' | 'ready') =>
           key === 'pending' ? 'done' : key === 'confirmed' ? 'current' : 'upcoming',
         cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
         onCancelOrder,
+        onConfirmDelivery: vi.fn(),
         onClose,
       }),
     )
@@ -972,7 +982,9 @@ describe('menu components', () => {
         orderSteps: [{ key: 'pending', label: 'Recebido', description: 'Entrou na fila.' }],
         getStepState: () => 'current',
         cancelOrderLoading: true,
+        confirmDeliveryLoading: false,
         onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
         onClose: vi.fn(),
       }),
     )
@@ -992,7 +1004,9 @@ describe('menu components', () => {
         orderSteps: [],
         getStepState: () => 'upcoming',
         cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
         onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
         onClose: vi.fn(),
       }),
     )
