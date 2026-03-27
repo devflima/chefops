@@ -271,7 +271,7 @@ describe('AdminTenantsPage component', () => {
     await Promise.resolve()
 
     expect(setSelected).not.toHaveBeenCalled()
-    expect(setLoading).toHaveBeenCalledWith(true)
+    expect(loadAdminTenantsMock).toHaveBeenCalledTimes(1)
     expect(setLoading).toHaveBeenCalledWith(false)
     expect(setTenants).toHaveBeenCalledWith([])
     expect(setSaving).not.toHaveBeenCalled()
