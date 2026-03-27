@@ -17,11 +17,9 @@ export function OrderCard({
   deliveryDrivers,
   hasWhatsappNotifications,
   updatePending,
-  chargingOrderId,
   onAssignDriver,
   onAdvance,
   onAdvanceDelivery,
-  onMercadoPagoCheckout,
   onConfirmPayment,
   onCancel,
 }: {
@@ -30,11 +28,11 @@ export function OrderCard({
   deliveryDrivers: Array<{ id: string; name: string; vehicle_type: string; active: boolean }>
   hasWhatsappNotifications: boolean
   updatePending: boolean
-  chargingOrderId: string | null
+  chargingOrderId?: string | null
   onAssignDriver: (order: Order, deliveryDriverId: string) => void
   onAdvance: (order: Order) => void
   onAdvanceDelivery: (order: Order) => void
-  onMercadoPagoCheckout: (order: Order) => void
+  onMercadoPagoCheckout?: (order: Order) => void
   onConfirmPayment: (order: Order) => void
   onCancel: (order: Order) => void
 }) {
@@ -208,17 +206,6 @@ export function OrderCard({
             })}
           </p>
           <div className="mt-3 flex justify-end gap-2">
-            {order.payment_status === 'pending' && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                disabled={chargingOrderId === order.id}
-                onClick={() => onMercadoPagoCheckout(order)}
-              >
-                {chargingOrderId === order.id ? 'Gerando...' : 'Cobrar com MP'}
-              </Button>
-            )}
             {shouldShowAdvanceButton(order) && (
               <Button size="sm" onClick={() => onAdvance(order)} disabled={updatePending}>
                 {config.nextLabel}

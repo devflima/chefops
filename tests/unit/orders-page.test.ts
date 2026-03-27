@@ -5,10 +5,7 @@ import {
   buildAdvanceOrderPayload,
   buildCancelOrderPayload,
   buildConfirmPaymentRequest,
-  buildMercadoPagoCheckoutRequest,
   buildDriverAssignmentPayload,
-  getMercadoPagoCheckoutErrorMessage,
-  getMercadoPagoWindowOpenFeatures,
   getDeliveryActionLabel,
   getOrderFilterChangeState,
   getLatestWhatsappNotification,
@@ -17,7 +14,6 @@ import {
   getOrdersTotalPages,
   getSortedNotifications,
   normalizeDeliveryAddress,
-  resolveMercadoPagoCheckoutUrl,
   shouldShowAdvanceButton,
   shouldShowWhatsappCard,
 } from '@/features/orders/orders-page'
@@ -91,7 +87,7 @@ describe('orders-page helpers', () => {
     expect(getDeliveryActionLabel({ status: 'confirmed', delivery_status: 'assigned' } as never)).toBeNull()
   })
 
-  it('monta payloads de pedidos, entrega, pagamento e checkout', () => {
+  it('monta payloads de pedidos, entrega e pagamento', () => {
     expect(buildAdvanceOrderPayload({ id: 'order-1', status: 'pending' } as never)).toEqual({
       id: 'order-1',
       status: 'confirmed',
@@ -129,28 +125,11 @@ describe('orders-page helpers', () => {
         body: JSON.stringify({ payment_status: 'paid' }),
       },
     })
-    expect(buildMercadoPagoCheckoutRequest({ id: 'order-9' })).toEqual({
-      url: '/api/orders/order-9/mercado-pago',
-      init: {
-        method: 'POST',
-      },
-    })
-
-    expect(resolveMercadoPagoCheckoutUrl({ sandbox_init_point: 'https://mp.test/checkout' })).toBe(
-      'https://mp.test/checkout'
-    )
-    expect(resolveMercadoPagoCheckoutUrl({ init_point: 'https://mp.test/init' })).toBe(
-      'https://mp.test/init'
-    )
-    expect(() => resolveMercadoPagoCheckoutUrl({})).toThrow('Mercado Pago não retornou um link de pagamento.')
     expect(buildCancelOrderPayload({ id: 'order-10' } as never, 'Cliente desistiu')).toEqual({
       id: 'order-10',
       status: 'cancelled',
       cancelled_reason: 'Cliente desistiu',
     })
-    expect(getMercadoPagoCheckoutErrorMessage(new Error('Falha MP'))).toBe('Falha MP')
-    expect(getMercadoPagoCheckoutErrorMessage(null)).toBe('Erro ao gerar cobrança.')
-    expect(getMercadoPagoWindowOpenFeatures()).toBe('_blank,noopener,noreferrer')
     expect(getOrderFilterChangeState('ready')).toEqual({ statusFilter: 'ready', page: 1 })
     expect(getOrdersInvalidationQueryKey()).toEqual(['orders'])
     expect(getOrdersTotalPages(0, 10)).toBe(1)

@@ -101,7 +101,6 @@ describe('PedidosPage component', () => {
       onStatusFilterChange: (value: string) => void
       onPageChange: (page: number) => void
       onConfirmPayment: (order: { id: string }) => Promise<void>
-      onMercadoPagoCheckout: (order: { id: string }) => Promise<void>
       onAssignDriver: (order: { id: string; status: string }, driverId: string) => Promise<void>
       onAdvance: (order: { id: string; status: string }) => Promise<void>
       onAdvanceDelivery: (order: { id: string; status: string; delivery_status?: string }) => Promise<void>
@@ -131,7 +130,6 @@ describe('PedidosPage component', () => {
     await props.onAdvanceDelivery({ id: 'order-1', status: 'ready', delivery_status: 'assigned' })
     await props.onAssignDriver({ id: 'order-1', status: 'ready' }, 'driver-1')
     await props.onCancel({ id: 'order-1' })
-    await props.onMercadoPagoCheckout({ id: 'order-1' })
     await props.onConfirmPayment({ id: 'order-1' })
 
     expect(mutateAsync).toHaveBeenCalledWith({ id: 'order-1', status: 'confirmed' })
@@ -151,8 +149,6 @@ describe('PedidosPage component', () => {
       cancelled_reason: 'Cliente desistiu',
     })
 
-    expect(fetch).toHaveBeenCalledWith('/api/orders/order-1/mercado-pago', { method: 'POST' })
-    expect(window.open).toHaveBeenCalledWith('https://mp.test/checkout', '_blank,noopener,noreferrer')
     expect(fetch).toHaveBeenCalledWith('/api/orders/order-1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -186,7 +182,6 @@ describe('PedidosPage component', () => {
       onAdvance: (order: { id: string; status: string }) => Promise<void>
       onAdvanceDelivery: (order: { id: string; status: string; delivery_status?: string }) => Promise<void>
       onCancel: (order: { id: string }) => Promise<void>
-      onMercadoPagoCheckout: (order: { id: string }) => Promise<void>
     }
 
     expect(props.deliveryDrivers).toEqual([])
@@ -195,10 +190,7 @@ describe('PedidosPage component', () => {
     await props.onAdvance({ id: 'order-1', status: 'cancelled' })
     await props.onAdvanceDelivery({ id: 'order-1', status: 'confirmed' })
     await props.onCancel({ id: 'order-1' })
-    await props.onMercadoPagoCheckout({ id: 'order-1' })
-
     expect(mutateAsync).not.toHaveBeenCalled()
-    expect(alert).toHaveBeenCalledWith('Falha ao gerar cobrança')
   })
 
   it('aplica fallbacks de listas quando os hooks retornam dados ausentes', async () => {

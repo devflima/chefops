@@ -14,11 +14,9 @@ export function OrdersListSection({
   deliveryDrivers,
   hasWhatsappNotifications,
   updatePending,
-  chargingOrderId,
   onAssignDriver,
   onAdvance,
   onAdvanceDelivery,
-  onMercadoPagoCheckout,
   onConfirmPayment,
   onCancel,
 }: {
@@ -31,11 +29,11 @@ export function OrdersListSection({
   deliveryDrivers: Array<{ id: string; name: string; vehicle_type: string; active: boolean }>
   hasWhatsappNotifications: boolean
   updatePending: boolean
-  chargingOrderId: string | null
+  chargingOrderId?: string | null
   onAssignDriver: (order: Order, deliveryDriverId: string) => void | Promise<void>
   onAdvance: (order: Order) => void | Promise<void>
   onAdvanceDelivery: (order: Order) => void | Promise<void>
-  onMercadoPagoCheckout: (order: Order) => void | Promise<void>
+  onMercadoPagoCheckout?: (order: Order) => void | Promise<void>
   onConfirmPayment: (order: Order) => void | Promise<void>
   onCancel: (order: Order) => void | Promise<void>
 }) {
@@ -55,11 +53,9 @@ export function OrdersListSection({
               deliveryDrivers={deliveryDrivers}
               hasWhatsappNotifications={hasWhatsappNotifications}
               updatePending={updatePending}
-              chargingOrderId={chargingOrderId}
               onAssignDriver={onAssignDriver}
               onAdvance={onAdvance}
               onAdvanceDelivery={onAdvanceDelivery}
-              onMercadoPagoCheckout={onMercadoPagoCheckout}
               onConfirmPayment={onConfirmPayment}
               onCancel={onCancel}
             />

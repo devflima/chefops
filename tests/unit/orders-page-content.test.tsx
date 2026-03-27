@@ -52,7 +52,6 @@ describe('OrdersPageContent', () => {
     const onAssignDriver = vi.fn()
     const onAdvance = vi.fn()
     const onAdvanceDelivery = vi.fn()
-    const onMercadoPagoCheckout = vi.fn()
     const onConfirmPayment = vi.fn()
     const onCancel = vi.fn()
 
@@ -92,11 +91,9 @@ describe('OrdersPageContent', () => {
         deliveryDrivers: [{ id: 'driver-1', name: 'João', vehicle_type: 'bike', active: true }],
         hasWhatsappNotifications: true,
         updatePending: false,
-        chargingOrderId: null,
         onAssignDriver,
         onAdvance,
         onAdvanceDelivery,
-        onMercadoPagoCheckout,
         onConfirmPayment,
         onCancel,
       }),
@@ -127,12 +124,10 @@ describe('OrdersPageContent', () => {
       deliveryDrivers: [{ id: 'driver-1', name: 'João', vehicle_type: 'bike', active: true }],
       hasWhatsappNotifications: true,
       updatePending: false,
-      chargingOrderId: null,
       onPageChange,
       onAssignDriver,
       onAdvance,
       onAdvanceDelivery,
-      onMercadoPagoCheckout,
       onConfirmPayment,
       onCancel,
     })
@@ -162,11 +157,9 @@ describe('OrdersPageContent', () => {
       deliveryDrivers: [],
       hasWhatsappNotifications: false,
       updatePending: true,
-      chargingOrderId: 'order-2',
       onAssignDriver,
       onAdvance,
       onAdvanceDelivery,
-      onMercadoPagoCheckout,
       onConfirmPayment,
       onCancel,
     })
@@ -181,7 +174,6 @@ describe('OrdersPageContent', () => {
       deliveryDrivers: [],
       hasWhatsappNotifications: false,
       updatePending: true,
-      chargingOrderId: 'order-2',
     })
     expect(capturedDialogProps).toMatchObject({
       open: false,
