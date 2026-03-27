@@ -57,6 +57,27 @@ describe('api public phone verification routes', () => {
     })
   })
 
+  it('retorna 429 quando o reenvio do código entra em cooldown', async () => {
+    vi.mocked(sendCustomerPhoneVerificationCode).mockRejectedValueOnce(
+      new Error('Aguarde 1 minuto para solicitar um novo código.')
+    )
+
+    const response = await sendRoute.POST(
+      new Request('https://chefops.test/api/public/phone-verification/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+          phone: '11999999999',
+        }),
+      }) as never,
+    )
+
+    expect(response.status).toBe(429)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Aguarde 1 minuto para solicitar um novo código.',
+    })
+  })
+
   it('retorna erros de validação e código expirado', async () => {
     expect(
       (

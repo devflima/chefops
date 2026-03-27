@@ -26,14 +26,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: result })
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível enviar o código de verificação.'
+
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Não foi possível enviar o código de verificação.',
-      },
-      { status: 500 }
+      { error: message },
+      { status: message === 'Aguarde 1 minuto para solicitar um novo código.' ? 429 : 500 }
     )
   }
 }

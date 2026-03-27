@@ -7,6 +7,7 @@ import {
 
 const VERIFICATION_TTL_MINUTES = 10
 const MAX_VERIFICATION_ATTEMPTS = 5
+const RESEND_COOLDOWN_SECONDS = 60
 
 function getTwilioVerificationConfig() {
   const accountSid = process.env.TWILIO_ACCOUNT_SID
@@ -50,15 +51,39 @@ export async function sendCustomerPhoneVerificationCode(params: {
   phone: string
 }) {
   const admin = createAdminClient()
+  const normalizedPhone = normalizeBrazilPhone(params.phone)
+  if (!normalizedPhone) {
+    throw new Error('Telefone inválido.')
+  }
+
+  const normalizedPhoneDigits = normalizedPhone.replace(/[^\d]/g, '')
+
+  const { data: latestVerification, error: latestVerificationError } = await admin
+    .from('customer_phone_verifications')
+    .select('id, sent_at, created_at')
+    .eq('tenant_id', params.tenantId)
+    .eq('phone', normalizedPhoneDigits)
+    .is('verified_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (latestVerificationError) {
+    throw latestVerificationError
+  }
+
+  const latestSentAt = latestVerification?.sent_at || latestVerification?.created_at
+  if (latestSentAt) {
+    const elapsedSeconds = Math.floor((Date.now() - new Date(latestSentAt).getTime()) / 1000)
+    if (elapsedSeconds < RESEND_COOLDOWN_SECONDS) {
+      throw new Error('Aguarde 1 minuto para solicitar um novo código.')
+    }
+  }
+
   const config = getTwilioVerificationConfig()
 
   if (!config) {
     throw new Error('WhatsApp de verificação não configurado.')
-  }
-
-  const normalizedPhone = normalizeBrazilPhone(params.phone)
-  if (!normalizedPhone) {
-    throw new Error('Telefone inválido.')
   }
 
   const { data: tenant, error: tenantError } = await admin
@@ -78,7 +103,7 @@ export async function sendCustomerPhoneVerificationCode(params: {
     .from('customer_phone_verifications')
     .insert({
       tenant_id: params.tenantId,
-      phone: normalizedPhone.replace(/[^\d]/g, ''),
+      phone: normalizedPhoneDigits,
       code_hash: buildVerificationCodeHash({
         tenantId: params.tenantId,
         phone: normalizedPhone,
