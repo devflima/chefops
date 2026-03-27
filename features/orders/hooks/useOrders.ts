@@ -78,6 +78,26 @@ export function useCreateOrder() {
   })
 }
 
+export function useCreatePublicOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateOrderPayload) => {
+      const res = await fetch('/api/public/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      return json.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['tables'] })
+    },
+  })
+}
+
 export function useMenuItems() {
   return useQuery({
     queryKey: ['menu-items'],

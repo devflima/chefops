@@ -43,6 +43,10 @@ vi.mock('@/features/orders/hooks/useOrders', () => ({
     isPending: false,
     mutateAsync: createOrderMutateAsyncMock,
   }),
+  useCreatePublicOrder: () => ({
+    isPending: false,
+    mutateAsync: createOrderMutateAsyncMock,
+  }),
 }))
 
 vi.mock('@/features/menu/PublicMenuPageShell', () => ({

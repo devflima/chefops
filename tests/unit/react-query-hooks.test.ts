@@ -240,6 +240,17 @@ describe('react-query hooks', () => {
     createOrder.onSuccess()
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tables'] })
 
+    const createPublicOrder = ordersHooks.useCreatePublicOrder() as {
+      mutationFn: (payload: unknown) => Promise<unknown>
+      onSuccess: () => void
+    }
+    await createPublicOrder.mutationFn({ items: [] })
+    createPublicOrder.onSuccess()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/public/orders', expect.objectContaining({
+      method: 'POST',
+    }))
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['orders'] })
+
     const menuItems = ordersHooks.useMenuItems() as { queryFn: () => Promise<unknown> }
     await menuItems.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/menu-items')
@@ -281,6 +292,11 @@ describe('react-query hooks', () => {
       new Response(JSON.stringify({ error: 'Falha ao criar pedido' }), { status: 400 })
     )
     await expect(createOrder.mutationFn({ items: [] })).rejects.toThrow('Falha ao criar pedido')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao criar pedido público' }), { status: 400 })
+    )
+    await expect(createPublicOrder.mutationFn({ items: [] })).rejects.toThrow('Falha ao criar pedido público')
 
     vi.mocked(globalThis.fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ error: 'Falha ao listar itens do menu' }), { status: 500 })

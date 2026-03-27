@@ -82,6 +82,10 @@ vi.mock('@/features/orders/hooks/useOrders', () => ({
     isPending: false,
     mutateAsync: createOrderMock,
   }),
+  useCreatePublicOrder: () => ({
+    isPending: false,
+    mutateAsync: createOrderMock,
+  }),
 }))
 
 vi.mock('@supabase/supabase-js', () => ({
