@@ -210,6 +210,7 @@ export async function POST(request: NextRequest) {
       ['online', 'delivery'].includes(parsed.data.payment_method) && delivery_address
       ? Number(parsed.data.delivery_fee ?? 0)
       : 0
+    const initialPaymentStatus = 'pending'
 
     const tableSessionId = table_id
       ? await resolveSessionId(admin, table_id, tenant_id)
@@ -239,6 +240,7 @@ export async function POST(request: NextRequest) {
       .insert({
         ...orderData,
         tenant_id,
+        payment_status: initialPaymentStatus,
         subtotal,
         delivery_fee: deliveryFee,
         total: subtotal + deliveryFee,

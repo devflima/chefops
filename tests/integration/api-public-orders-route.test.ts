@@ -13,6 +13,7 @@ describe('api public orders route', () => {
   })
 
   it('cria pedido público de delivery sem autenticação de dashboard', async () => {
+    const insertOrder = vi.fn()
     const orderInsertQuery = {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
@@ -47,7 +48,7 @@ describe('api public orders route', () => {
 
         if (table === 'orders') {
           return {
-            insert: vi.fn(() => orderInsertQuery),
+            insert: insertOrder.mockImplementation(() => orderInsertQuery),
           }
         }
 
@@ -103,6 +104,11 @@ describe('api public orders route', () => {
         status: 'pending',
       },
     })
+    expect(insertOrder).toHaveBeenCalledWith(expect.objectContaining({
+      payment_method: 'delivery',
+      payment_status: 'pending',
+      delivery_status: 'waiting_dispatch',
+    }))
   })
 
   it('bloqueia pedidos públicos quando o plano basic atinge o limite mensal', async () => {

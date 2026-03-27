@@ -415,6 +415,7 @@ describe('api orders and checkout routes', () => {
       }) as never,
     )).status).toBe(500)
 
+    const insertOrder = vi.fn()
     const orderInsertQuery = {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: { id: 'order-1' }, error: null }),
@@ -437,7 +438,7 @@ describe('api orders and checkout routes', () => {
         }
         if (table === 'orders') {
           return {
-            insert: vi.fn(() => orderInsertQuery),
+            insert: insertOrder.mockImplementation(() => orderInsertQuery),
           }
         }
         if (table === 'order_items') {
@@ -470,6 +471,11 @@ describe('api orders and checkout routes', () => {
         }),
       }) as never,
     )).status).toBe(201)
+    expect(insertOrder).toHaveBeenCalledWith(expect.objectContaining({
+      payment_method: 'delivery',
+      payment_status: 'pending',
+      delivery_status: 'waiting_dispatch',
+    }))
 
     const orderInsertForItemsError = {
       select: vi.fn().mockReturnThis(),
