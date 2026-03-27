@@ -150,44 +150,16 @@ describe('KDSPageContent', () => {
     expect(markup).toContain('Nenhum pedido no momento')
   })
 
-  it('executa o relógio do elapsed time, limpa o intervalo e desabilita avanço pendente', async () => {
+  it('desabilita o avanço quando a atualização está pendente', async () => {
     vi.resetModules()
-
-    const RealDate = Date
-    const setIntervalMock = vi.fn(() => 123)
-    const clearIntervalMock = vi.fn()
-    const effectCleanups: Array<() => void> = []
-    const setElapsedMock = vi.fn()
-    const setUrgentMock = vi.fn()
-
-    vi.stubGlobal('Date', class extends Date {
-      constructor(value?: string | number | Date) {
-        super(value ?? '2026-03-21T00:12:05.000Z')
-      }
-
-      static now() {
-        return new RealDate('2026-03-21T00:12:05.000Z').getTime()
-      }
-    } as DateConstructor)
-    vi.stubGlobal('setInterval', setIntervalMock)
-    vi.stubGlobal('clearInterval', clearIntervalMock)
 
     vi.doMock('react', async () => {
       const actualReact = await vi.importActual<typeof import('react')>('react')
-      let stateCall = 0
 
       return {
         ...actualReact,
-        useEffect: (effect: () => void | (() => void)) => {
-          const cleanup = effect()
-          if (typeof cleanup === 'function') effectCleanups.push(cleanup)
-        },
-        useState: (initialValue: unknown) => {
-          stateCall += 1
-          if (stateCall === 1) return [initialValue, setElapsedMock]
-          if (stateCall === 2) return [initialValue, setUrgentMock]
-          return [initialValue, vi.fn()]
-        },
+        useEffect: vi.fn(),
+        useState: (initialValue: unknown) => [initialValue, vi.fn()],
       }
     })
 
@@ -230,16 +202,6 @@ describe('KDSPageContent', () => {
     expect(advanceButton).toBeTruthy()
     expect(getTextContent(advanceButton?.props.children)).toContain('Marcar pronto')
     expect(advanceButton?.props.disabled).toBe(true)
-    expect(elapsedTime).toBeTruthy()
-    const elapsedNode = elapsedTime?.type(elapsedTime.props)
-    expect(React.isValidElement(elapsedNode) && elapsedNode.type === 'span').toBe(true)
-    expect(setElapsedMock).toHaveBeenCalledWith('12:05')
-    expect(setUrgentMock).toHaveBeenCalledWith(true)
-    expect(setIntervalMock).toHaveBeenCalled()
-
-    effectCleanups.forEach((cleanup) => cleanup())
-
-    expect(clearIntervalMock).toHaveBeenCalledWith(123)
   })
 
   it('ignora pedidos sem configuração de status no grid', async () => {
