@@ -614,6 +614,21 @@ describe('public menu helpers', () => {
     }, 'entregue')).toBe('Seu pedido foi entregue.')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
+      status: 'confirmed',
+      delivery_status: 'waiting_dispatch',
+    })).toBe('Seu pedido foi confirmado pelo estabelecimento.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
+      status: 'preparing',
+      delivery_status: 'waiting_dispatch',
+    })).toBe('Seu pedido está em preparo.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
+      status: 'ready',
+      delivery_status: 'waiting_dispatch',
+    })).toBe('Seu pedido está pronto.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
       status: 'delivered',
       delivery_status: 'delivered',
     })).toBe('Pedido entregue com sucesso.')

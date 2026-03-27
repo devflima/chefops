@@ -497,14 +497,23 @@ export function getPublicOrderTrackingMessage(
 
 export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus | null) {
   if (!publicOrderStatus) return null
-  if (publicOrderStatus.status === 'delivered') return 'Pedido entregue com sucesso.'
-  if (
-    publicOrderStatus.payment_method === 'delivery' &&
-    publicOrderStatus.status === 'ready' &&
-    publicOrderStatus.delivery_status === 'out_for_delivery'
-  ) {
-    return 'Seu pedido saiu para entrega.'
+  if (publicOrderStatus.status === 'confirmed') {
+    return 'Seu pedido foi confirmado pelo estabelecimento.'
   }
+  if (publicOrderStatus.status === 'preparing') {
+    return 'Seu pedido está em preparo.'
+  }
+  if (publicOrderStatus.status === 'ready') {
+    if (
+      publicOrderStatus.payment_method === 'delivery' &&
+      publicOrderStatus.delivery_status === 'out_for_delivery'
+    ) {
+      return 'Seu pedido saiu para entrega.'
+    }
+
+    return 'Seu pedido está pronto.'
+  }
+  if (publicOrderStatus.status === 'delivered') return 'Pedido entregue com sucesso.'
 
   return null
 }
