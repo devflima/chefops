@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import type { Order } from '@/features/orders/types'
 
-import { kdsStatusConfig } from '@/features/orders/kds-page'
+import { getElapsedTimeState, kdsStatusConfig } from '@/features/orders/kds-page'
 
 function ElapsedTime({ since }: { since: string }) {
   const [elapsed, setElapsed] = useState('')
@@ -10,11 +10,9 @@ function ElapsedTime({ since }: { since: string }) {
 
   useEffect(() => {
     function update() {
-      const diff = Math.floor((Date.now() - new Date(since).getTime()) / 1000)
-      const m = Math.floor(diff / 60)
-      const s = diff % 60
-      setElapsed(`${m}:${s.toString().padStart(2, '0')}`)
-      setUrgent(m >= 10)
+      const nextState = getElapsedTimeState(since)
+      setElapsed(nextState.elapsed)
+      setUrgent(nextState.urgent)
     }
 
     update()

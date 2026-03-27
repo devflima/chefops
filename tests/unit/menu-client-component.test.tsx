@@ -455,6 +455,7 @@ describe('MenuClient component', () => {
       expect.objectContaining({
         tenant_id: 'tenant-1',
         customer_name: 'Maria',
+        customer_id: 'customer-created',
         payment_method: 'table',
       }),
     )
@@ -1509,7 +1510,7 @@ describe('MenuClient component', () => {
     expect(stateSetters[13]).toHaveBeenCalledWith(false)
   })
 
-  it('segue com customer_id indefinido quando o cadastro pago nao retorna id', async () => {
+  it('bloqueia o pedido pago quando o cadastro do cliente nao retorna id', async () => {
     stateValues[0] = [
       {
         menu_item_id: 'item-1',
@@ -1577,14 +1578,8 @@ describe('MenuClient component', () => {
         address: undefined,
       }),
     })
-    expect(createOrderMutateAsyncMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tenant_id: 'tenant-1',
-        customer_name: 'Maria',
-        customer_id: undefined,
-        payment_method: 'table',
-      }),
-    )
+    expect(createOrderMutateAsyncMock).not.toHaveBeenCalled()
+    expect(alert).toHaveBeenCalledWith('Nao foi possivel identificar o cliente para concluir o pedido.')
   })
 
   it('cria pedido com endereco quando a entrega é confirmada no passo final', async () => {
@@ -1655,6 +1650,7 @@ describe('MenuClient component', () => {
     expect(createOrderMutateAsyncMock).toHaveBeenCalledWith(
       expect.objectContaining({
         payment_method: 'delivery',
+        customer_id: 'customer-created',
         delivery_address: {
           zip_code: '12345-678',
           street: 'Rua A',
@@ -1801,6 +1797,7 @@ describe('MenuClient component', () => {
     expect(createOrderMutateAsyncMock).toHaveBeenCalledWith(
       expect.objectContaining({
         customer_name: 'Maria',
+        customer_id: 'customer-created',
         payment_method: 'delivery',
         delivery_address: {
           zip_code: '12345-678',

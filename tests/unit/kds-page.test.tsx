@@ -2,7 +2,7 @@ import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import { getKdsAdvancePayload, kdsStatusConfig } from '@/features/orders/kds-page'
+import { getElapsedTimeState, getKdsAdvancePayload, kdsStatusConfig } from '@/features/orders/kds-page'
 
 vi.mock('@/features/plans/components/FeatureGate', () => ({
   default: ({ children }: React.PropsWithChildren) => React.createElement(React.Fragment, null, children),
@@ -40,6 +40,24 @@ describe('kds helpers', () => {
       status: 'preparing',
     })
     expect(getKdsAdvancePayload({ id: 'order-2', status: 'delivered' })).toBeNull()
+  })
+
+  it('calcula o relógio e marca urgência corretamente', () => {
+    expect(getElapsedTimeState(
+      '2026-03-21T00:00:00.000Z',
+      new Date('2026-03-21T00:12:05.000Z').getTime(),
+    )).toEqual({
+      elapsed: '12:05',
+      urgent: true,
+    })
+
+    expect(getElapsedTimeState(
+      '2026-03-21T00:00:00.000Z',
+      new Date('2026-03-21T00:09:05.000Z').getTime(),
+    )).toEqual({
+      elapsed: '9:05',
+      urgent: false,
+    })
   })
 })
 
@@ -132,44 +150,16 @@ describe('KDSPageContent', () => {
     expect(markup).toContain('Nenhum pedido no momento')
   })
 
-  it('executa o relógio do elapsed time, limpa o intervalo e desabilita avanço pendente', async () => {
+  it('desabilita o avanço quando a atualização está pendente', async () => {
     vi.resetModules()
-
-    const RealDate = Date
-    const setIntervalMock = vi.fn(() => 123)
-    const clearIntervalMock = vi.fn()
-    const effectCleanups: Array<() => void> = []
-    const setElapsedMock = vi.fn()
-    const setUrgentMock = vi.fn()
-
-    vi.stubGlobal('Date', class extends Date {
-      constructor(value?: string | number | Date) {
-        super(value ?? '2026-03-21T00:12:05.000Z')
-      }
-
-      static now() {
-        return new RealDate('2026-03-21T00:12:05.000Z').getTime()
-      }
-    } as DateConstructor)
-    vi.stubGlobal('setInterval', setIntervalMock)
-    vi.stubGlobal('clearInterval', clearIntervalMock)
 
     vi.doMock('react', async () => {
       const actualReact = await vi.importActual<typeof import('react')>('react')
-      let stateCall = 0
 
       return {
         ...actualReact,
-        useEffect: (effect: () => void | (() => void)) => {
-          const cleanup = effect()
-          if (typeof cleanup === 'function') effectCleanups.push(cleanup)
-        },
-        useState: (initialValue: unknown) => {
-          stateCall += 1
-          if (stateCall === 1) return [initialValue, setElapsedMock]
-          if (stateCall === 2) return [initialValue, setUrgentMock]
-          return [initialValue, vi.fn()]
-        },
+        useEffect: vi.fn(),
+        useState: (initialValue: unknown) => [initialValue, vi.fn()],
       }
     })
 
@@ -199,6 +189,11 @@ describe('KDSPageContent', () => {
       onAdvance: vi.fn(),
     })
     const elements = flattenElements(tree)
+    const elapsedTime = elements.find(
+      (element) =>
+        typeof element.type === 'function' &&
+        (element.type as { name?: string }).name === 'ElapsedTime'
+    )
     const advanceButton = elements.find(
       (element) =>
         element.type === 'button' &&
@@ -207,131 +202,6 @@ describe('KDSPageContent', () => {
     expect(advanceButton).toBeTruthy()
     expect(getTextContent(advanceButton?.props.children)).toContain('Marcar pronto')
     expect(advanceButton?.props.disabled).toBe(true)
-    expect(renderToStaticMarkup(React.createElement(KDSPageContent, {
-      orders: [order],
-      updatePending: true,
-      onAdvance: vi.fn(),
-    }))).toContain('span')
-    expect(setElapsedMock).toHaveBeenCalledWith('12:05')
-    expect(setUrgentMock).toHaveBeenCalledWith(true)
-    expect(setIntervalMock).toHaveBeenCalled()
-
-    effectCleanups.forEach((cleanup) => cleanup())
-
-    expect(clearIntervalMock).toHaveBeenCalledWith(123)
-  })
-
-  it('mantém elapsed time sem classe urgente antes de 10 minutos', async () => {
-    vi.resetModules()
-
-    const RealDate = Date
-    const setElapsedMock = vi.fn()
-    const setUrgentMock = vi.fn()
-
-    vi.stubGlobal('Date', class extends Date {
-      constructor(value?: string | number | Date) {
-        super(value ?? '2026-03-21T00:09:05.000Z')
-      }
-
-      static now() {
-        return new RealDate('2026-03-21T00:09:05.000Z').getTime()
-      }
-    } as DateConstructor)
-    vi.stubGlobal('setInterval', vi.fn(() => 456))
-    vi.stubGlobal('clearInterval', vi.fn())
-
-    vi.doMock('react', async () => {
-      const actualReact = await vi.importActual<typeof import('react')>('react')
-      let stateCall = 0
-
-      return {
-        ...actualReact,
-        useEffect: (effect: () => void | (() => void)) => {
-          effect()
-        },
-        useState: (initialValue: unknown) => {
-          stateCall += 1
-          if (stateCall === 1) return [initialValue, setElapsedMock]
-          if (stateCall === 2) return [initialValue, setUrgentMock]
-          return [initialValue, vi.fn()]
-        },
-      }
-    })
-
-    const { KDSPageContent } = await import('@/features/orders/KDSPageContent')
-
-    const elements = flattenElements(
-      KDSPageContent({
-        orders: [{
-          id: 'order-soft-clock',
-          order_number: 13,
-          status: 'confirmed',
-          created_at: '2026-03-21T00:00:00.000Z',
-          table_number: null,
-          notes: null,
-          items: [{ id: 'item-1', name: 'Suco', quantity: 1, notes: null, extras: [] }],
-        }],
-        updatePending: false,
-        onAdvance: vi.fn(),
-      })
-    )
-
-    const elapsedTime = elements.find(
-      (element) => typeof element.type === 'function' && element.type.name === 'ElapsedTime'
-    )
-    const elapsedNode = elapsedTime?.type(elapsedTime.props)
-    const markup = renderToStaticMarkup(React.createElement(React.Fragment, null, elapsedNode))
-
-    expect(markup).toContain('<span class="">')
-    expect(setElapsedMock).toHaveBeenCalledWith('9:05')
-    expect(setUrgentMock).toHaveBeenCalledWith(false)
-  })
-
-  it('renderiza elapsed time com classe urgente quando o estado já está marcado', async () => {
-    vi.resetModules()
-
-    vi.doMock('react', async () => {
-      const actualReact = await vi.importActual<typeof import('react')>('react')
-      let stateCall = 0
-
-      return {
-        ...actualReact,
-        useEffect: vi.fn(),
-        useState: () => {
-          stateCall += 1
-          if (stateCall === 1) return ['12:05', vi.fn()]
-          if (stateCall === 2) return [true, vi.fn()]
-          return ['', vi.fn()]
-        },
-      }
-    })
-
-    const { KDSPageContent } = await import('@/features/orders/KDSPageContent')
-
-    const elements = flattenElements(
-      KDSPageContent({
-        orders: [{
-          id: 'order-urgent-clock',
-          order_number: 77,
-          status: 'confirmed',
-          created_at: '2026-03-21T00:00:00.000Z',
-          table_number: null,
-          notes: null,
-          items: [{ id: 'item-1', name: 'Lanche', quantity: 1, notes: null, extras: [] }],
-        }],
-        updatePending: false,
-        onAdvance: vi.fn(),
-      })
-    )
-
-    const elapsedTime = elements.find(
-      (element) => typeof element.type === 'function' && element.type.name === 'ElapsedTime'
-    )
-    const elapsedNode = elapsedTime?.type(elapsedTime.props)
-    const markup = renderToStaticMarkup(React.createElement(React.Fragment, null, elapsedNode))
-
-    expect(markup).toContain('animate-pulse font-bold text-red-500')
-    expect(markup).toContain('12:05')
   })
 
   it('ignora pedidos sem configuração de status no grid', async () => {

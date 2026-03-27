@@ -392,8 +392,15 @@ export default function MenuClient({
             address: deliveryAddress?.zip_code ? deliveryAddress : undefined,
           }),
         })
+        if (!customerRes.ok) {
+          const customerJson = await customerRes.json()
+          throw new Error(customerJson.error || 'Nao foi possivel cadastrar o cliente.')
+        }
         const customerJson = await customerRes.json()
         customerId = customerJson.data?.id
+        if (!customerId) {
+          throw new Error('Nao foi possivel identificar o cliente para concluir o pedido.')
+        }
       }
 
       const order = await createOrder.mutateAsync({
