@@ -68,6 +68,7 @@ describe('VendasPage component', () => {
     useSalesMetricsMock.mockReturnValue({
       data: {
         revenue: 1234.5,
+        paid_orders: 12,
         delivered: 12,
         average_ticket: 102.87,
         cancelled: 2,
@@ -104,7 +105,7 @@ describe('VendasPage component', () => {
 
     expect(markup).toContain('Faturamento')
     expect(markup).toContain('R$ 1234.50')
-    expect(markup).toContain('Pedidos entregues')
+    expect(markup).toContain('Vendas concluídas')
     expect(markup).toContain('12')
     expect(markup).toContain('Ticket médio')
     expect(markup).toContain('R$ 102.87')
