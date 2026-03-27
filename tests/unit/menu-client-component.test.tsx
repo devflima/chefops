@@ -1179,6 +1179,44 @@ describe('MenuClient component', () => {
     expect(stateSetters[10]).toHaveBeenCalledWith(true)
   })
 
+  it('mostra toast quando tenta validar telefone inválido no plano pago', async () => {
+    stateValues[5] = '(11) 9999-999'
+
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onPhoneLookup: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.infoStepProps.onPhoneLookup()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('Informe um telefone válido para continuar.')
+  })
+
   it('marca cliente como novo quando lookup pago nao encontra cadastro', async () => {
     stateValues[5] = '(11) 99999-9999'
 
