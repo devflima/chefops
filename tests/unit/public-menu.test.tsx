@@ -70,6 +70,7 @@ import {
   shouldContinueOrderPolling,
   shouldPersistActiveOrder,
   getCheckoutNoticeTone,
+  shouldShowCheckoutNoticeBanner,
   shouldShowPublicDeliveryConfirmButton,
   validateCPF,
   validateCustomerAddress,
@@ -714,6 +715,30 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       status: 'delivered',
     })).toBe('success')
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Seu pedido está em preparo.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'preparing',
+      },
+      cartOpen: false,
+    })).toBe(false)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pagamento pendente.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'preparing',
+      },
+      cartOpen: false,
+    })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido cancelado.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'cancelled',
+      },
+      cartOpen: false,
+    })).toBe(true)
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
     expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
     expect(getDeliveryStepMessage({

@@ -1335,7 +1335,7 @@ describe('menu components', () => {
     expect(markup).toContain('3')
   })
 
-  it('renderiza painel de status com aviso, pedido e banner de mesa', async () => {
+  it('renderiza painel de status com aviso distinto, pedido e banner de mesa', async () => {
     const { MenuStatusPanel } = await import('@/features/menu/MenuStatusPanel')
 
     const markup = renderToStaticMarkup(
@@ -1360,6 +1360,31 @@ describe('menu components', () => {
     expect(markup).toContain('border-blue-200 bg-blue-50 text-blue-700')
     expect(markup).toContain('Pedido em preparo #42')
     expect(markup).toContain('Mesa 9')
+  })
+
+  it('oculta o banner quando ele só repete o status em andamento já exibido no card', async () => {
+    const { MenuStatusPanel } = await import('@/features/menu/MenuStatusPanel')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuStatusPanel, {
+        checkoutNotice: 'Seu pedido está em preparo.',
+        publicOrderStatus: {
+          id: 'order-duplicate',
+          order_number: 77,
+          status: 'preparing',
+          payment_status: 'paid',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        cartOpen: false,
+        headline: 'em preparo',
+        onTrackOrder: vi.fn(),
+        tableInfo: null,
+      })
+    )
+
+    expect(markup).not.toContain('border-blue-200 bg-blue-50 text-blue-700')
+    expect(markup).toContain('Pedido em preparo #77')
   })
 
   it('nao renderiza card de pedido em andamento para estados finais no painel de status', async () => {

@@ -629,6 +629,24 @@ export function getCheckoutNoticeTone(publicOrderStatus: PublicOrderStatus | nul
   return 'info'
 }
 
+export function shouldShowCheckoutNoticeBanner(params: {
+  checkoutNotice: string | null
+  publicOrderStatus: PublicOrderStatus | null
+  cartOpen: boolean
+}) {
+  if (!params.checkoutNotice) return false
+  if (params.cartOpen) return true
+  if (!params.publicOrderStatus) return true
+  if (['delivered', 'cancelled'].includes(params.publicOrderStatus.status)) return true
+
+  const statusNotice = getPublicOrderStatusNotice(params.publicOrderStatus)
+  if (statusNotice && statusNotice === params.checkoutNotice) {
+    return false
+  }
+
+  return true
+}
+
 export function formatPhone(value: string) {
   return value
     .replace(/\D/g, '')
