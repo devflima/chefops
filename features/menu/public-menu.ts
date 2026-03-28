@@ -507,6 +507,21 @@ export function getPublicOrderTrackingMessage(
   return `Seu pedido está em ${headline}.`
 }
 
+export function getPublicOrderStatusCardTitle(publicOrderStatus: PublicOrderStatus) {
+  if (publicOrderStatus.status === 'pending') return `Pedido recebido #${publicOrderStatus.order_number}`
+  if (publicOrderStatus.status === 'confirmed') return `Pedido confirmado #${publicOrderStatus.order_number}`
+  if (publicOrderStatus.status === 'preparing') return `Pedido em preparo #${publicOrderStatus.order_number}`
+  if (
+    publicOrderStatus.payment_method === 'delivery' &&
+    publicOrderStatus.status === 'ready' &&
+    publicOrderStatus.delivery_status === 'out_for_delivery'
+  ) {
+    return `Pedido saiu para entrega #${publicOrderStatus.order_number}`
+  }
+  if (publicOrderStatus.status === 'ready') return `Pedido pronto #${publicOrderStatus.order_number}`
+  return `Pedido #${publicOrderStatus.order_number}`
+}
+
 export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus | null) {
   if (!publicOrderStatus) return null
   if (publicOrderStatus.status === 'cancelled') {

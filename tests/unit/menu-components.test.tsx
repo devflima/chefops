@@ -85,7 +85,7 @@ function getTextContent(node: React.ReactNode): string {
 }
 
 describe('menu components', () => {
-  it('renderiza card de status do pedido em andamento', async () => {
+  it('renderiza card de status do pedido com título contextual', async () => {
     const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
 
     const markup = renderToStaticMarkup(
@@ -103,7 +103,7 @@ describe('menu components', () => {
       })
     )
 
-    expect(markup).toContain('Pedido em andamento #42')
+    expect(markup).toContain('Pedido em preparo #42')
     expect(markup).toContain('Seu pedido está em preparo.')
     expect(markup).toContain('Acompanhar')
   })
@@ -1359,7 +1359,7 @@ describe('menu components', () => {
 
     expect(markup).toContain('Pagamento pendente.')
     expect(markup).toContain('border-blue-200 bg-blue-50 text-blue-700')
-    expect(markup).toContain('Pedido em andamento #42')
+    expect(markup).toContain('Pedido em preparo #42')
     expect(markup).toContain('Mesa 9')
   })
 
