@@ -491,6 +491,11 @@ export function getPublicOrderTrackingMessage(
   if (publicOrderStatus.status === 'confirmed') return 'Seu pedido foi confirmado.'
   if (publicOrderStatus.status === 'preparing') return 'Seu pedido está em preparo.'
   if (publicOrderStatus.status === 'delivered') return 'Seu pedido foi entregue.'
+  if (publicOrderStatus.status === 'cancelled') {
+    return publicOrderStatus.payment_status === 'refunded'
+      ? 'Seu pedido foi cancelado e o reembolso foi solicitado.'
+      : 'Seu pedido foi cancelado.'
+  }
   if (
     publicOrderStatus.payment_method === 'delivery' &&
     publicOrderStatus.status === 'ready' &&
