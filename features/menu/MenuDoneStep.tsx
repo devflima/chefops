@@ -5,6 +5,7 @@ import {
   getDeliveryStepMessage,
   getPaymentStatusLabel,
   isDeliveryStepCompleted,
+  shouldShowPublicDeliveryConfirmButton,
   shouldShowCancelOrderButton,
   shouldShowDeliveryStep,
   type PublicOrderStatus,
@@ -113,8 +114,7 @@ export function MenuDoneStep({
             </span>
           </div>
 
-          {publicOrderStatus?.payment_method === 'delivery' &&
-            publicOrderStatus?.delivery_status === 'out_for_delivery' && (
+          {shouldShowPublicDeliveryConfirmButton(publicOrderStatus) && (
               <Button
                 className="mt-4 w-full"
                 onClick={onConfirmDelivery}

@@ -67,6 +67,7 @@ import {
   shouldContinueCheckoutPolling,
   shouldContinueOrderPolling,
   shouldPersistActiveOrder,
+  shouldShowPublicDeliveryConfirmButton,
   validateCPF,
   validateCustomerAddress,
   validateCustomerInfo,
@@ -650,6 +651,11 @@ describe('public menu helpers', () => {
     expect(shouldShowCancelOrderButton(undefined)).toBe(false)
     expect(shouldShowCancelOrderButton('ready')).toBe(false)
     expect(shouldShowDeliveryStep(publicOrderStatus)).toBe(true)
+    expect(shouldShowPublicDeliveryConfirmButton(publicOrderStatus)).toBe(true)
+    expect(shouldShowPublicDeliveryConfirmButton({
+      ...publicOrderStatus,
+      status: 'delivered',
+    })).toBe(false)
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
     expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
     expect(getDeliveryStepMessage({
