@@ -1,17 +1,15 @@
 import { Button } from '@/components/ui/button'
 import {
+  getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardTitle,
-  getPublicOrderTrackingMessage,
   type PublicOrderStatus,
 } from '@/features/menu/public-menu'
 
 export function PublicOrderStatusCard({
   publicOrderStatus,
-  headline,
   onTrack,
 }: {
   publicOrderStatus: PublicOrderStatus
-  headline: string
   onTrack: () => void
 }) {
   return (
@@ -22,7 +20,7 @@ export function PublicOrderStatusCard({
             {getPublicOrderStatusCardTitle(publicOrderStatus)}
           </p>
           <p className="mt-1 text-sm text-emerald-700">
-            {getPublicOrderTrackingMessage(publicOrderStatus, headline)}
+            {getPublicOrderStatusCardMessage(publicOrderStatus)}
           </p>
         </div>
         <Button

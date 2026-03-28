@@ -41,6 +41,7 @@ import {
   getPaymentStatusLabel,
   getPhoneChangeState,
   getPublicOrderHeadline,
+  getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardTitle,
   getPublicOrderStatusNotice,
   getPublicOrderTrackingMessage,
@@ -631,15 +632,28 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       status: 'pending',
     })).toBe('Pedido recebido #42')
+    expect(getPublicOrderStatusCardMessage({
+      ...publicOrderStatus,
+      status: 'pending',
+    })).toBe('Seu pedido entrou na fila do estabelecimento.')
     expect(getPublicOrderStatusCardTitle({
       ...publicOrderStatus,
       status: 'preparing',
     })).toBe('Pedido em preparo #42')
+    expect(getPublicOrderStatusCardMessage({
+      ...publicOrderStatus,
+      status: 'preparing',
+    })).toBe('Seu pedido está sendo preparado.')
     expect(getPublicOrderStatusCardTitle({
       ...publicOrderStatus,
       status: 'ready',
       delivery_status: 'out_for_delivery',
     })).toBe('Pedido saiu para entrega #42')
+    expect(getPublicOrderStatusCardMessage({
+      ...publicOrderStatus,
+      status: 'ready',
+      delivery_status: 'out_for_delivery',
+    })).toBe('Acompanhe o deslocamento da entrega.')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
       status: 'confirmed',

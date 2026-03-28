@@ -37,7 +37,6 @@ export function MenuStatusPanel({
       {publicOrderStatus && !cartOpen && !['delivered', 'cancelled'].includes(publicOrderStatus.status) && headline && (
         <PublicOrderStatusCard
           publicOrderStatus={publicOrderStatus}
-          headline={headline}
           onTrack={onTrackOrder}
         />
       )}
