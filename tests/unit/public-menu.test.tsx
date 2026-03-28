@@ -562,17 +562,32 @@ describe('public menu helpers', () => {
       label: 'Pronto',
       description: 'Seu pedido está pronto para servir.',
     })
+    expect(getOrderSteps({ id: 'table-1', number: '10' }, 'table')[4]).toEqual({
+      key: 'delivered',
+      label: 'Entregue',
+      description: 'Pedido servido na mesa com sucesso.',
+    })
 
     expect(getOrderSteps(null, 'counter')[3]).toEqual({
       key: 'ready',
       label: 'Pronto',
       description: 'Seu pedido está pronto para retirada.',
     })
+    expect(getOrderSteps(null, 'counter')[4]).toEqual({
+      key: 'delivered',
+      label: 'Entregue',
+      description: 'Pedido retirado com sucesso.',
+    })
 
     expect(getOrderSteps(null, 'delivery')[3]).toEqual({
       key: 'ready',
       label: 'Pronto',
       description: 'Seu pedido está pronto para sair para entrega.',
+    })
+    expect(getOrderSteps(null, 'delivery')[4]).toEqual({
+      key: 'delivered',
+      label: 'Entregue',
+      description: 'Pedido entregue com sucesso.',
     })
   })
 

@@ -315,6 +315,11 @@ export function getOrderSteps(
     : paymentMethod === 'delivery'
       ? 'Seu pedido está pronto para sair para entrega.'
       : 'Seu pedido está pronto para retirada.'
+  const deliveredDescription = tableInfo
+    ? 'Pedido servido na mesa com sucesso.'
+    : paymentMethod === 'delivery'
+      ? 'Pedido entregue com sucesso.'
+      : 'Pedido retirado com sucesso.'
 
   return [
     { key: 'pending', label: 'Recebido', description: 'Seu pedido entrou na fila do estabelecimento.' },
@@ -325,7 +330,7 @@ export function getOrderSteps(
       label: 'Pronto',
       description: readyDescription,
     },
-    { key: 'delivered', label: 'Entregue', description: 'Pedido finalizado com sucesso.' },
+    { key: 'delivered', label: 'Entregue', description: deliveredDescription },
   ] as const satisfies Array<{
     key: PublicOrderStatus['status']
     label: string
