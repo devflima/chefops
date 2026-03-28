@@ -28,7 +28,6 @@ import {
   getOrderSteps,
   getPhoneChangeState,
   getPublicOrderPlacementErrorMessage,
-  getPublicOrderHeadline,
   getPublicOrderStatusNotice,
   getOpenCartState,
   getSuccessfulPublicOrderState,
@@ -632,7 +631,6 @@ export default function MenuClient({
       checkoutNotice={checkoutNotice}
       publicOrderStatus={publicOrderStatus}
       cartOpen={cartOpen}
-      headline={getPublicOrderHeadline(publicOrderStatus, orderSteps)}
       onTrackOrder={() => {
         const nextState = getTrackOrderState()
         setCartOpen(nextState.cartOpen)

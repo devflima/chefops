@@ -550,6 +550,18 @@ export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderSt
   return 'Acompanhe o andamento do seu pedido.'
 }
 
+export function getPublicOrderStatusCardActionLabel(publicOrderStatus: PublicOrderStatus) {
+  if (
+    publicOrderStatus.payment_method === 'delivery' &&
+    publicOrderStatus.status === 'ready' &&
+    publicOrderStatus.delivery_status === 'out_for_delivery'
+  ) {
+    return 'Ver entrega'
+  }
+
+  return 'Ver pedido'
+}
+
 export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus | null) {
   if (!publicOrderStatus) return null
   if (publicOrderStatus.status === 'cancelled') {

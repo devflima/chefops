@@ -340,7 +340,7 @@ describe('admin pages smoke', () => {
               plan: 'pro',
               status: 'active',
               created_at: '2026-03-10T00:00:00.000Z',
-              next_billing_at: '2026-03-28T00:00:00.000Z',
+              next_billing_at: '2026-04-28T00:00:00.000Z',
             },
           ])
         }
@@ -373,7 +373,7 @@ describe('admin pages smoke', () => {
               total_users: 4,
               total_orders: 40,
               total_revenue: 1800,
-              next_billing_at: '2026-03-28T00:00:00.000Z',
+              next_billing_at: '2026-04-28T00:00:00.000Z',
               last_order_at: '2026-03-19T00:00:00.000Z',
               created_at: '2026-03-10T00:00:00.000Z',
             },
@@ -385,7 +385,7 @@ describe('admin pages smoke', () => {
               tenant_id: 'tenant-healthy',
               plan: 'pro',
               status: 'authorized',
-              next_payment_date: '2026-03-28T00:00:00.000Z',
+              next_payment_date: '2026-04-28T00:00:00.000Z',
               cancel_at_period_end: false,
               scheduled_plan: null,
             },
@@ -549,7 +549,7 @@ describe('admin pages smoke', () => {
               plan: 'pro',
               status: 'active',
               created_at: '2026-03-10T00:00:00.000Z',
-              next_billing_at: '2026-03-28T00:00:00.000Z',
+              next_billing_at: '2026-04-28T00:00:00.000Z',
             },
           ])
         }
@@ -582,7 +582,7 @@ describe('admin pages smoke', () => {
               total_users: 3,
               total_orders: 14,
               total_revenue: 980,
-              next_billing_at: '2026-03-28T00:00:00.000Z',
+              next_billing_at: '2026-04-28T00:00:00.000Z',
               last_order_at: '2026-03-19T00:00:00.000Z',
               created_at: '2026-03-10T00:00:00.000Z',
             },

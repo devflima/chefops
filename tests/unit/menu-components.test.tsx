@@ -104,7 +104,7 @@ describe('menu components', () => {
 
     expect(markup).toContain('Pedido em preparo #42')
     expect(markup).toContain('Seu pedido está sendo preparado.')
-    expect(markup).toContain('Acompanhar')
+    expect(markup).toContain('Ver pedido')
   })
 
   it('renderiza modal de meia a meia com sabores elegíveis', async () => {
@@ -1350,7 +1350,6 @@ describe('menu components', () => {
           updated_at: '2026-03-21T00:00:00.000Z',
         },
         cartOpen: false,
-        headline: 'em preparo',
         onTrackOrder: vi.fn(),
         tableInfo: { id: 'table-2', number: '9' },
       })
@@ -1377,7 +1376,6 @@ describe('menu components', () => {
           updated_at: '2026-03-21T00:00:00.000Z',
         },
         cartOpen: false,
-        headline: 'em preparo',
         onTrackOrder: vi.fn(),
         tableInfo: null,
       })
@@ -1402,7 +1400,6 @@ describe('menu components', () => {
           updated_at: '2026-03-21T00:00:00.000Z',
         },
         cartOpen: false,
-        headline: 'cancelado',
         onTrackOrder: vi.fn(),
         tableInfo: null,
       })
@@ -1420,7 +1417,6 @@ describe('menu components', () => {
           updated_at: '2026-03-21T00:00:00.000Z',
         },
         cartOpen: false,
-        headline: 'entregue',
         onTrackOrder: vi.fn(),
         tableInfo: null,
       })
@@ -1432,6 +1428,29 @@ describe('menu components', () => {
     expect(deliveredMarkup).toContain('Pedido entregue com sucesso.')
     expect(deliveredMarkup).toContain('border-green-200 bg-green-50 text-green-700')
     expect(deliveredMarkup).not.toContain('Pedido em andamento')
+  })
+
+  it('renderiza o card de status sem depender de headline no painel', async () => {
+    const { MenuStatusPanel } = await import('@/features/menu/MenuStatusPanel')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuStatusPanel, {
+        checkoutNotice: null,
+        publicOrderStatus: {
+          id: 'order-no-headline',
+          order_number: 55,
+          status: 'confirmed',
+          payment_status: 'paid',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        cartOpen: false,
+        onTrackOrder: vi.fn(),
+        tableInfo: null,
+      })
+    )
+
+    expect(markup).toContain('Pedido confirmado #55')
   })
 
   it('renderiza casca da página pública do menu com modal e drawer', async () => {
@@ -1466,7 +1485,6 @@ describe('menu components', () => {
           updated_at: '2026-03-21T00:00:00.000Z',
         },
         cartOpen: false,
-        headline: 'em preparo',
         onTrackOrder: vi.fn(),
         groups: [
           { category: item.category, items: [item] },
@@ -1608,7 +1626,6 @@ describe('menu components', () => {
           updated_at: '2026-03-21T00:00:00.000Z',
         },
         cartOpen: true,
-        headline: 'em preparo',
         onTrackOrder: vi.fn(),
         groups: [
           { category: item.category, items: [item] },

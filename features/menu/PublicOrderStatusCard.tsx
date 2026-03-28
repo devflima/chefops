@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import {
+  getPublicOrderStatusCardActionLabel,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardTitle,
   type PublicOrderStatus,
@@ -28,7 +29,7 @@ export function PublicOrderStatusCard({
           className="bg-emerald-600 text-white hover:bg-emerald-700"
           onClick={onTrack}
         >
-          Acompanhar
+          {getPublicOrderStatusCardActionLabel(publicOrderStatus)}
         </Button>
       </div>
     </div>
