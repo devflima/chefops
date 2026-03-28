@@ -640,6 +640,16 @@ describe('public menu helpers', () => {
       status: 'ready',
       delivery_status: 'out_for_delivery',
     })).toBe('Seu pedido saiu para entrega.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
+      status: 'cancelled',
+      payment_status: 'pending',
+    })).toBe('Pedido cancelado.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
+      status: 'cancelled',
+      payment_status: 'refunded',
+    })).toBe('Pedido cancelado e reembolso solicitado com sucesso.')
     expect(getOnlineCheckoutErrorMessage(new Error('mp error'))).toBe('mp error')
     expect(getOnlineCheckoutErrorMessage(null)).toBe('Erro ao iniciar pagamento online.')
     expect(getPublicOrderPlacementErrorMessage(new Error('order error'))).toBe('order error')

@@ -504,6 +504,11 @@ export function getPublicOrderTrackingMessage(
 
 export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus | null) {
   if (!publicOrderStatus) return null
+  if (publicOrderStatus.status === 'cancelled') {
+    return publicOrderStatus.payment_status === 'refunded'
+      ? 'Pedido cancelado e reembolso solicitado com sucesso.'
+      : 'Pedido cancelado.'
+  }
   if (publicOrderStatus.status === 'confirmed') {
     return 'Seu pedido foi confirmado pelo estabelecimento.'
   }
