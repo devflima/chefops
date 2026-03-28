@@ -1362,6 +1362,51 @@ describe('menu components', () => {
     expect(markup).toContain('Mesa 9')
   })
 
+  it('nao renderiza card de pedido em andamento para estados finais no painel de status', async () => {
+    const { MenuStatusPanel } = await import('@/features/menu/MenuStatusPanel')
+
+    const cancelledMarkup = renderToStaticMarkup(
+      React.createElement(MenuStatusPanel, {
+        checkoutNotice: 'Pedido cancelado.',
+        publicOrderStatus: {
+          id: 'order-cancelled',
+          order_number: 99,
+          status: 'cancelled',
+          payment_status: 'refunded',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        cartOpen: false,
+        headline: 'cancelado',
+        onTrackOrder: vi.fn(),
+        tableInfo: null,
+      })
+    )
+
+    const deliveredMarkup = renderToStaticMarkup(
+      React.createElement(MenuStatusPanel, {
+        checkoutNotice: 'Pedido entregue com sucesso.',
+        publicOrderStatus: {
+          id: 'order-delivered',
+          order_number: 100,
+          status: 'delivered',
+          payment_status: 'paid',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        cartOpen: false,
+        headline: 'entregue',
+        onTrackOrder: vi.fn(),
+        tableInfo: null,
+      })
+    )
+
+    expect(cancelledMarkup).toContain('Pedido cancelado.')
+    expect(cancelledMarkup).not.toContain('Pedido em andamento')
+    expect(deliveredMarkup).toContain('Pedido entregue com sucesso.')
+    expect(deliveredMarkup).not.toContain('Pedido em andamento')
+  })
+
   it('renderiza casca da página pública do menu com modal e drawer', async () => {
     const { PublicMenuPageShell } = await import('@/features/menu/PublicMenuPageShell')
 
