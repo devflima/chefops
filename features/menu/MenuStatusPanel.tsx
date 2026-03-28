@@ -1,5 +1,9 @@
 import { PublicOrderStatusCard } from '@/features/menu/PublicOrderStatusCard'
-import { getCheckoutNoticeTone, type PublicOrderStatus } from '@/features/menu/public-menu'
+import {
+  getCheckoutNoticeTone,
+  shouldShowCheckoutNoticeBanner,
+  type PublicOrderStatus,
+} from '@/features/menu/public-menu'
 
 export function MenuStatusPanel({
   checkoutNotice,
@@ -17,10 +21,15 @@ export function MenuStatusPanel({
   tableInfo: { id: string; number: string } | null
 }) {
   const checkoutNoticeTone = getCheckoutNoticeTone(publicOrderStatus)
+  const shouldShowNotice = shouldShowCheckoutNoticeBanner({
+    checkoutNotice,
+    publicOrderStatus,
+    cartOpen,
+  })
 
   return (
     <>
-      {checkoutNotice && (
+      {shouldShowNotice && checkoutNotice && (
         <div
           className={`mb-6 rounded-xl px-4 py-3 text-sm ${
             checkoutNoticeTone === 'danger'
