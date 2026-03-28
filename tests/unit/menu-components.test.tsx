@@ -1358,6 +1358,7 @@ describe('menu components', () => {
     )
 
     expect(markup).toContain('Pagamento pendente.')
+    expect(markup).toContain('border-blue-200 bg-blue-50 text-blue-700')
     expect(markup).toContain('Pedido em andamento #42')
     expect(markup).toContain('Mesa 9')
   })
@@ -1402,8 +1403,10 @@ describe('menu components', () => {
     )
 
     expect(cancelledMarkup).toContain('Pedido cancelado.')
+    expect(cancelledMarkup).toContain('border-red-200 bg-red-50 text-red-700')
     expect(cancelledMarkup).not.toContain('Pedido em andamento')
     expect(deliveredMarkup).toContain('Pedido entregue com sucesso.')
+    expect(deliveredMarkup).toContain('border-green-200 bg-green-50 text-green-700')
     expect(deliveredMarkup).not.toContain('Pedido em andamento')
   })
 

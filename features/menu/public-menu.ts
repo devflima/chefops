@@ -574,6 +574,18 @@ export function shouldShowPublicDeliveryConfirmButton(publicOrderStatus: PublicO
   )
 }
 
+export function getCheckoutNoticeTone(publicOrderStatus: PublicOrderStatus | null) {
+  if (publicOrderStatus?.status === 'cancelled') {
+    return 'danger'
+  }
+
+  if (publicOrderStatus?.status === 'delivered') {
+    return 'success'
+  }
+
+  return 'info'
+}
+
 export function formatPhone(value: string) {
   return value
     .replace(/\D/g, '')

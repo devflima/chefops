@@ -67,6 +67,7 @@ import {
   shouldContinueCheckoutPolling,
   shouldContinueOrderPolling,
   shouldPersistActiveOrder,
+  getCheckoutNoticeTone,
   shouldShowPublicDeliveryConfirmButton,
   validateCPF,
   validateCustomerAddress,
@@ -676,6 +677,15 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       status: 'delivered',
     })).toBe(false)
+    expect(getCheckoutNoticeTone(publicOrderStatus)).toBe('info')
+    expect(getCheckoutNoticeTone({
+      ...publicOrderStatus,
+      status: 'cancelled',
+    })).toBe('danger')
+    expect(getCheckoutNoticeTone({
+      ...publicOrderStatus,
+      status: 'delivered',
+    })).toBe('success')
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
     expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
     expect(getDeliveryStepMessage({
