@@ -1,5 +1,5 @@
 import { PublicOrderStatusCard } from '@/features/menu/PublicOrderStatusCard'
-import type { PublicOrderStatus } from '@/features/menu/public-menu'
+import { getCheckoutNoticeTone, type PublicOrderStatus } from '@/features/menu/public-menu'
 
 export function MenuStatusPanel({
   checkoutNotice,
@@ -16,10 +16,20 @@ export function MenuStatusPanel({
   onTrackOrder: () => void
   tableInfo: { id: string; number: string } | null
 }) {
+  const checkoutNoticeTone = getCheckoutNoticeTone(publicOrderStatus)
+
   return (
     <>
       {checkoutNotice && (
-        <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <div
+          className={`mb-6 rounded-xl px-4 py-3 text-sm ${
+            checkoutNoticeTone === 'danger'
+              ? 'border border-red-200 bg-red-50 text-red-700'
+              : checkoutNoticeTone === 'success'
+                ? 'border border-green-200 bg-green-50 text-green-700'
+                : 'border border-blue-200 bg-blue-50 text-blue-700'
+          }`}
+        >
           {checkoutNotice}
         </div>
       )}
