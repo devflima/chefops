@@ -98,13 +98,12 @@ describe('menu components', () => {
           created_at: '2026-03-21T00:00:00.000Z',
           updated_at: '2026-03-21T00:00:00.000Z',
         },
-        headline: 'em preparo',
         onTrack: vi.fn(),
       })
     )
 
     expect(markup).toContain('Pedido em preparo #42')
-    expect(markup).toContain('Seu pedido está em preparo.')
+    expect(markup).toContain('Seu pedido está sendo preparado.')
     expect(markup).toContain('Acompanhar')
   })
 

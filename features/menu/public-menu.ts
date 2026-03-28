@@ -522,6 +522,34 @@ export function getPublicOrderStatusCardTitle(publicOrderStatus: PublicOrderStat
   return `Pedido #${publicOrderStatus.order_number}`
 }
 
+export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderStatus) {
+  if (publicOrderStatus.status === 'pending') {
+    return 'Seu pedido entrou na fila do estabelecimento.'
+  }
+
+  if (publicOrderStatus.status === 'confirmed') {
+    return 'O estabelecimento confirmou seu pedido.'
+  }
+
+  if (publicOrderStatus.status === 'preparing') {
+    return 'Seu pedido está sendo preparado.'
+  }
+
+  if (
+    publicOrderStatus.payment_method === 'delivery' &&
+    publicOrderStatus.status === 'ready' &&
+    publicOrderStatus.delivery_status === 'out_for_delivery'
+  ) {
+    return 'Acompanhe o deslocamento da entrega.'
+  }
+
+  if (publicOrderStatus.status === 'ready') {
+    return 'Seu pedido está pronto para a próxima etapa.'
+  }
+
+  return 'Acompanhe o andamento do seu pedido.'
+}
+
 export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus | null) {
   if (!publicOrderStatus) return null
   if (publicOrderStatus.status === 'cancelled') {
