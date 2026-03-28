@@ -556,6 +556,14 @@ export function getDeliveryStepMessage(publicOrderStatus: PublicOrderStatus | nu
   return 'Seu pedido vai aparecer aqui quando sair para entrega.'
 }
 
+export function shouldShowPublicDeliveryConfirmButton(publicOrderStatus: PublicOrderStatus | null) {
+  return (
+    publicOrderStatus?.payment_method === 'delivery' &&
+    publicOrderStatus?.status === 'ready' &&
+    publicOrderStatus?.delivery_status === 'out_for_delivery'
+  )
+}
+
 export function formatPhone(value: string) {
   return value
     .replace(/\D/g, '')

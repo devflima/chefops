@@ -1034,6 +1034,42 @@ describe('menu components', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('não mostra confirmar recebimento quando o pedido já está entregue mesmo com delivery_status inconsistente', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 500,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-500',
+          order_number: 500,
+          status: 'delivered',
+          payment_status: 'paid',
+          payment_method: 'delivery',
+          delivery_status: 'out_for_delivery',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [
+          { key: 'pending', label: 'Recebido', description: 'Entrou na fila.' },
+          { key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' },
+          { key: 'ready', label: 'Pronto', description: 'Pronto para sair.' },
+          { key: 'delivered', label: 'Entregue', description: 'Finalizado.' },
+        ],
+        getStepState: (key: 'pending' | 'confirmed' | 'ready' | 'delivered') =>
+          key === 'delivered' ? 'current' : 'done',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+
+    expect(markup).not.toContain('Confirmar recebimento')
+  })
+
   it('renderiza cancelamento em andamento e cancelado sem mensagem de reembolso', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
