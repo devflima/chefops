@@ -41,6 +41,7 @@ import {
   getPaymentStatusLabel,
   getPhoneChangeState,
   getPublicOrderHeadline,
+  getPublicOrderStatusCardTitle,
   getPublicOrderStatusNotice,
   getPublicOrderTrackingMessage,
   getValidationErrorToastMessage,
@@ -626,6 +627,19 @@ describe('public menu helpers', () => {
       status: 'cancelled',
       payment_status: 'refunded',
     }, 'cancelado')).toBe('Seu pedido foi cancelado e o reembolso foi solicitado.')
+    expect(getPublicOrderStatusCardTitle({
+      ...publicOrderStatus,
+      status: 'pending',
+    })).toBe('Pedido recebido #42')
+    expect(getPublicOrderStatusCardTitle({
+      ...publicOrderStatus,
+      status: 'preparing',
+    })).toBe('Pedido em preparo #42')
+    expect(getPublicOrderStatusCardTitle({
+      ...publicOrderStatus,
+      status: 'ready',
+      delivery_status: 'out_for_delivery',
+    })).toBe('Pedido saiu para entrega #42')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
       status: 'confirmed',

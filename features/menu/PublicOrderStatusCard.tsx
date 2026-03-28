@@ -1,5 +1,9 @@
 import { Button } from '@/components/ui/button'
-import { getPublicOrderTrackingMessage, type PublicOrderStatus } from '@/features/menu/public-menu'
+import {
+  getPublicOrderStatusCardTitle,
+  getPublicOrderTrackingMessage,
+  type PublicOrderStatus,
+} from '@/features/menu/public-menu'
 
 export function PublicOrderStatusCard({
   publicOrderStatus,
@@ -15,7 +19,7 @@ export function PublicOrderStatusCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-emerald-900">
-            Pedido em andamento #{publicOrderStatus.order_number}
+            {getPublicOrderStatusCardTitle(publicOrderStatus)}
           </p>
           <p className="mt-1 text-sm text-emerald-700">
             {getPublicOrderTrackingMessage(publicOrderStatus, headline)}
