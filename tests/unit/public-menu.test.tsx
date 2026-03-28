@@ -42,6 +42,7 @@ import {
   getPhoneChangeState,
   getPublicOrderHeadline,
   getPublicOrderStatusCardMessage,
+  getPublicOrderStatusCardActionLabel,
   getPublicOrderStatusCardTitle,
   getPublicOrderStatusNotice,
   getPublicOrderTrackingMessage,
@@ -655,6 +656,15 @@ describe('public menu helpers', () => {
       status: 'ready',
       delivery_status: 'out_for_delivery',
     })).toBe('Acompanhe o deslocamento da entrega.')
+    expect(getPublicOrderStatusCardActionLabel({
+      ...publicOrderStatus,
+      status: 'ready',
+      delivery_status: 'out_for_delivery',
+    })).toBe('Ver entrega')
+    expect(getPublicOrderStatusCardActionLabel({
+      ...publicOrderStatus,
+      status: 'preparing',
+    })).toBe('Ver pedido')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
       status: 'confirmed',

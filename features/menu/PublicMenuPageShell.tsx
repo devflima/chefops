@@ -19,7 +19,6 @@ type Props = {
   checkoutNotice: string | null
   publicOrderStatus: PublicOrderStatus | null
   cartOpen: boolean
-  headline: string | null
   onTrackOrder: () => void
   groups: ReturnType<typeof import('@/features/menu/public-menu').groupMenuItems>
   activeCategory: string | null
@@ -45,7 +44,6 @@ export function PublicMenuPageShell({
   checkoutNotice,
   publicOrderStatus,
   cartOpen,
-  headline,
   onTrackOrder,
   groups,
   activeCategory,
@@ -76,7 +74,6 @@ export function PublicMenuPageShell({
           checkoutNotice={checkoutNotice}
           publicOrderStatus={publicOrderStatus}
           cartOpen={cartOpen}
-          headline={headline}
           onTrackOrder={onTrackOrder}
           tableInfo={tableInfo}
         />

@@ -9,14 +9,12 @@ export function MenuStatusPanel({
   checkoutNotice,
   publicOrderStatus,
   cartOpen,
-  headline,
   onTrackOrder,
   tableInfo,
 }: {
   checkoutNotice: string | null
   publicOrderStatus: PublicOrderStatus | null
   cartOpen: boolean
-  headline: string | null
   onTrackOrder: () => void
   tableInfo: { id: string; number: string } | null
 }) {
@@ -43,7 +41,7 @@ export function MenuStatusPanel({
         </div>
       )}
 
-      {publicOrderStatus && !cartOpen && !['delivered', 'cancelled'].includes(publicOrderStatus.status) && headline && (
+      {publicOrderStatus && !cartOpen && !['delivered', 'cancelled'].includes(publicOrderStatus.status) && (
         <PublicOrderStatusCard
           publicOrderStatus={publicOrderStatus}
           onTrack={onTrackOrder}
