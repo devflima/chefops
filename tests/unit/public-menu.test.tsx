@@ -557,21 +557,27 @@ describe('public menu helpers', () => {
   })
 
   it('monta steps do pedido conforme contexto de mesa', () => {
-    expect(getOrderSteps({ id: 'table-1', number: '10' })[3]).toEqual({
+    expect(getOrderSteps({ id: 'table-1', number: '10' }, 'table')[3]).toEqual({
       key: 'ready',
       label: 'Pronto',
       description: 'Seu pedido está pronto para servir.',
     })
 
-    expect(getOrderSteps(null)[3]).toEqual({
+    expect(getOrderSteps(null, 'counter')[3]).toEqual({
       key: 'ready',
       label: 'Pronto',
-      description: 'Seu pedido está pronto para sair.',
+      description: 'Seu pedido está pronto para retirada.',
+    })
+
+    expect(getOrderSteps(null, 'delivery')[3]).toEqual({
+      key: 'ready',
+      label: 'Pronto',
+      description: 'Seu pedido está pronto para sair para entrega.',
     })
   })
 
   it('resume checkout, cancelamento, pagamento e entrega do pedido público', () => {
-    const orderSteps = getOrderSteps(null)
+    const orderSteps = getOrderSteps(null, 'delivery')
     const publicOrderStatus = {
       id: 'order-1',
       order_number: 42,

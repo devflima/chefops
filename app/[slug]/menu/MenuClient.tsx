@@ -107,7 +107,9 @@ export default function MenuClient({
   const [isNewCustomer, setIsNewCustomer] = useState(false)
   const [address, setAddress] = useState<Partial<CustomerAddress>>({})
   const [loadingCep, setLoadingCep] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<string>(tableInfo ? 'table' : '')
+  const [paymentMethod, setPaymentMethod] = useState<'' | NonNullable<PublicOrderStatus['payment_method']>>(
+    tableInfo ? 'table' : ''
+  )
   const [notes, setNotes] = useState('')
   const [orderNumber, setOrderNumber] = useState<number | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
@@ -604,7 +606,7 @@ export default function MenuClient({
     }
   }
 
-  const orderSteps = getOrderSteps(tableInfo)
+  const orderSteps = getOrderSteps(tableInfo, (publicOrderStatus?.payment_method ?? paymentMethod) || null)
   const isCheckoutProcessing = getPublicCheckoutProcessingState(
     createOrder.isPending,
     onlineCheckoutLoading,
@@ -702,7 +704,8 @@ export default function MenuClient({
           onCustomerCpfChange: (value) => setCustomerCpf(formatCPF(value)),
           paymentOptions,
           paymentMethod,
-          onPaymentMethodChange: setPaymentMethod,
+          onPaymentMethodChange: (value) =>
+            setPaymentMethod(value as '' | NonNullable<PublicOrderStatus['payment_method']>),
           notes,
           onNotesChange: setNotes,
           cartTotal,

@@ -306,7 +306,16 @@ export function getPublicCheckoutProcessingState(
   return createOrderPending || onlineCheckoutLoading
 }
 
-export function getOrderSteps(tableInfo: { id: string; number: string } | null) {
+export function getOrderSteps(
+  tableInfo: { id: string; number: string } | null,
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+) {
+  const readyDescription = tableInfo
+    ? 'Seu pedido está pronto para servir.'
+    : paymentMethod === 'delivery'
+      ? 'Seu pedido está pronto para sair para entrega.'
+      : 'Seu pedido está pronto para retirada.'
+
   return [
     { key: 'pending', label: 'Recebido', description: 'Seu pedido entrou na fila do estabelecimento.' },
     { key: 'confirmed', label: 'Confirmado', description: 'O estabelecimento confirmou seu pedido.' },
@@ -314,7 +323,7 @@ export function getOrderSteps(tableInfo: { id: string; number: string } | null) 
     {
       key: 'ready',
       label: 'Pronto',
-      description: tableInfo ? 'Seu pedido está pronto para servir.' : 'Seu pedido está pronto para sair.',
+      description: readyDescription,
     },
     { key: 'delivered', label: 'Entregue', description: 'Pedido finalizado com sucesso.' },
   ] as const satisfies Array<{
