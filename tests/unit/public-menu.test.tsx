@@ -43,6 +43,7 @@ import {
   getPublicOrderHeadline,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardActionLabel,
+  getPublicOrderStatusCardTone,
   getPublicOrderStatusCardTitle,
   getPublicOrderStatusNotice,
   getPublicOrderTrackingMessage,
@@ -665,6 +666,26 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       status: 'preparing',
     })).toBe('Ver pedido')
+    expect(getPublicOrderStatusCardTone({
+      ...publicOrderStatus,
+      status: 'pending',
+      delivery_status: 'waiting_dispatch',
+    })).toBe('warning')
+    expect(getPublicOrderStatusCardTone({
+      ...publicOrderStatus,
+      status: 'preparing',
+      delivery_status: 'waiting_dispatch',
+    })).toBe('progress')
+    expect(getPublicOrderStatusCardTone({
+      ...publicOrderStatus,
+      status: 'ready',
+      delivery_status: 'out_for_delivery',
+    })).toBe('delivery')
+    expect(getPublicOrderStatusCardTone({
+      ...publicOrderStatus,
+      status: 'ready',
+      delivery_status: 'waiting_dispatch',
+    })).toBe('success')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
       status: 'confirmed',

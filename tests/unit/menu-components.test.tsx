@@ -105,6 +105,8 @@ describe('menu components', () => {
     expect(markup).toContain('Pedido em preparo #42')
     expect(markup).toContain('Seu pedido está sendo preparado.')
     expect(markup).toContain('Ver pedido')
+    expect(markup).toContain('border-sky-200')
+    expect(markup).toContain('bg-sky-50')
   })
 
   it('renderiza modal de meia a meia com sabores elegíveis', async () => {

@@ -562,6 +562,24 @@ export function getPublicOrderStatusCardActionLabel(publicOrderStatus: PublicOrd
   return 'Ver pedido'
 }
 
+export function getPublicOrderStatusCardTone(publicOrderStatus: PublicOrderStatus) {
+  if (publicOrderStatus.status === 'pending') return 'warning'
+
+  if (
+    publicOrderStatus.payment_method === 'delivery' &&
+    publicOrderStatus.status === 'ready' &&
+    publicOrderStatus.delivery_status === 'out_for_delivery'
+  ) {
+    return 'delivery'
+  }
+
+  if (publicOrderStatus.status === 'confirmed' || publicOrderStatus.status === 'preparing') {
+    return 'progress'
+  }
+
+  return 'success'
+}
+
 export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus | null) {
   if (!publicOrderStatus) return null
   if (publicOrderStatus.status === 'cancelled') {
