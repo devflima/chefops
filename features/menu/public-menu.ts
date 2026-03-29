@@ -708,7 +708,13 @@ export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus 
 
     return 'Seu pedido está pronto.'
   }
-  if (publicOrderStatus.status === 'delivered') return 'Pedido entregue com sucesso.'
+  if (publicOrderStatus.status === 'delivered') {
+    if (publicOrderStatus.payment_method === 'table') {
+      return 'Pedido servido na mesa com sucesso.'
+    }
+
+    return 'Pedido entregue com sucesso.'
+  }
 
   return null
 }
