@@ -521,6 +521,10 @@ export function getPublicOrderHeadline(
 ) {
   if (!publicOrderStatus) return null
 
+  if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
+    return 'pronto para retirada'
+  }
+
   return orderSteps.find((step) => step.key === publicOrderStatus.status)?.label.toLowerCase() ?? 'andamento'
 }
 
