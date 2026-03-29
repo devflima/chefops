@@ -579,6 +579,9 @@ export function getPublicOrderTrackingMessage(
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
     return 'Seu pedido está pronto para retirada.'
   }
+  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
+    return 'Seu pedido está pronto para servir.'
+  }
   if (publicOrderStatus.status === 'ready') return 'Seu pedido está pronto.'
   return `Seu pedido está em ${headline}.`
 }
