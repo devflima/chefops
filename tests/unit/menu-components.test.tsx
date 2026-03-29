@@ -129,6 +129,7 @@ describe('menu components', () => {
     )
 
     expect(markup).toContain('Pedido pronto para retirada #77')
+    expect(markup).toContain('Seu pedido está aguardando retirada.')
     expect(markup).toContain('Ver pedido')
   })
 
