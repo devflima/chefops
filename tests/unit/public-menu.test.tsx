@@ -836,6 +836,12 @@ describe('public menu helpers', () => {
     })).toBe('Seu pedido está pronto para retirada.')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
+      payment_method: 'table',
+      status: 'ready',
+      delivery_status: null,
+    })).toBe('Seu pedido está pronto para servir.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
       status: 'delivered',
       delivery_status: 'delivered',
     })).toBe('Pedido entregue com sucesso.')

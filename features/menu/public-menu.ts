@@ -695,6 +695,10 @@ export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus 
       return 'Seu pedido está pronto para retirada.'
     }
 
+    if (publicOrderStatus.payment_method === 'table') {
+      return 'Seu pedido está pronto para servir.'
+    }
+
     return 'Seu pedido está pronto.'
   }
   if (publicOrderStatus.status === 'delivered') return 'Pedido entregue com sucesso.'
