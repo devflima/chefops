@@ -742,6 +742,12 @@ describe('public menu helpers', () => {
     })).toBe('Pedido pronto para retirada #42')
     expect(getPublicOrderStatusCardMessage({
       ...publicOrderStatus,
+      payment_method: 'counter',
+      status: 'ready',
+      delivery_status: null,
+    })).toBe('Seu pedido está aguardando retirada.')
+    expect(getPublicOrderStatusCardMessage({
+      ...publicOrderStatus,
       status: 'preparing',
     })).toBe('Seu pedido está sendo preparado.')
     expect(getPublicOrderStatusCardTitle({
