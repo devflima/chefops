@@ -7,6 +7,7 @@ import {
   getPaymentStatusLabel,
   getPublicOrderCompletionTitle,
   getPublicOrderCompletionSubtitle,
+  getPublicOrderPaymentLabel,
   getPublicOrderProgressTitle,
   getPublicOrderReferenceLabel,
   isDeliveryStepCompleted,
@@ -134,7 +135,7 @@ export function MenuDoneStep({
           </div>
 
           <div className="mt-4 flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs text-slate-500">
-            <span>Pagamento</span>
+            <span>{getPublicOrderPaymentLabel(publicOrderStatus?.payment_method)}</span>
             <span className="font-medium text-slate-700">
               {getPaymentStatusLabel(publicOrderStatus?.payment_status, publicOrderStatus?.payment_method)}
             </span>

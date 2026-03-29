@@ -392,6 +392,14 @@ export function getPublicOrderProgressTitle(params: {
   return 'Acompanhe o status do pedido'
 }
 
+export function getPublicOrderPaymentLabel(paymentMethod?: PublicOrderStatus['payment_method'] | null) {
+  if (paymentMethod === 'table') return 'Pagamento no local'
+  if (paymentMethod === 'counter') return 'Pagamento na retirada'
+  if (paymentMethod === 'delivery') return 'Pagamento na entrega'
+  if (paymentMethod === 'online') return 'Pagamento online'
+  return 'Pagamento'
+}
+
 export function getContinueFlowTarget(
   paymentMethod: string,
   tableInfo: { id: string; number: string } | null
