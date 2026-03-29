@@ -42,6 +42,7 @@ import {
   getPhoneChangeState,
   getPublicOrderHeadline,
   getPublicOrderCompletionTitle,
+  getPublicOrderCompletionSubtitle,
   getPublicOrderReferenceLabel,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardActionLabel,
@@ -624,6 +625,18 @@ describe('public menu helpers', () => {
       tableInfo: null,
       paymentMethod: 'delivery',
     })).toBe('Pedido realizado!')
+    expect(getPublicOrderCompletionSubtitle({
+      tableInfo: { id: 'table-1', number: '10' },
+      paymentMethod: 'table',
+    })).toBe('Acompanhe a comanda da sua mesa.')
+    expect(getPublicOrderCompletionSubtitle({
+      tableInfo: null,
+      paymentMethod: 'counter',
+    })).toBe('Use este número para retirar o pedido.')
+    expect(getPublicOrderCompletionSubtitle({
+      tableInfo: null,
+      paymentMethod: 'delivery',
+    })).toBe('Acompanhe o andamento do pedido até a entrega.')
     expect(getPublicOrderReferenceLabel({
       tableInfo: { id: 'table-1', number: '10' },
       paymentMethod: 'table',

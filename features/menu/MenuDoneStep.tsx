@@ -5,6 +5,7 @@ import {
   getDeliveryStepMessage,
   getPaymentStatusLabel,
   getPublicOrderCompletionTitle,
+  getPublicOrderCompletionSubtitle,
   getPublicOrderReferenceLabel,
   isDeliveryStepCompleted,
   shouldShowPublicDeliveryConfirmButton,
@@ -47,6 +48,12 @@ export function MenuDoneStep({
           paymentMethod: publicOrderStatus?.payment_method,
         })}
       </h3>
+      <p className="text-slate-500 text-sm mb-1">
+        {getPublicOrderCompletionSubtitle({
+          tableInfo,
+          paymentMethod: publicOrderStatus?.payment_method,
+        })}
+      </p>
       <p className="text-slate-500 text-sm mb-1">
         {getPublicOrderReferenceLabel({
           tableInfo,

@@ -363,6 +363,15 @@ export function getPublicOrderCompletionTitle(params: {
   return 'Pedido realizado!'
 }
 
+export function getPublicOrderCompletionSubtitle(params: {
+  tableInfo: { id: string; number: string } | null
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+}) {
+  if (params.tableInfo) return 'Acompanhe a comanda da sua mesa.'
+  if (params.paymentMethod === 'counter') return 'Use este número para retirar o pedido.'
+  return 'Acompanhe o andamento do pedido até a entrega.'
+}
+
 export function getContinueFlowTarget(
   paymentMethod: string,
   tableInfo: { id: string; number: string } | null
