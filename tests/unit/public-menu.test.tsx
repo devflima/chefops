@@ -45,6 +45,7 @@ import {
   getPublicOrderCompletionSubtitle,
   getPublicOrderCompletionCloseLabel,
   getPublicOrderProgressTitle,
+  getPublicOrderPaymentLabel,
   getPublicOrderReferenceLabel,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardActionLabel,
@@ -663,6 +664,10 @@ describe('public menu helpers', () => {
       tableInfo: null,
       paymentMethod: 'delivery',
     })).toBe('Acompanhe o status do pedido')
+    expect(getPublicOrderPaymentLabel('table')).toBe('Pagamento no local')
+    expect(getPublicOrderPaymentLabel('counter')).toBe('Pagamento na retirada')
+    expect(getPublicOrderPaymentLabel('delivery')).toBe('Pagamento na entrega')
+    expect(getPublicOrderPaymentLabel('online')).toBe('Pagamento online')
     expect(getPublicOrderReferenceLabel({
       tableInfo: { id: 'table-1', number: '10' },
       paymentMethod: 'table',

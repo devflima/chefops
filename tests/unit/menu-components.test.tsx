@@ -858,6 +858,7 @@ describe('menu components', () => {
     expect(markup).toContain('Número do pedido')
     expect(markup).toContain('#42')
     expect(markup).toContain('Acompanhe o status do pedido')
+    expect(markup).toContain('Pagamento na entrega')
     expect(markup).toContain('Cancelar pedido')
     expect(markup).toContain('Aprovado')
   })
@@ -928,6 +929,7 @@ describe('menu components', () => {
     expect(markup).toContain('Use este número para retirar o pedido.')
     expect(markup).toContain('Voltar ao cardápio')
     expect(markup).toContain('Acompanhe a retirada')
+    expect(markup).toContain('Pagamento na retirada')
     expect(markup).toContain('#321')
   })
 
