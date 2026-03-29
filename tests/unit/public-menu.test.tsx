@@ -688,6 +688,12 @@ describe('public menu helpers', () => {
       status: 'ready',
       delivery_status: null,
     }, getOrderSteps(null, 'counter'))).toBe('pronto para retirada')
+    expect(getPublicOrderHeadline({
+      ...publicOrderStatus,
+      payment_method: 'table',
+      status: 'ready',
+      delivery_status: null,
+    }, getOrderSteps({ id: 'table-1', number: '10' }, 'table'))).toBe('pronto para servir')
     expect(getCancelledOrderMessage(publicOrderStatus)).toBe('Cliente desistiu')
     expect(getCancelledOrderMessage(null)).toBe('O pedido foi cancelado.')
     expect(getCancelSuccessNotice('refunded')).toContain('reembolso')
