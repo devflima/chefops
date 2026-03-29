@@ -345,6 +345,15 @@ export function getCheckoutStepTitle(step: 'cart' | 'info' | 'address' | 'done')
   return 'Pedido realizado!'
 }
 
+export function getPublicOrderReferenceLabel(params: {
+  tableInfo: { id: string; number: string } | null
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+}) {
+  if (params.tableInfo) return 'Número da comanda'
+  if (params.paymentMethod === 'counter') return 'Número para retirada'
+  return 'Número do pedido'
+}
+
 export function getContinueFlowTarget(
   paymentMethod: string,
   tableInfo: { id: string; number: string } | null

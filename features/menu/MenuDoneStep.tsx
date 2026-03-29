@@ -4,6 +4,7 @@ import {
   getCancelledOrderMessage,
   getDeliveryStepMessage,
   getPaymentStatusLabel,
+  getPublicOrderReferenceLabel,
   isDeliveryStepCompleted,
   shouldShowPublicDeliveryConfirmButton,
   shouldShowCancelOrderButton,
@@ -40,7 +41,12 @@ export function MenuDoneStep({
         <ChefHat className="w-8 h-8 text-green-600" />
       </div>
       <h3 className="text-xl font-semibold text-slate-900 mb-2">Pedido realizado!</h3>
-      <p className="text-slate-500 text-sm mb-1">Seu número de pedido é</p>
+      <p className="text-slate-500 text-sm mb-1">
+        {getPublicOrderReferenceLabel({
+          tableInfo,
+          paymentMethod: publicOrderStatus?.payment_method,
+        })}
+      </p>
       <p className="text-4xl font-bold text-slate-900 mb-4">#{orderNumber}</p>
       {tableInfo && (
         <p className="text-sm text-slate-500">

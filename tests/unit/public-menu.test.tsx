@@ -41,6 +41,7 @@ import {
   getPaymentStatusLabel,
   getPhoneChangeState,
   getPublicOrderHeadline,
+  getPublicOrderReferenceLabel,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardActionLabel,
   getPublicOrderStatusCardTone,
@@ -610,6 +611,18 @@ describe('public menu helpers', () => {
     expect(getCheckoutStepTitle('info')).toBe('Seus dados')
     expect(getCheckoutStepTitle('address')).toBe('Endereço de entrega')
     expect(getCheckoutStepTitle('done')).toBe('Pedido realizado!')
+    expect(getPublicOrderReferenceLabel({
+      tableInfo: { id: 'table-1', number: '10' },
+      paymentMethod: 'table',
+    })).toBe('Número da comanda')
+    expect(getPublicOrderReferenceLabel({
+      tableInfo: null,
+      paymentMethod: 'counter',
+    })).toBe('Número para retirada')
+    expect(getPublicOrderReferenceLabel({
+      tableInfo: null,
+      paymentMethod: 'delivery',
+    })).toBe('Número do pedido')
 
     expect(getPublicOrderHeadline(publicOrderStatus, orderSteps)).toBe('pronto')
     expect(getCancelledOrderMessage(publicOrderStatus)).toBe('Cliente desistiu')
