@@ -886,6 +886,7 @@ describe('menu components', () => {
     )
 
     expect(markup).toContain('Pedido cancelado')
+    expect(markup).toContain('Comanda aberta!')
     expect(markup).toContain('Número da comanda')
     expect(markup).toContain('Estoque indisponível')
     expect(markup).toContain('Reembolso solicitado com sucesso')
@@ -920,6 +921,7 @@ describe('menu components', () => {
     )
 
     expect(markup).toContain('Número para retirada')
+    expect(markup).toContain('Pedido pronto para retirada!')
     expect(markup).toContain('#321')
   })
 

@@ -354,6 +354,15 @@ export function getPublicOrderReferenceLabel(params: {
   return 'Número do pedido'
 }
 
+export function getPublicOrderCompletionTitle(params: {
+  tableInfo: { id: string; number: string } | null
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+}) {
+  if (params.tableInfo) return 'Comanda aberta!'
+  if (params.paymentMethod === 'counter') return 'Pedido pronto para retirada!'
+  return 'Pedido realizado!'
+}
+
 export function getContinueFlowTarget(
   paymentMethod: string,
   tableInfo: { id: string; number: string } | null

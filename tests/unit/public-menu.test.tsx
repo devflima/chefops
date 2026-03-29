@@ -41,6 +41,7 @@ import {
   getPaymentStatusLabel,
   getPhoneChangeState,
   getPublicOrderHeadline,
+  getPublicOrderCompletionTitle,
   getPublicOrderReferenceLabel,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardActionLabel,
@@ -611,6 +612,18 @@ describe('public menu helpers', () => {
     expect(getCheckoutStepTitle('info')).toBe('Seus dados')
     expect(getCheckoutStepTitle('address')).toBe('Endereço de entrega')
     expect(getCheckoutStepTitle('done')).toBe('Pedido realizado!')
+    expect(getPublicOrderCompletionTitle({
+      tableInfo: { id: 'table-1', number: '10' },
+      paymentMethod: 'table',
+    })).toBe('Comanda aberta!')
+    expect(getPublicOrderCompletionTitle({
+      tableInfo: null,
+      paymentMethod: 'counter',
+    })).toBe('Pedido pronto para retirada!')
+    expect(getPublicOrderCompletionTitle({
+      tableInfo: null,
+      paymentMethod: 'delivery',
+    })).toBe('Pedido realizado!')
     expect(getPublicOrderReferenceLabel({
       tableInfo: { id: 'table-1', number: '10' },
       paymentMethod: 'table',

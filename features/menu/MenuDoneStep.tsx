@@ -4,6 +4,7 @@ import {
   getCancelledOrderMessage,
   getDeliveryStepMessage,
   getPaymentStatusLabel,
+  getPublicOrderCompletionTitle,
   getPublicOrderReferenceLabel,
   isDeliveryStepCompleted,
   shouldShowPublicDeliveryConfirmButton,
@@ -40,7 +41,12 @@ export function MenuDoneStep({
       <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
         <ChefHat className="w-8 h-8 text-green-600" />
       </div>
-      <h3 className="text-xl font-semibold text-slate-900 mb-2">Pedido realizado!</h3>
+      <h3 className="text-xl font-semibold text-slate-900 mb-2">
+        {getPublicOrderCompletionTitle({
+          tableInfo,
+          paymentMethod: publicOrderStatus?.payment_method,
+        })}
+      </h3>
       <p className="text-slate-500 text-sm mb-1">
         {getPublicOrderReferenceLabel({
           tableInfo,
