@@ -109,6 +109,29 @@ describe('menu components', () => {
     expect(markup).toContain('bg-sky-50')
   })
 
+  it('renderiza card de status com título contextual para retirada', async () => {
+    const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicOrderStatusCard, {
+        publicOrderStatus: {
+          id: 'order-counter',
+          order_number: 77,
+          status: 'ready',
+          payment_status: 'pending',
+          payment_method: 'counter',
+          delivery_status: null,
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        onTrack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido pronto para retirada #77')
+    expect(markup).toContain('Ver pedido')
+  })
+
   it('renderiza modal de meia a meia com sabores elegíveis', async () => {
     const { HalfFlavorModal } = await import('@/features/menu/HalfFlavorModal')
 

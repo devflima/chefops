@@ -580,6 +580,9 @@ export function getPublicOrderStatusCardTitle(publicOrderStatus: PublicOrderStat
   if (publicOrderStatus.status === 'pending') return `Pedido recebido #${publicOrderStatus.order_number}`
   if (publicOrderStatus.status === 'confirmed') return `Pedido confirmado #${publicOrderStatus.order_number}`
   if (publicOrderStatus.status === 'preparing') return `Pedido em preparo #${publicOrderStatus.order_number}`
+  if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
+    return `Pedido pronto para retirada #${publicOrderStatus.order_number}`
+  }
   if (
     publicOrderStatus.payment_method === 'delivery' &&
     publicOrderStatus.status === 'ready' &&
