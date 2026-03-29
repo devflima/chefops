@@ -854,6 +854,7 @@ describe('menu components', () => {
     )
 
     expect(markup).toContain('Pedido realizado!')
+    expect(markup).toContain('Número do pedido')
     expect(markup).toContain('#42')
     expect(markup).toContain('Acompanhe o status do pedido')
     expect(markup).toContain('Cancelar pedido')
@@ -885,9 +886,41 @@ describe('menu components', () => {
     )
 
     expect(markup).toContain('Pedido cancelado')
+    expect(markup).toContain('Número da comanda')
     expect(markup).toContain('Estoque indisponível')
     expect(markup).toContain('Reembolso solicitado com sucesso')
     expect(markup).toContain('Mesa 8')
+  })
+
+  it('renderiza rótulo de retirada no passo final de balcão', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 321,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-counter',
+          order_number: 321,
+          status: 'confirmed',
+          payment_status: 'pending',
+          payment_method: 'counter',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [
+          { key: 'pending', label: 'Recebido', description: 'Entrou na fila.' },
+          { key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' },
+        ],
+        getStepState: () => 'current',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+
+    expect(markup).toContain('Número para retirada')
+    expect(markup).toContain('#321')
   })
 
   it('aciona handlers e renderiza etapa de entrega no passo final', async () => {
