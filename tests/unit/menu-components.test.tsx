@@ -890,6 +890,7 @@ describe('menu components', () => {
     expect(markup).toContain('Comanda aberta!')
     expect(markup).toContain('Acompanhe a comanda da sua mesa.')
     expect(markup).toContain('Número da comanda')
+    expect(markup).toContain('Acompanhe a comanda')
     expect(markup).toContain('Estoque indisponível')
     expect(markup).toContain('Reembolso solicitado com sucesso')
     expect(markup).toContain('Mesa 8')
@@ -926,6 +927,7 @@ describe('menu components', () => {
     expect(markup).toContain('Pedido pronto para retirada!')
     expect(markup).toContain('Use este número para retirar o pedido.')
     expect(markup).toContain('Voltar ao cardápio')
+    expect(markup).toContain('Acompanhe a retirada')
     expect(markup).toContain('#321')
   })
 

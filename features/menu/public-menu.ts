@@ -383,6 +383,15 @@ export function getPublicOrderCompletionCloseLabel(params: {
   return 'Acompanhar depois'
 }
 
+export function getPublicOrderProgressTitle(params: {
+  tableInfo: { id: string; number: string } | null
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+}) {
+  if (params.tableInfo) return 'Acompanhe a comanda'
+  if (params.paymentMethod === 'counter') return 'Acompanhe a retirada'
+  return 'Acompanhe o status do pedido'
+}
+
 export function getContinueFlowTarget(
   paymentMethod: string,
   tableInfo: { id: string; number: string } | null

@@ -7,6 +7,7 @@ import {
   getPaymentStatusLabel,
   getPublicOrderCompletionTitle,
   getPublicOrderCompletionSubtitle,
+  getPublicOrderProgressTitle,
   getPublicOrderReferenceLabel,
   isDeliveryStepCompleted,
   shouldShowPublicDeliveryConfirmButton,
@@ -79,7 +80,12 @@ export function MenuDoneStep({
         </div>
       ) : (
         <div className="mt-6 w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
-          <p className="mb-4 text-sm font-medium text-slate-700">Acompanhe o status do pedido</p>
+          <p className="mb-4 text-sm font-medium text-slate-700">
+            {getPublicOrderProgressTitle({
+              tableInfo,
+              paymentMethod: publicOrderStatus?.payment_method,
+            })}
+          </p>
           <div className="space-y-3">
             {orderSteps.map((step) => {
               const state = getStepState(step.key)
