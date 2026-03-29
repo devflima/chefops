@@ -925,6 +925,7 @@ describe('menu components', () => {
     expect(markup).toContain('Número para retirada')
     expect(markup).toContain('Pedido pronto para retirada!')
     expect(markup).toContain('Use este número para retirar o pedido.')
+    expect(markup).toContain('Voltar ao cardápio')
     expect(markup).toContain('#321')
   })
 
@@ -975,7 +976,7 @@ describe('menu components', () => {
 
     expect(buttons).toHaveLength(2)
     expect(getTextContent(buttons[0])).toContain('Confirmar recebimento')
-    expect(getTextContent(buttons[1])).toContain('Fechar')
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
 
     buttons[0].props.onClick()
     buttons[1].props.onClick()
@@ -2260,7 +2261,9 @@ describe('menu components', () => {
       (element) => element.type === 'button' && getTextContent(element) === 'Voltar'
     )
     const doneCloseButton = doneElements.find(
-      (element) => element.type === 'button' && getTextContent(element) === 'Fechar'
+      (element) =>
+        element.type === 'button' &&
+        ['Fechar', 'Voltar ao cardápio', 'Acompanhar depois'].includes(getTextContent(element))
     )
     const doneDrawerCloseButton = doneElements.find(
       (element) => element.type === 'button' && getTextContent(element) === ''

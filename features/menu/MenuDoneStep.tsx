@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { ChefHat } from 'lucide-react'
 import {
   getCancelledOrderMessage,
+  getPublicOrderCompletionCloseLabel,
   getDeliveryStepMessage,
   getPaymentStatusLabel,
   getPublicOrderCompletionTitle,
@@ -156,7 +157,10 @@ export function MenuDoneStep({
         </div>
       )}
       <Button className="mt-8 w-full" onClick={onClose}>
-        Fechar
+        {getPublicOrderCompletionCloseLabel({
+          tableInfo,
+          paymentMethod: publicOrderStatus?.payment_method,
+        })}
       </Button>
     </div>
   )

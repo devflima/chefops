@@ -43,6 +43,7 @@ import {
   getPublicOrderHeadline,
   getPublicOrderCompletionTitle,
   getPublicOrderCompletionSubtitle,
+  getPublicOrderCompletionCloseLabel,
   getPublicOrderReferenceLabel,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardActionLabel,
@@ -637,6 +638,18 @@ describe('public menu helpers', () => {
       tableInfo: null,
       paymentMethod: 'delivery',
     })).toBe('Acompanhe o andamento do pedido até a entrega.')
+    expect(getPublicOrderCompletionCloseLabel({
+      tableInfo: { id: 'table-1', number: '10' },
+      paymentMethod: 'table',
+    })).toBe('Voltar ao cardápio')
+    expect(getPublicOrderCompletionCloseLabel({
+      tableInfo: null,
+      paymentMethod: 'counter',
+    })).toBe('Voltar ao cardápio')
+    expect(getPublicOrderCompletionCloseLabel({
+      tableInfo: null,
+      paymentMethod: 'delivery',
+    })).toBe('Acompanhar depois')
     expect(getPublicOrderReferenceLabel({
       tableInfo: { id: 'table-1', number: '10' },
       paymentMethod: 'table',
