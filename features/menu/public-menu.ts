@@ -372,6 +372,17 @@ export function getPublicOrderCompletionSubtitle(params: {
   return 'Acompanhe o andamento do pedido até a entrega.'
 }
 
+export function getPublicOrderCompletionCloseLabel(params: {
+  tableInfo: { id: string; number: string } | null
+  paymentMethod?: PublicOrderStatus['payment_method'] | null
+}) {
+  if (params.tableInfo || params.paymentMethod === 'counter') {
+    return 'Voltar ao cardápio'
+  }
+
+  return 'Acompanhar depois'
+}
+
 export function getContinueFlowTarget(
   paymentMethod: string,
   tableInfo: { id: string; number: string } | null
