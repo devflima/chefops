@@ -625,6 +625,10 @@ export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderSt
     return 'Acompanhe o deslocamento da entrega.'
   }
 
+  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
+    return 'Seu pedido está pronto para servir.'
+  }
+
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
     return 'Seu pedido está aguardando retirada.'
   }
@@ -689,6 +693,10 @@ export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus 
 
     if (publicOrderStatus.payment_method === 'counter') {
       return 'Seu pedido está pronto para retirada.'
+    }
+
+    if (publicOrderStatus.payment_method === 'table') {
+      return 'Seu pedido está pronto para servir.'
     }
 
     return 'Seu pedido está pronto.'
