@@ -722,6 +722,12 @@ describe('public menu helpers', () => {
       status: 'cancelled',
       payment_status: 'refunded',
     }, 'cancelado')).toBe('Seu pedido foi cancelado e o reembolso foi solicitado.')
+    expect(getPublicOrderTrackingMessage({
+      ...publicOrderStatus,
+      payment_method: 'counter',
+      status: 'ready',
+      delivery_status: null,
+    }, 'pronto')).toBe('Seu pedido está pronto para retirada.')
     expect(getPublicOrderStatusCardTitle({
       ...publicOrderStatus,
       status: 'pending',
