@@ -44,6 +44,7 @@ import {
   getPublicOrderCompletionTitle,
   getPublicOrderCompletionSubtitle,
   getPublicOrderCompletionCloseLabel,
+  getPublicOrderProgressTitle,
   getPublicOrderReferenceLabel,
   getPublicOrderStatusCardMessage,
   getPublicOrderStatusCardActionLabel,
@@ -650,6 +651,18 @@ describe('public menu helpers', () => {
       tableInfo: null,
       paymentMethod: 'delivery',
     })).toBe('Acompanhar depois')
+    expect(getPublicOrderProgressTitle({
+      tableInfo: { id: 'table-1', number: '10' },
+      paymentMethod: 'table',
+    })).toBe('Acompanhe a comanda')
+    expect(getPublicOrderProgressTitle({
+      tableInfo: null,
+      paymentMethod: 'counter',
+    })).toBe('Acompanhe a retirada')
+    expect(getPublicOrderProgressTitle({
+      tableInfo: null,
+      paymentMethod: 'delivery',
+    })).toBe('Acompanhe o status do pedido')
     expect(getPublicOrderReferenceLabel({
       tableInfo: { id: 'table-1', number: '10' },
       paymentMethod: 'table',
