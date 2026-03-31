@@ -607,6 +607,9 @@ export function getPublicOrderStatusCardTitle(publicOrderStatus: PublicOrderStat
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
     return `Pedido pronto para servir #${publicOrderStatus.order_number}`
   }
+  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'delivered') {
+    return `Pedido servido na mesa #${publicOrderStatus.order_number}`
+  }
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
     return `Pedido pronto para retirada #${publicOrderStatus.order_number}`
   }
