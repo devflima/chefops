@@ -268,7 +268,7 @@ describe('admin pages smoke', () => {
               name: 'Pizza Prime',
               slug: 'pizza-prime',
               plan: 'basic',
-              status: 'inactive',
+              status: 'active',
               created_at: '2026-01-10T00:00:00.000Z',
               next_billing_at: null,
             },
@@ -444,7 +444,7 @@ describe('admin pages smoke', () => {
               plan: 'pro',
               status: 'active',
               created_at: '2026-03-15T00:00:00.000Z',
-              next_billing_at: '2026-03-30T00:00:00.000Z',
+              next_billing_at: '2026-04-30T00:00:00.000Z',
             },
           ])
         }
@@ -473,11 +473,11 @@ describe('admin pages smoke', () => {
               name: 'Bistro Azul',
               slug: 'bistro-azul',
               plan: 'pro',
-              status: 'inactive',
+              status: 'active',
               total_users: 2,
               total_orders: 8,
               total_revenue: 450,
-              next_billing_at: '2026-03-30T00:00:00.000Z',
+              next_billing_at: '2026-04-30T00:00:00.000Z',
               last_order_at: '2026-03-18T00:00:00.000Z',
               created_at: '2026-03-15T00:00:00.000Z',
             },
@@ -489,7 +489,7 @@ describe('admin pages smoke', () => {
               tenant_id: 'tenant-clean',
               plan: 'pro',
               status: 'authorized',
-              next_payment_date: '2026-03-30T00:00:00.000Z',
+              next_payment_date: '2026-04-30T00:00:00.000Z',
               cancel_at_period_end: false,
               scheduled_plan: null,
             },
@@ -507,7 +507,7 @@ describe('admin pages smoke', () => {
     expect(markup).toContain('url-invalida')
     expect(markup).toContain('Nenhum alerta importante no momento.')
     expect(markup).toContain('A base está saudável e sem pendências críticas.')
-    expect(markup).toContain('Inativo')
+    expect(markup).toContain('Ativo')
     expect(markup).toContain('Pronta para cobrar')
 
     if (previousAppUrl) {

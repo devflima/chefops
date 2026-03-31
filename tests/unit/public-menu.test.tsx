@@ -694,6 +694,12 @@ describe('public menu helpers', () => {
       status: 'ready',
       delivery_status: null,
     }, getOrderSteps({ id: 'table-1', number: '10' }, 'table'))).toBe('pronto para servir')
+    expect(getPublicOrderHeadline({
+      ...publicOrderStatus,
+      payment_method: 'table',
+      status: 'delivered',
+      delivery_status: null,
+    }, getOrderSteps({ id: 'table-1', number: '10' }, 'table'))).toBe('servido na mesa')
     expect(getCancelledOrderMessage(publicOrderStatus)).toBe('Cliente desistiu')
     expect(getCancelledOrderMessage(null)).toBe('O pedido foi cancelado.')
     expect(getCancelSuccessNotice('refunded')).toContain('reembolso')
@@ -776,6 +782,12 @@ describe('public menu helpers', () => {
       status: 'ready',
       delivery_status: null,
     })).toBe('Pedido pronto para servir #42')
+    expect(getPublicOrderStatusCardTitle({
+      ...publicOrderStatus,
+      payment_method: 'table',
+      status: 'delivered',
+      delivery_status: null,
+    })).toBe('Pedido servido na mesa #42')
     expect(getPublicOrderStatusCardMessage({
       ...publicOrderStatus,
       payment_method: 'counter',

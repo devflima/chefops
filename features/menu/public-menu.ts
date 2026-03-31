@@ -529,6 +529,10 @@ export function getPublicOrderHeadline(
     return 'pronto para servir'
   }
 
+  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'delivered') {
+    return 'servido na mesa'
+  }
+
   return orderSteps.find((step) => step.key === publicOrderStatus.status)?.label.toLowerCase() ?? 'andamento'
 }
 
@@ -602,6 +606,9 @@ export function getPublicOrderStatusCardTitle(publicOrderStatus: PublicOrderStat
   if (publicOrderStatus.status === 'preparing') return `Pedido em preparo #${publicOrderStatus.order_number}`
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
     return `Pedido pronto para servir #${publicOrderStatus.order_number}`
+  }
+  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'delivered') {
+    return `Pedido servido na mesa #${publicOrderStatus.order_number}`
   }
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
     return `Pedido pronto para retirada #${publicOrderStatus.order_number}`
