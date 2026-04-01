@@ -565,7 +565,7 @@ describe('public menu helpers', () => {
   it('monta steps do pedido conforme contexto de mesa', () => {
     expect(getOrderSteps({ id: 'table-1', number: '10' }, 'table')[3]).toEqual({
       key: 'ready',
-      label: 'Pronto',
+      label: 'Servir',
       description: 'Seu pedido está pronto para servir.',
     })
     expect(getOrderSteps({ id: 'table-1', number: '10' }, 'table')[4]).toEqual({
@@ -581,7 +581,7 @@ describe('public menu helpers', () => {
     })
     expect(getOrderSteps(null, 'counter')[4]).toEqual({
       key: 'delivered',
-      label: 'Entregue',
+      label: 'Retirado',
       description: 'Pedido retirado com sucesso.',
     })
 
