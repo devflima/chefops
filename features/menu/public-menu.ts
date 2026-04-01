@@ -578,6 +578,10 @@ export function getPublicOrderTrackingMessage(
       return 'Seu pedido foi servido na mesa.'
     }
 
+    if (publicOrderStatus.payment_method === 'counter') {
+      return 'Seu pedido foi retirado.'
+    }
+
     return 'Seu pedido foi entregue.'
   }
   if (publicOrderStatus.status === 'cancelled') {
