@@ -576,7 +576,7 @@ describe('public menu helpers', () => {
 
     expect(getOrderSteps(null, 'counter')[3]).toEqual({
       key: 'ready',
-      label: 'Pronto',
+      label: 'Retirar',
       description: 'Seu pedido está pronto para retirada.',
     })
     expect(getOrderSteps(null, 'counter')[4]).toEqual({
