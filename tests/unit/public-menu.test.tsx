@@ -570,7 +570,7 @@ describe('public menu helpers', () => {
     })
     expect(getOrderSteps({ id: 'table-1', number: '10' }, 'table')[4]).toEqual({
       key: 'delivered',
-      label: 'Entregue',
+      label: 'Servido',
       description: 'Pedido servido na mesa com sucesso.',
     })
 
