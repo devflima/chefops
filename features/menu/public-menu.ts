@@ -527,6 +527,10 @@ export function getPublicOrderHeadline(
     return 'pronto para retirada'
   }
 
+  if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'delivered') {
+    return 'retirado'
+  }
+
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
     return 'pronto para servir'
   }
