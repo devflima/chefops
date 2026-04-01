@@ -657,6 +657,10 @@ export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderSt
     return 'Seu pedido está pronto para a próxima etapa.'
   }
 
+  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'delivered') {
+    return 'Seu pedido foi servido na mesa.'
+  }
+
   return 'Acompanhe o andamento do seu pedido.'
 }
 
