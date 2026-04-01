@@ -8,11 +8,6 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-const publicSupabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default async function MenuPage({
   params,
   searchParams,
@@ -21,6 +16,11 @@ export default async function MenuPage({
   searchParams: Promise<{ table?: string; checkout_session?: string; checkout_result?: string }>
 }) {
   const { slug } = await params
+
+  const publicSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'test-anon-key'
+  )
   const {
     table: tableToken,
     checkout_session: checkoutSessionId,
