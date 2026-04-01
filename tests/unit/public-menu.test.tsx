@@ -738,6 +738,12 @@ describe('public menu helpers', () => {
     }, 'entregue')).toBe('Seu pedido foi servido na mesa.')
     expect(getPublicOrderTrackingMessage({
       ...publicOrderStatus,
+      payment_method: 'counter',
+      status: 'delivered',
+      delivery_status: null,
+    }, 'entregue')).toBe('Seu pedido foi retirado.')
+    expect(getPublicOrderTrackingMessage({
+      ...publicOrderStatus,
       status: 'cancelled',
       payment_status: 'pending',
     }, 'cancelado')).toBe('Seu pedido foi cancelado.')
