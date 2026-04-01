@@ -732,6 +732,10 @@ export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus 
       return 'Pedido servido na mesa com sucesso.'
     }
 
+    if (publicOrderStatus.payment_method === 'counter') {
+      return 'Pedido retirado com sucesso.'
+    }
+
     return 'Pedido entregue com sucesso.'
   }
 

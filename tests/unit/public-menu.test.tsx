@@ -884,6 +884,12 @@ describe('public menu helpers', () => {
     })).toBe('Pedido servido na mesa com sucesso.')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
+      payment_method: 'counter',
+      status: 'delivered',
+      delivery_status: null,
+    })).toBe('Pedido retirado com sucesso.')
+    expect(getPublicOrderStatusNotice({
+      ...publicOrderStatus,
       status: 'delivered',
       delivery_status: 'delivered',
     })).toBe('Pedido entregue com sucesso.')
