@@ -634,6 +634,9 @@ export function getPublicOrderStatusCardTitle(publicOrderStatus: PublicOrderStat
     return `Pedido saiu para entrega #${publicOrderStatus.order_number}`
   }
   if (publicOrderStatus.status === 'ready') return `Pedido pronto #${publicOrderStatus.order_number}`
+  if (publicOrderStatus.payment_method === 'delivery' && publicOrderStatus.status === 'delivered') {
+    return `Pedido entregue #${publicOrderStatus.order_number}`
+  }
   return `Pedido #${publicOrderStatus.order_number}`
 }
 
@@ -668,6 +671,10 @@ export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderSt
 
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'delivered') {
     return 'Seu pedido foi retirado.'
+  }
+
+  if (publicOrderStatus.payment_method === 'delivery' && publicOrderStatus.status === 'delivered') {
+    return 'Seu pedido foi entregue.'
   }
 
   if (publicOrderStatus.status === 'ready') {
