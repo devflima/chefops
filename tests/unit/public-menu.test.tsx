@@ -806,6 +806,12 @@ describe('public menu helpers', () => {
       status: 'delivered',
       delivery_status: null,
     })).toBe('Pedido retirado #42')
+    expect(getPublicOrderStatusCardTitle({
+      ...publicOrderStatus,
+      payment_method: 'delivery',
+      status: 'delivered',
+      delivery_status: 'delivered',
+    })).toBe('Pedido entregue #42')
     expect(getPublicOrderStatusCardMessage({
       ...publicOrderStatus,
       payment_method: 'counter',
@@ -830,6 +836,12 @@ describe('public menu helpers', () => {
       status: 'delivered',
       delivery_status: null,
     })).toBe('Seu pedido foi servido na mesa.')
+    expect(getPublicOrderStatusCardMessage({
+      ...publicOrderStatus,
+      payment_method: 'delivery',
+      status: 'delivered',
+      delivery_status: 'delivered',
+    })).toBe('Seu pedido foi entregue.')
     expect(getPublicOrderStatusCardMessage({
       ...publicOrderStatus,
       status: 'preparing',
