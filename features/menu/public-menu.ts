@@ -531,6 +531,10 @@ export function getPublicOrderHeadline(
     return 'retirado'
   }
 
+  if (publicOrderStatus.payment_method === 'delivery' && publicOrderStatus.status === 'ready') {
+    return 'despachar'
+  }
+
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
     return 'pronto para servir'
   }
@@ -606,38 +610,41 @@ export function getPublicOrderTrackingMessage(
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
     return 'Seu pedido está pronto para servir.'
   }
-  if (publicOrderStatus.status === 'ready') return 'Seu pedido está pronto.'
-  return `Seu pedido está em ${headline}.`
+  if (publicOrderStatus.status === 'ready') return 'Seu pedido está ' + headline + '.'
+  return 'Acompanhe o andamento do seu pedido.'
 }
 
 export function getPublicOrderStatusCardTitle(publicOrderStatus: PublicOrderStatus) {
-  if (publicOrderStatus.status === 'pending') return `Pedido recebido #${publicOrderStatus.order_number}`
-  if (publicOrderStatus.status === 'confirmed') return `Pedido confirmado #${publicOrderStatus.order_number}`
-  if (publicOrderStatus.status === 'preparing') return `Pedido em preparo #${publicOrderStatus.order_number}`
+  if (publicOrderStatus.status === 'pending') return 'Pedido recebido #' + publicOrderStatus.order_number
+  if (publicOrderStatus.status === 'confirmed') return 'Pedido confirmado #' + publicOrderStatus.order_number
+  if (publicOrderStatus.status === 'preparing') return 'Pedido em preparo #' + publicOrderStatus.order_number
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
-    return `Pedido pronto para servir #${publicOrderStatus.order_number}`
+    return 'Pedido pronto para servir #' + publicOrderStatus.order_number
   }
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'delivered') {
-    return `Pedido servido na mesa #${publicOrderStatus.order_number}`
+    return 'Pedido servido na mesa #' + publicOrderStatus.order_number
   }
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
-    return `Pedido pronto para retirada #${publicOrderStatus.order_number}`
+    return 'Pedido pronto para retirada #' + publicOrderStatus.order_number
   }
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'delivered') {
-    return `Pedido retirado #${publicOrderStatus.order_number}`
+    return 'Pedido retirado #' + publicOrderStatus.order_number
   }
   if (
     publicOrderStatus.payment_method === 'delivery' &&
     publicOrderStatus.status === 'ready' &&
     publicOrderStatus.delivery_status === 'out_for_delivery'
   ) {
-    return `Pedido saiu para entrega #${publicOrderStatus.order_number}`
+    return 'Pedido saiu para entrega #' + publicOrderStatus.order_number
   }
-  if (publicOrderStatus.status === 'ready') return `Pedido pronto #${publicOrderStatus.order_number}`
+  if (publicOrderStatus.payment_method === 'delivery' && publicOrderStatus.status === 'ready') {
+    return 'Pedido pronto para entrega #' + publicOrderStatus.order_number
+  }
+  if (publicOrderStatus.status === 'ready') return 'Pedido pronto #' + publicOrderStatus.order_number
   if (publicOrderStatus.payment_method === 'delivery' && publicOrderStatus.status === 'delivered') {
-    return `Pedido entregue #${publicOrderStatus.order_number}`
+    return 'Pedido entregue #' + publicOrderStatus.order_number
   }
-  return `Pedido #${publicOrderStatus.order_number}`
+  return 'Pedido #' + publicOrderStatus.order_number
 }
 
 export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderStatus) {
@@ -659,6 +666,10 @@ export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderSt
     publicOrderStatus.delivery_status === 'out_for_delivery'
   ) {
     return 'Acompanhe o deslocamento da entrega.'
+  }
+
+  if (publicOrderStatus.payment_method === 'delivery' && publicOrderStatus.status === 'ready') {
+    return 'Seu pedido está pronto para sair para entrega.'
   }
 
   if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
@@ -687,7 +698,6 @@ export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderSt
 
   return 'Acompanhe o andamento do seu pedido.'
 }
-
 export function getPublicOrderStatusCardActionLabel(publicOrderStatus: PublicOrderStatus) {
   if (
     publicOrderStatus.payment_method === 'delivery' &&
@@ -1008,5 +1018,6 @@ export function normalizePublicMenuItems(rawItems: RawItem[]) {
 export function normalizeTenantDeliverySettings(
   value: { delivery_enabled: boolean; flat_fee: number } | { delivery_enabled: boolean; flat_fee: number }[] | null
 ) {
+
   return Array.isArray(value) ? (value[0] ?? null) : (value ?? null)
 }
