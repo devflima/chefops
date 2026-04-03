@@ -587,7 +587,7 @@ describe('public menu helpers', () => {
 
     expect(getOrderSteps(null, 'delivery')[3]).toEqual({
       key: 'ready',
-      label: 'Pronto',
+      label: 'Despachar',
       description: 'Seu pedido está pronto para sair para entrega.',
     })
     expect(getOrderSteps(null, 'delivery')[4]).toEqual({
@@ -681,7 +681,7 @@ describe('public menu helpers', () => {
       paymentMethod: 'delivery',
     })).toBe('Número do pedido')
 
-    expect(getPublicOrderHeadline(publicOrderStatus, orderSteps)).toBe('pronto')
+    expect(getPublicOrderHeadline(publicOrderStatus, orderSteps)).toBe('despachar')
     expect(getPublicOrderHeadline({
       ...publicOrderStatus,
       payment_method: 'counter',
