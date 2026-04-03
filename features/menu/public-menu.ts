@@ -320,7 +320,7 @@ export function getOrderSteps(
     : paymentMethod === 'delivery'
       ? 'Pedido entregue com sucesso.'
       : 'Pedido retirado com sucesso.'
-  const readyLabel = tableInfo ? 'Servir' : paymentMethod === 'counter' ? 'Retirar' : 'Pronto'
+  const readyLabel = tableInfo ? 'Servir' : paymentMethod === 'counter' ? 'Retirar' : paymentMethod === 'delivery' ? 'Despachar' : 'Pronto'
   const deliveredLabel = tableInfo ? 'Servido' : paymentMethod === 'counter' ? 'Retirado' : 'Entregue'
 
   return [
