@@ -1147,6 +1147,7 @@ describe('menu components', () => {
     expect(markup).toContain('Número da comanda')
     expect(markup).toContain('Acompanhe a comanda')
     expect(markup).toContain('Estoque indisponível')
+    expect(markup).not.toContain('Cancelar pedido')
     expect(markup).toContain('Reembolso solicitado com sucesso')
     expect(markup).toContain('Mesa 8')
   })
