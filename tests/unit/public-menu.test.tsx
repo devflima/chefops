@@ -760,6 +760,12 @@ describe('public menu helpers', () => {
     }, 'cancelado')).toBe('Seu pedido foi cancelado e o reembolso foi solicitado.')
     expect(getPublicOrderTrackingMessage({
       ...publicOrderStatus,
+      payment_method: 'delivery',
+      status: 'ready',
+      delivery_status: 'waiting_dispatch',
+    }, 'despachar')).toBe('Seu pedido está pronto para sair para entrega.')
+    expect(getPublicOrderTrackingMessage({
+      ...publicOrderStatus,
       payment_method: 'counter',
       status: 'ready',
       delivery_status: null,
@@ -911,7 +917,7 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       status: 'ready',
       delivery_status: 'waiting_dispatch',
-    })).toBe('Seu pedido está pronto.')
+    })).toBe('Seu pedido está pronto para sair para entrega.')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
       payment_method: 'counter',
