@@ -1322,6 +1322,7 @@ describe('menu components', () => {
     expect(markup).toContain('Saiu para entrega')
     expect(markup).toContain('Seu pedido vai aparecer aqui quando sair para entrega.')
     expect(markup).toContain('border-slate-300 bg-white text-slate-400')
+    expect(markup).not.toContain('Confirmar recebimento')
     expect(markup).not.toContain('com João')
   })
 
