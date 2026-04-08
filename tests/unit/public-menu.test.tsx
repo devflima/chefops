@@ -1097,6 +1097,16 @@ describe('public menu helpers', () => {
       },
       cartOpen: false,
     })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido retirado com sucesso.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'delivered',
+        payment_method: 'counter',
+        delivery_status: null,
+      },
+      cartOpen: false,
+    })).toBe(true)
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
     expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
     expect(getDeliveryStepMessage({
