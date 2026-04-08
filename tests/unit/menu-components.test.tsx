@@ -295,6 +295,8 @@ describe('menu components', () => {
     expect(markup).toContain('Ver retirada')
     expect(markup).toContain('border-emerald-200')
     expect(markup).toContain('bg-emerald-50')
+    expect(markup).toContain('bg-emerald-600')
+    expect(markup).toContain('hover:bg-emerald-700')
   })
 
   it('renderiza card de status com ação contextual para mesa concluída', async () => {
