@@ -938,7 +938,7 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       status: 'ready',
       delivery_status: 'waiting_dispatch',
-    })).toBe('success')
+    })).toBe('delivery')
     expect(getPublicOrderStatusNotice({
       ...publicOrderStatus,
       status: 'confirmed',
