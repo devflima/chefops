@@ -131,6 +131,8 @@ describe('menu components', () => {
     expect(markup).toContain('Pedido pronto para retirada #77')
     expect(markup).toContain('Seu pedido está aguardando retirada.')
     expect(markup).toContain('Ver retirada')
+    expect(markup).toContain('border-emerald-200')
+    expect(markup).toContain('bg-emerald-50')
   })
 
   it('renderiza card de status com ação contextual para entrega pronta para despacho', async () => {
@@ -154,6 +156,32 @@ describe('menu components', () => {
 
     expect(markup).toContain('Pedido pronto para entrega #91')
     expect(markup).toContain('Seu pedido está pronto para sair para entrega.')
+    expect(markup).toContain('Ver entrega')
+    expect(markup).toContain('border-violet-200')
+    expect(markup).toContain('bg-violet-50')
+  })
+
+  it('renderiza card de status com ação contextual para entrega em rota', async () => {
+    const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicOrderStatusCard, {
+        publicOrderStatus: {
+          id: 'order-delivery-out',
+          order_number: 92,
+          status: 'ready',
+          payment_status: 'pending',
+          payment_method: 'delivery',
+          delivery_status: 'out_for_delivery',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        onTrack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido saiu para entrega #92')
+    expect(markup).toContain('Acompanhe o deslocamento da entrega.')
     expect(markup).toContain('Ver entrega')
     expect(markup).toContain('border-violet-200')
     expect(markup).toContain('bg-violet-50')
@@ -259,6 +287,8 @@ describe('menu components', () => {
     expect(markup).toContain('Pedido pronto para servir #88')
     expect(markup).toContain('Seu pedido está pronto para servir.')
     expect(markup).toContain('Ver comanda')
+    expect(markup).toContain('border-emerald-200')
+    expect(markup).toContain('bg-emerald-50')
   })
 
   it('renderiza modal de meia a meia com sabores elegíveis', async () => {
