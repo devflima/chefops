@@ -1165,7 +1165,8 @@ describe('menu components', () => {
   it('renderiza rótulo de retirada no passo final de balcão', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
-    const markup = renderToStaticMarkup(
+    const onClose = vi.fn()
+    const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 321,
         tableInfo: null,
@@ -1185,17 +1186,26 @@ describe('menu components', () => {
         getStepState: () => 'current',
         cancelOrderLoading: false,
         onCancelOrder: vi.fn(),
-        onClose: vi.fn(),
+        onClose,
       }),
     )
 
-    expect(markup).toContain('Número para retirada')
-    expect(markup).toContain('Pedido pronto para retirada!')
-    expect(markup).toContain('Use este número para retirar o pedido.')
-    expect(markup).toContain('Voltar ao cardápio')
-    expect(markup).toContain('Acompanhe a retirada')
-    expect(markup).toContain('Pagamento na retirada')
-    expect(markup).toContain('#321')
+    expect(getTextContent(elements)).toContain('Número para retirada')
+    expect(getTextContent(elements)).toContain('Pedido pronto para retirada!')
+    expect(getTextContent(elements)).toContain('Use este número para retirar o pedido.')
+    expect(getTextContent(elements)).toContain('Voltar ao cardápio')
+    expect(getTextContent(elements)).toContain('Acompanhe a retirada')
+    expect(getTextContent(elements)).toContain('Pagamento na retirada')
+    expect(getTextContent(elements)).toContain('#321')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Voltar ao cardápio')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('aciona handlers e renderiza etapa de entrega no passo final', async () => {
