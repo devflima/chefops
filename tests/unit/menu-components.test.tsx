@@ -159,6 +159,8 @@ describe('menu components', () => {
     expect(markup).toContain('Ver pedido')
     expect(markup).toContain('border-amber-200')
     expect(markup).toContain('bg-amber-50')
+    expect(markup).toContain('bg-amber-600')
+    expect(markup).toContain('hover:bg-amber-700')
   })
 
   it('renderiza card de status com título contextual para retirada', async () => {
