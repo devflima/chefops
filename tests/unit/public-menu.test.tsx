@@ -881,6 +881,12 @@ describe('public menu helpers', () => {
     })).toBe('Ver entrega')
     expect(getPublicOrderStatusCardActionLabel({
       ...publicOrderStatus,
+      payment_method: 'delivery',
+      status: 'delivered',
+      delivery_status: 'delivered',
+    })).toBe('Ver entrega')
+    expect(getPublicOrderStatusCardActionLabel({
+      ...publicOrderStatus,
       payment_method: 'counter',
       status: 'ready',
       delivery_status: null,
@@ -895,6 +901,12 @@ describe('public menu helpers', () => {
       ...publicOrderStatus,
       payment_method: 'table',
       status: 'ready',
+      delivery_status: null,
+    })).toBe('Ver comanda')
+    expect(getPublicOrderStatusCardActionLabel({
+      ...publicOrderStatus,
+      payment_method: 'table',
+      status: 'delivered',
       delivery_status: null,
     })).toBe('Ver comanda')
     expect(getPublicOrderStatusCardActionLabel({

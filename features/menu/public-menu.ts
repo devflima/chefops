@@ -704,8 +704,7 @@ export function getPublicOrderStatusCardMessage(publicOrderStatus: PublicOrderSt
 export function getPublicOrderStatusCardActionLabel(publicOrderStatus: PublicOrderStatus) {
   if (
     publicOrderStatus.payment_method === 'delivery' &&
-    publicOrderStatus.status === 'ready' &&
-    publicOrderStatus.delivery_status === 'out_for_delivery'
+    ((publicOrderStatus.status === 'ready' && publicOrderStatus.delivery_status === 'out_for_delivery') || publicOrderStatus.status === 'delivered')
   ) {
     return 'Ver entrega'
   }
@@ -714,7 +713,7 @@ export function getPublicOrderStatusCardActionLabel(publicOrderStatus: PublicOrd
     return 'Ver retirada'
   }
 
-  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
+  if (publicOrderStatus.payment_method === 'table' && (publicOrderStatus.status === 'ready' || publicOrderStatus.status === 'delivered')) {
     return 'Ver comanda'
   }
 
