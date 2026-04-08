@@ -237,6 +237,8 @@ describe('menu components', () => {
     expect(markup).toContain('Ver entrega')
     expect(markup).toContain('border-violet-200')
     expect(markup).toContain('bg-violet-50')
+    expect(markup).toContain('bg-violet-600')
+    expect(markup).toContain('hover:bg-violet-700')
   })
 
   it('renderiza card de status com ação contextual para entrega concluída', async () => {
