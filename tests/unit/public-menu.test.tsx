@@ -1060,6 +1060,16 @@ describe('public menu helpers', () => {
       cartOpen: false,
     })).toBe(false)
     expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Seu pedido está pronto para retirada.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'ready',
+        payment_method: 'counter',
+        delivery_status: null,
+      },
+      cartOpen: false,
+    })).toBe(false)
+    expect(shouldShowCheckoutNoticeBanner({
       checkoutNotice: 'Pedido cancelado.',
       publicOrderStatus: {
         ...publicOrderStatus,
