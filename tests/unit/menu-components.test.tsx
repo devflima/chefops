@@ -1461,6 +1461,7 @@ describe('menu components', () => {
 
     expect(loadingMarkup).toContain('Cancelando...')
     expect(cancelledMarkup).toContain('Pedido cancelado')
+    expect(cancelledMarkup).not.toContain('Cancelar pedido')
     expect(cancelledMarkup).not.toContain('Reembolso solicitado com sucesso')
   })
 
