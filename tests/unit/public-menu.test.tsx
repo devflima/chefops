@@ -887,6 +887,12 @@ describe('public menu helpers', () => {
     })).toBe('Ver retirada')
     expect(getPublicOrderStatusCardActionLabel({
       ...publicOrderStatus,
+      payment_method: 'counter',
+      status: 'delivered',
+      delivery_status: null,
+    })).toBe('Ver retirada')
+    expect(getPublicOrderStatusCardActionLabel({
+      ...publicOrderStatus,
       payment_method: 'table',
       status: 'ready',
       delivery_status: null,
