@@ -1248,6 +1248,7 @@ describe('menu components', () => {
   it('renderiza carregamento na confirmação de recebimento no passo final', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
+    const onClose = vi.fn()
     const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 223,
@@ -1273,7 +1274,7 @@ describe('menu components', () => {
         confirmDeliveryLoading: true,
         onCancelOrder: vi.fn(),
         onConfirmDelivery: vi.fn(),
-        onClose: vi.fn(),
+        onClose,
       }),
     )
 
@@ -1285,6 +1286,9 @@ describe('menu components', () => {
     expect(getTextContent(buttons[0])).toContain('Confirmando...')
     expect(buttons[0].props.disabled).toBe(true)
     expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('renderiza etapa de entrega pendente sem marcar como concluída', async () => {
