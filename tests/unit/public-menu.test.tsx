@@ -1040,6 +1040,16 @@ describe('public menu helpers', () => {
       cartOpen: false,
     })).toBe(true)
     expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Seu pedido está pronto para sair para entrega.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'ready',
+        payment_method: 'delivery',
+        delivery_status: 'waiting_dispatch',
+      },
+      cartOpen: false,
+    })).toBe(false)
+    expect(shouldShowCheckoutNoticeBanner({
       checkoutNotice: 'Pedido cancelado.',
       publicOrderStatus: {
         ...publicOrderStatus,
