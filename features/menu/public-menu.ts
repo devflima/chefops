@@ -725,8 +725,7 @@ export function getPublicOrderStatusCardTone(publicOrderStatus: PublicOrderStatu
 
   if (
     publicOrderStatus.payment_method === 'delivery' &&
-    publicOrderStatus.status === 'ready' &&
-    publicOrderStatus.delivery_status === 'out_for_delivery'
+    publicOrderStatus.status === 'ready'
   ) {
     return 'delivery'
   }
