@@ -181,6 +181,8 @@ describe('menu components', () => {
     expect(markup).toContain('Pedido entregue #90')
     expect(markup).toContain('Seu pedido foi entregue.')
     expect(markup).toContain('Ver entrega')
+    expect(markup).toContain('border-emerald-200')
+    expect(markup).toContain('bg-emerald-50')
   })
 
   it('renderiza card de status com ação contextual para retirada concluída', async () => {
