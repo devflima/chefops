@@ -882,6 +882,12 @@ describe('public menu helpers', () => {
     expect(getPublicOrderStatusCardActionLabel({
       ...publicOrderStatus,
       payment_method: 'delivery',
+      status: 'ready',
+      delivery_status: 'waiting_dispatch',
+    })).toBe('Ver entrega')
+    expect(getPublicOrderStatusCardActionLabel({
+      ...publicOrderStatus,
+      payment_method: 'delivery',
       status: 'delivered',
       delivery_status: 'delivered',
     })).toBe('Ver entrega')
