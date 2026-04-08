@@ -1117,6 +1117,15 @@ describe('public menu helpers', () => {
       },
       cartOpen: false,
     })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido cancelado e reembolso solicitado com sucesso.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'cancelled',
+        payment_status: 'refunded',
+      },
+      cartOpen: false,
+    })).toBe(true)
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
     expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
     expect(getDeliveryStepMessage({
