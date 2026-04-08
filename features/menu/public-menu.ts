@@ -710,8 +710,12 @@ export function getPublicOrderStatusCardActionLabel(publicOrderStatus: PublicOrd
     return 'Ver entrega'
   }
 
-  if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
+  if (publicOrderStatus.payment_method === 'counter' && (publicOrderStatus.status === 'ready' || publicOrderStatus.status === 'delivered')) {
     return 'Ver retirada'
+  }
+
+  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
+    return 'Ver comanda'
   }
 
   return 'Ver pedido'
