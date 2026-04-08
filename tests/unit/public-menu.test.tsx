@@ -1107,6 +1107,16 @@ describe('public menu helpers', () => {
       },
       cartOpen: false,
     })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido servido na mesa com sucesso.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'delivered',
+        payment_method: 'table',
+        delivery_status: null,
+      },
+      cartOpen: false,
+    })).toBe(true)
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
     expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
     expect(getDeliveryStepMessage({
