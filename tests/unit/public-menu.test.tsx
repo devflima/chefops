@@ -899,6 +899,12 @@ describe('public menu helpers', () => {
     })).toBe('Ver comanda')
     expect(getPublicOrderStatusCardActionLabel({
       ...publicOrderStatus,
+      payment_method: 'table',
+      status: 'delivered',
+      delivery_status: null,
+    })).toBe('Ver comanda')
+    expect(getPublicOrderStatusCardActionLabel({
+      ...publicOrderStatus,
       status: 'preparing',
     })).toBe('Ver pedido')
     expect(getPublicOrderStatusCardTone({

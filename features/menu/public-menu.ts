@@ -714,7 +714,7 @@ export function getPublicOrderStatusCardActionLabel(publicOrderStatus: PublicOrd
     return 'Ver retirada'
   }
 
-  if (publicOrderStatus.payment_method === 'table' && publicOrderStatus.status === 'ready') {
+  if (publicOrderStatus.payment_method === 'table' && (publicOrderStatus.status === 'ready' || publicOrderStatus.status === 'delivered')) {
     return 'Ver comanda'
   }
 
