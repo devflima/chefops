@@ -109,6 +109,8 @@ describe('menu components', () => {
     expect(markup).toContain('Ver pedido')
     expect(markup).toContain('border-sky-200')
     expect(markup).toContain('bg-sky-50')
+    expect(markup).toContain('bg-sky-600')
+    expect(markup).toContain('hover:bg-sky-700')
   })
 
   it('renderiza card de status do pedido com título contextual', async () => {
