@@ -1244,6 +1244,49 @@ describe('menu components', () => {
     expect(onCancelOrder).not.toHaveBeenCalled()
   })
 
+
+  it('renderiza carregamento na confirmação de recebimento no passo final', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 223,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-confirm-loading',
+          order_number: 223,
+          status: 'ready',
+          payment_status: 'paid',
+          payment_method: 'delivery',
+          delivery_status: 'out_for_delivery',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [
+          { key: 'pending', label: 'Recebido', description: 'Entrou na fila.' },
+          { key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' },
+          { key: 'ready', label: 'Pronto', description: 'Pronto para sair.' },
+        ],
+        getStepState: (key: 'pending' | 'confirmed' | 'ready') =>
+          key === 'ready' ? 'current' : 'done',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: true,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[0])).toContain('Confirmando...')
+    expect(buttons[0].props.disabled).toBe(true)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+  })
+
   it('renderiza etapa de entrega pendente sem marcar como concluída', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
