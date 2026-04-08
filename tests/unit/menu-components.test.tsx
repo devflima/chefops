@@ -233,6 +233,8 @@ describe('menu components', () => {
     expect(markup).toContain('Pedido servido na mesa #89')
     expect(markup).toContain('Seu pedido foi servido na mesa.')
     expect(markup).toContain('Ver comanda')
+    expect(markup).toContain('border-emerald-200')
+    expect(markup).toContain('bg-emerald-50')
   })
 
   it('renderiza card de status com título contextual para mesa pronta', async () => {
