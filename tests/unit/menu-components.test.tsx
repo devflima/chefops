@@ -161,6 +161,32 @@ describe('menu components', () => {
     expect(markup).toContain('bg-violet-50')
   })
 
+  it('renderiza card de status com ação contextual para entrega em rota', async () => {
+    const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicOrderStatusCard, {
+        publicOrderStatus: {
+          id: 'order-delivery-out',
+          order_number: 92,
+          status: 'ready',
+          payment_status: 'pending',
+          payment_method: 'delivery',
+          delivery_status: 'out_for_delivery',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        onTrack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido saiu para entrega #92')
+    expect(markup).toContain('Acompanhe o deslocamento da entrega.')
+    expect(markup).toContain('Ver entrega')
+    expect(markup).toContain('border-violet-200')
+    expect(markup).toContain('bg-violet-50')
+  })
+
   it('renderiza card de status com ação contextual para entrega concluída', async () => {
     const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
 
