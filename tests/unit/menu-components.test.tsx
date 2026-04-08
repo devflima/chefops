@@ -1463,6 +1463,41 @@ describe('menu components', () => {
     expect(cancelledMarkup).not.toContain('Reembolso solicitado com sucesso')
   })
 
+
+  it('renderiza carregamento no cancelamento do passo final com botão desabilitado', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 557,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-cancel-loading',
+          order_number: 557,
+          status: 'pending',
+          payment_status: 'pending',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [{ key: 'pending', label: 'Recebido', description: 'Entrou na fila.' }],
+        getStepState: () => 'current',
+        cancelOrderLoading: true,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[0])).toContain('Cancelando...')
+    expect(buttons[0].props.disabled).toBe(true)
+  })
+
   it('renderiza filtro de categorias com estado ativo', async () => {
     const { MenuCategoryFilter } = await import('@/features/menu/MenuCategoryFilter')
 
