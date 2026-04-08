@@ -130,7 +130,7 @@ describe('menu components', () => {
 
     expect(markup).toContain('Pedido pronto para retirada #77')
     expect(markup).toContain('Seu pedido está aguardando retirada.')
-    expect(markup).toContain('Ver pedido')
+    expect(markup).toContain('Ver retirada')
   })
 
   it('renderiza card de status com título contextual para mesa pronta', async () => {
