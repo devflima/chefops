@@ -85,6 +85,32 @@ function getTextContent(node: React.ReactNode): string {
 }
 
 describe('menu components', () => {
+  it('renderiza card de status com tom de progresso para pedido confirmado', async () => {
+    const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicOrderStatusCard, {
+        publicOrderStatus: {
+          id: 'order-confirmed',
+          order_number: 40,
+          status: 'confirmed',
+          payment_status: 'paid',
+          payment_method: 'online',
+          delivery_status: 'waiting_dispatch',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        onTrack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido confirmado #40')
+    expect(markup).toContain('O estabelecimento confirmou seu pedido.')
+    expect(markup).toContain('Ver pedido')
+    expect(markup).toContain('border-sky-200')
+    expect(markup).toContain('bg-sky-50')
+  })
+
   it('renderiza card de status do pedido com título contextual', async () => {
     const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
 
@@ -107,6 +133,32 @@ describe('menu components', () => {
     expect(markup).toContain('Ver pedido')
     expect(markup).toContain('border-sky-200')
     expect(markup).toContain('bg-sky-50')
+  })
+
+  it('renderiza card de status com tom de alerta para pedido pendente', async () => {
+    const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicOrderStatusCard, {
+        publicOrderStatus: {
+          id: 'order-pending',
+          order_number: 41,
+          status: 'pending',
+          payment_status: 'pending',
+          payment_method: 'online',
+          delivery_status: null,
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        onTrack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido recebido #41')
+    expect(markup).toContain('Seu pedido entrou na fila do estabelecimento.')
+    expect(markup).toContain('Ver pedido')
+    expect(markup).toContain('border-amber-200')
+    expect(markup).toContain('bg-amber-50')
   })
 
   it('renderiza card de status com título contextual para retirada', async () => {
