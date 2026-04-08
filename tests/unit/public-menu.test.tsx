@@ -1126,6 +1126,15 @@ describe('public menu helpers', () => {
       },
       cartOpen: false,
     })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido cancelado.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'cancelled',
+        payment_status: 'pending',
+      },
+      cartOpen: false,
+    })).toBe(true)
     expect(isDeliveryStepCompleted(publicOrderStatus)).toBe(true)
     expect(getDeliveryStepMessage(publicOrderStatus)).toContain('com Carlos')
     expect(getDeliveryStepMessage({
