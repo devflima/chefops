@@ -154,7 +154,7 @@ describe('menu components', () => {
 
     expect(markup).toContain('Pedido pronto para servir #88')
     expect(markup).toContain('Seu pedido está pronto para servir.')
-    expect(markup).toContain('Ver pedido')
+    expect(markup).toContain('Ver comanda')
   })
 
   it('renderiza modal de meia a meia com sabores elegíveis', async () => {
