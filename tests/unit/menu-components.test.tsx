@@ -1082,7 +1082,8 @@ describe('menu components', () => {
   it('renderiza passo final com status em andamento e cancelamento disponível', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
-    const markup = renderToStaticMarkup(
+    const onClose = vi.fn()
+    const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 42,
         tableInfo: null,
@@ -1103,18 +1104,27 @@ describe('menu components', () => {
         getStepState: (key: 'pending' | 'confirmed') => (key === 'pending' ? 'done' : 'current'),
         cancelOrderLoading: false,
         onCancelOrder: vi.fn(),
-        onClose: vi.fn(),
-      })
+        onClose,
+      }),
     )
 
-    expect(markup).toContain('Pedido realizado!')
-    expect(markup).toContain('Acompanhe o andamento do pedido até a entrega.')
-    expect(markup).toContain('Número do pedido')
-    expect(markup).toContain('#42')
-    expect(markup).toContain('Acompanhe o status do pedido')
-    expect(markup).toContain('Pagamento na entrega')
-    expect(markup).toContain('Cancelar pedido')
-    expect(markup).toContain('Aprovado')
+    expect(getTextContent(elements)).toContain('Pedido realizado!')
+    expect(getTextContent(elements)).toContain('Acompanhe o andamento do pedido até a entrega.')
+    expect(getTextContent(elements)).toContain('Número do pedido')
+    expect(getTextContent(elements)).toContain('#42')
+    expect(getTextContent(elements)).toContain('Acompanhe o status do pedido')
+    expect(getTextContent(elements)).toContain('Pagamento na entrega')
+    expect(getTextContent(elements)).toContain('Cancelar pedido')
+    expect(getTextContent(elements)).toContain('Aprovado')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('renderiza passo final cancelado com mensagem de reembolso', async () => {
