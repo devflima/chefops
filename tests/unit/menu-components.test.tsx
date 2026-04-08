@@ -1172,6 +1172,50 @@ describe('menu components', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+
+  it('mantém o CTA final funcional no fluxo padrão de mesa', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 222,
+        tableInfo: { id: 'table-9', number: '9' },
+        publicOrderStatus: {
+          id: 'order-table-default',
+          order_number: 222,
+          status: 'confirmed',
+          payment_status: 'pending',
+          payment_method: 'table',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [
+          { key: 'pending', label: 'Recebido', description: 'Entrou na fila.' },
+          { key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' },
+        ],
+        getStepState: () => 'current',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Comanda aberta!')
+    expect(getTextContent(elements)).toContain('Número da comanda')
+    expect(getTextContent(elements)).toContain('Pagamento no local')
+    expect(getTextContent(elements)).toContain('Voltar ao cardápio')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Voltar ao cardápio')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('renderiza rótulo de retirada no passo final de balcão', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
