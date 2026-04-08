@@ -1473,6 +1473,7 @@ describe('menu components', () => {
   it('renderiza carregamento no cancelamento do passo final com botão desabilitado', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
+    const onClose = vi.fn()
     const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 557,
@@ -1491,7 +1492,7 @@ describe('menu components', () => {
         confirmDeliveryLoading: false,
         onCancelOrder: vi.fn(),
         onConfirmDelivery: vi.fn(),
-        onClose: vi.fn(),
+        onClose,
       }),
     )
 
@@ -1502,6 +1503,10 @@ describe('menu components', () => {
     expect(buttons).toHaveLength(2)
     expect(getTextContent(buttons[0])).toContain('Cancelando...')
     expect(buttons[0].props.disabled).toBe(true)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('renderiza filtro de categorias com estado ativo', async () => {
