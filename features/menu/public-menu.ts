@@ -604,6 +604,9 @@ export function getPublicOrderTrackingMessage(
   ) {
     return 'Seu pedido saiu para entrega.'
   }
+  if (publicOrderStatus.payment_method === 'delivery' && publicOrderStatus.status === 'ready') {
+    return 'Seu pedido está pronto para sair para entrega.'
+  }
   if (publicOrderStatus.payment_method === 'counter' && publicOrderStatus.status === 'ready') {
     return 'Seu pedido está pronto para retirada.'
   }
@@ -747,6 +750,10 @@ export function getPublicOrderStatusNotice(publicOrderStatus: PublicOrderStatus 
       publicOrderStatus.delivery_status === 'out_for_delivery'
     ) {
       return 'Seu pedido saiu para entrega.'
+    }
+
+    if (publicOrderStatus.payment_method === 'delivery') {
+      return 'Seu pedido está pronto para sair para entrega.'
     }
 
     if (publicOrderStatus.payment_method === 'counter') {
