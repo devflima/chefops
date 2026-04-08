@@ -133,6 +133,30 @@ describe('menu components', () => {
     expect(markup).toContain('Ver retirada')
   })
 
+  it('renderiza card de status com ação contextual para entrega concluída', async () => {
+    const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(PublicOrderStatusCard, {
+        publicOrderStatus: {
+          id: 'order-delivery-delivered',
+          order_number: 90,
+          status: 'delivered',
+          payment_status: 'paid',
+          payment_method: 'delivery',
+          delivery_status: 'delivered',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        onTrack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Pedido entregue #90')
+    expect(markup).toContain('Seu pedido foi entregue.')
+    expect(markup).toContain('Ver entrega')
+  })
+
   it('renderiza card de status com ação contextual para retirada concluída', async () => {
     const { PublicOrderStatusCard } = await import('@/features/menu/PublicOrderStatusCard')
 
