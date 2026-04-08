@@ -1120,7 +1120,8 @@ describe('menu components', () => {
   it('renderiza passo final cancelado com mensagem de reembolso', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
-    const markup = renderToStaticMarkup(
+    const onClose = vi.fn()
+    const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 99,
         tableInfo: { id: 'table-1', number: '8' },
@@ -1137,19 +1138,28 @@ describe('menu components', () => {
         getStepState: () => 'upcoming',
         cancelOrderLoading: false,
         onCancelOrder: vi.fn(),
-        onClose: vi.fn(),
-      })
+        onClose,
+      }),
     )
 
-    expect(markup).toContain('Pedido cancelado')
-    expect(markup).toContain('Comanda aberta!')
-    expect(markup).toContain('Acompanhe a comanda da sua mesa.')
-    expect(markup).toContain('Número da comanda')
-    expect(markup).toContain('Acompanhe a comanda')
-    expect(markup).toContain('Estoque indisponível')
-    expect(markup).not.toContain('Cancelar pedido')
-    expect(markup).toContain('Reembolso solicitado com sucesso')
-    expect(markup).toContain('Mesa 8')
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Comanda aberta!')
+    expect(getTextContent(elements)).toContain('Acompanhe a comanda da sua mesa.')
+    expect(getTextContent(elements)).toContain('Número da comanda')
+    expect(getTextContent(elements)).toContain('Acompanhe a comanda')
+    expect(getTextContent(elements)).toContain('Estoque indisponível')
+    expect(getTextContent(elements)).not.toContain('Cancelar pedido')
+    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso')
+    expect(getTextContent(elements)).toContain('Mesa 8')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Voltar ao cardápio')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('renderiza rótulo de retirada no passo final de balcão', async () => {
