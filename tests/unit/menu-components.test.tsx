@@ -155,6 +155,8 @@ describe('menu components', () => {
     expect(markup).toContain('Pedido pronto para entrega #91')
     expect(markup).toContain('Seu pedido está pronto para sair para entrega.')
     expect(markup).toContain('Ver entrega')
+    expect(markup).toContain('border-violet-200')
+    expect(markup).toContain('bg-violet-50')
   })
 
   it('renderiza card de status com ação contextual para entrega concluída', async () => {
