@@ -1374,6 +1374,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Atendimento encerrado')
     expect(getTextContent(elements)).not.toContain('Pagamento no local')
     expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Pendente')
     expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
     expect(getTextContent(elements)).toContain('Mesa 11')
 
