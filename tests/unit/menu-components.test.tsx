@@ -1325,6 +1325,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Estoque indisponível')
     expect(getTextContent(elements)).not.toContain('Pagamento no local')
     expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
     expect(getTextContent(elements)).not.toContain('Cancelar pedido')
     expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso')
     expect(getTextContent(elements)).toContain('Mesa 8')
