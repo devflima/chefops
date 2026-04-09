@@ -1409,6 +1409,23 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await userByIdRoute.PATCH(
+      new Request('https://chefops.test/api/users/user-2', {
+        method: 'PATCH',
+        body: JSON.stringify({ role: 'owner' }),
+      }) as never,
+      { params: Promise.resolve({ id: 'user-2' }) },
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),

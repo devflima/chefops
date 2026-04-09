@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import {
   canAssignRole,
   EstablishmentRole,
@@ -29,6 +30,10 @@ async function getCurrentProfile() {
 
   if (!profile) return null
 
+  const billingState = profile.tenant_id
+    ? await ensureTenantBillingAccessState(profile.tenant_id)
+    : null
+
   const tenant = Array.isArray(profile.tenants)
     ? profile.tenants[0]
     : profile.tenants
@@ -37,7 +42,7 @@ async function getCurrentProfile() {
     id: user.id,
     tenant_id: profile.tenant_id,
     role: profile.role as EstablishmentRole,
-    plan: tenant?.plan as 'free' | 'basic' | 'pro',
+    plan: ((billingState?.downgraded ? 'free' : tenant?.plan) ?? 'free') as 'free' | 'basic' | 'pro',
   }
 }
 
