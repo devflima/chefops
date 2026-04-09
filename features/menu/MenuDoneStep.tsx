@@ -75,7 +75,9 @@ export function MenuDoneStep({
           <p className="mt-1 text-sm text-red-600">{getCancelledOrderMessage(publicOrderStatus)}</p>
           {publicOrderStatus.payment_status === 'refunded' && (
             <p className="mt-2 text-xs text-red-500">
-              Reembolso solicitado com sucesso no pagamento online.
+              {publicOrderStatus.payment_method === 'online'
+                ? 'Reembolso solicitado com sucesso no pagamento online.'
+                : 'Reembolso solicitado com sucesso.'}
             </p>
           )}
         </div>

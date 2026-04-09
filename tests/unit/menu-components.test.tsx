@@ -1741,7 +1741,7 @@ describe('menu components', () => {
     )
 
     expect(getTextContent(elements)).toContain('Pedido cancelado')
-    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso no pagamento online.')
+    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso.')
     expect(getTextContent(elements)).not.toContain('Pagamento na retirada')
     expect(getTextContent(elements)).not.toContain('No local')
     expect(getTextContent(elements)).not.toContain('Reembolsado')

@@ -77,6 +77,9 @@ describe('public cancel route', () => {
             order_number: 77,
             status: 'cancelled',
             payment_status: 'refunded',
+            payment_method: 'delivery',
+            delivery_status: 'waiting_dispatch',
+            cancelled_reason: 'Cliente desistiu',
             refunded_at: '2026-03-20T12:00:00.000Z',
             created_at: '2026-03-20T10:00:00.000Z',
             updated_at: '2026-03-20T12:00:00.000Z',
@@ -113,7 +116,14 @@ describe('public cancel route', () => {
     })
     expect(refundOrderId).toBe('order-1')
     expect(notifiedOrderId).toBe('order-1')
-    expect((await response.json()).data.status).toBe('cancelled')
+    expect(await response.json()).toEqual({
+      data: expect.objectContaining({
+        status: 'cancelled',
+        payment_method: 'delivery',
+        delivery_status: 'waiting_dispatch',
+        cancelled_reason: 'Cliente desistiu',
+      }),
+    })
   })
 
   it('cancelPublicOrder devolve 404 quando pedido não existe', async () => {
@@ -341,6 +351,9 @@ describe('public cancel route', () => {
             order_number: 88,
             status: 'cancelled',
             payment_status: 'paid',
+            payment_method: 'counter',
+            delivery_status: null,
+            cancelled_reason: 'Cancelado pelo cliente',
             refunded_at: null,
             created_at: '2026-03-20T10:00:00.000Z',
             updated_at: '2026-03-20T12:00:00.000Z',
@@ -393,6 +406,9 @@ describe('public cancel route', () => {
             order_number: 55,
             status: 'cancelled',
             payment_status: 'pending',
+            payment_method: 'table',
+            delivery_status: null,
+            cancelled_reason: 'Cancelado pelo cliente',
             refunded_at: null,
             created_at: '2026-03-20T10:00:00.000Z',
             updated_at: '2026-03-20T12:00:00.000Z',
