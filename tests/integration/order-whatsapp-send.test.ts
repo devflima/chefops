@@ -6,7 +6,12 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }))
 
+vi.mock('@/lib/saas-billing', () => ({
+  ensureTenantBillingAccessState: vi.fn().mockResolvedValue({ downgraded: false }),
+}))
+
 const { createAdminClient } = await import('@/lib/supabase/admin')
+const { ensureTenantBillingAccessState } = await import('@/lib/saas-billing')
 const { sendOrderWhatsappNotification } = await import('@/lib/order-whatsapp')
 
 describe('sendOrderWhatsappNotification', () => {
@@ -521,6 +526,61 @@ describe('sendOrderWhatsappNotification', () => {
     await expect(
       sendOrderWhatsappNotification({
         orderId: 'order-tenant-null',
+        eventKey: 'order_confirmed',
+      })
+    ).resolves.toEqual({
+      sent: false,
+      reason: 'feature-not-available',
+    })
+
+    expect(insertedLogs.at(-1)).toMatchObject({
+      status: 'skipped',
+      error_message: 'feature-not-available-for-plan',
+    })
+  })
+
+  it('registra skip quando o billing efetivo já rebaixou o tenant mesmo com plano persistido mais alto', async () => {
+    const insertedLogs: Record<string, unknown>[] = []
+
+    vi.mocked(createAdminClient).mockReturnValue(
+      createMockSupabaseClient({
+        order_notifications: (state) => {
+          if (state.operation === 'select') {
+            return { data: null, error: null }
+          }
+
+          insertedLogs.push(state.rows?.[0] as Record<string, unknown>)
+          return { data: null, error: null }
+        },
+        orders: () => ({
+          data: {
+            id: 'order-downgraded',
+            tenant_id: 'tenant-1',
+            order_number: 22,
+            customer_name: 'Felipe',
+            customer_phone: '(11) 91234-5678',
+            status: 'confirmed',
+            payment_status: 'paid',
+            refunded_at: null,
+            cancelled_reason: null,
+            total: 50,
+          },
+          error: null,
+        }),
+        tenants: () => ({
+          data: {
+            name: 'ChefOps Pizza',
+            plan: 'basic',
+          },
+          error: null,
+        }),
+      }) as never
+    )
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+
+    await expect(
+      sendOrderWhatsappNotification({
+        orderId: 'order-downgraded',
         eventKey: 'order_confirmed',
       })
     ).resolves.toEqual({
