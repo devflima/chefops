@@ -112,6 +112,10 @@ describe('api core routes', () => {
     expect(response.status).toBe(200)
     expect(ensureTenantBillingAccessState).toHaveBeenCalledWith('tenant-1')
     expect(json.data.plan).toBe('pro')
+    expect(json.data.max_users).toBe(27)
+    expect(json.data.max_tables).toBe(-1)
+    expect(json.data.max_products).toBe(-1)
+    expect(json.data.features).toContain('reports')
     expect(json.data.available_roles).toContain('owner')
 
     vi.mocked(createClient).mockResolvedValueOnce({
