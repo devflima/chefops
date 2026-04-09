@@ -1040,6 +1040,7 @@ describe('public menu helpers', () => {
     expect(shouldShowCancelOrderButton('confirmed')).toBe(true)
     expect(shouldShowCancelOrderButton(undefined)).toBe(false)
     expect(shouldShowCancelOrderButton('ready')).toBe(false)
+    expect(shouldShowCancelOrderButton('cancelled')).toBe(false)
     expect(shouldShowDeliveryStep(publicOrderStatus)).toBe(true)
     expect(shouldShowPublicDeliveryConfirmButton(publicOrderStatus)).toBe(true)
     expect(shouldShowPublicDeliveryConfirmButton({
