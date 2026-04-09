@@ -1875,6 +1875,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Entregador indisponivel')
     expect(getTextContent(elements)).not.toContain('Pagamento na entrega')
     expect(getTextContent(elements)).not.toContain('Na entrega')
+    expect(getTextContent(elements)).not.toContain('Pendente')
     expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
 
     const buttons = elements.filter(
