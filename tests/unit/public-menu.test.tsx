@@ -345,6 +345,17 @@ describe('public menu helpers', () => {
       created_at: '2026-03-21T00:00:00.000Z',
       updated_at: '2026-03-21T00:00:00.000Z',
     })).toBe(false)
+    expect(getDeliveryStepMessage({
+      id: 'order-1',
+      order_number: 42,
+      status: 'ready',
+      payment_status: 'paid',
+      payment_method: 'delivery',
+      delivery_status: 'waiting_dispatch',
+      delivery_driver: null,
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })).toBe('Seu pedido vai aparecer aqui quando sair para entrega.')
     expect(isDeliveryStepCompleted({
       id: 'order-1',
       order_number: 42,
