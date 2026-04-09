@@ -879,22 +879,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'basic' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: 1 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: 1 }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 10 }),
+        })),
       },
     } as never)
     expect((await tablesRoute.POST(
@@ -906,22 +896,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: 0 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({}),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({}),
+        })),
       },
     } as never)
     expect((await tablesRoute.POST(
@@ -933,22 +913,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: -1 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: 0 }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 0 }),
+        })),
       },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
@@ -979,22 +949,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'basic' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: 5 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: null }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: null }),
+        })),
       },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
@@ -1025,22 +985,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'basic' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: 2 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: 1 }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 1 }),
+        })),
       },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
@@ -1071,22 +1021,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'basic' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: 2 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: undefined }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: undefined }),
+        })),
       },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
@@ -1117,22 +1057,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: null }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: 999 }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 999 }),
+        })),
       },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
@@ -1163,22 +1093,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: -1 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: 0 }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 0 }),
+        })),
       },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
@@ -1209,22 +1129,12 @@ describe('api operations routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_tables: -1 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: 0 }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 0 }),
+        })),
       },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({

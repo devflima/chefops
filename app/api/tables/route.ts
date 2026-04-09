@@ -1,4 +1,5 @@
 import { requireTenantFeature } from '@/lib/auth-guards'
+import { getPersistedTenantPlanSnapshot } from '@/lib/tenant-plan'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -72,22 +73,18 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = createAdminClient()
+    const plan = profile.tenant?.plan ?? 'free'
+    const limit = getPersistedTenantPlanSnapshot(plan).max_tables
 
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('max_tables')
-      .eq('id', profile.tenant_id)
-      .single()
-
-    if ((tenant?.max_tables ?? -1) !== -1) {
+    if (limit !== -1) {
       const { count } = await supabase
         .from('tables')
         .select('*', { count: 'exact', head: true })
         .eq('tenant_id', profile.tenant_id)
 
-      if ((count ?? 0) >= (tenant?.max_tables ?? 0)) {
+      if ((count ?? 0) >= limit) {
         return NextResponse.json(
-          { error: `Limite de ${tenant?.max_tables} mesas atingido para o plano atual.` },
+          { error: `Limite de ${limit} mesas atingido para o plano atual.` },
           { status: 429 }
         )
       }

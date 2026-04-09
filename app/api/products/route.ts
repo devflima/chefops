@@ -1,4 +1,5 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
+import { getPersistedTenantPlanSnapshot } from '@/lib/tenant-plan'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -72,21 +73,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('max_products')
-      .eq('id', profile.tenant_id)
-      .single()
+    const plan = profile.tenant?.plan ?? 'free'
+    const limit = getPersistedTenantPlanSnapshot(plan).max_products
 
-    if ((tenant?.max_products ?? -1) !== -1) {
+    if (limit !== -1) {
       const { count } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true })
         .eq('tenant_id', profile.tenant_id)
 
-      if ((count ?? 0) >= (tenant?.max_products ?? 0)) {
+      if ((count ?? 0) >= limit) {
         return NextResponse.json(
-          { error: `Limite de ${tenant?.max_products} produtos atingido para o plano atual.` },
+          { error: `Limite de ${limit} produtos atingido para o plano atual.` },
           { status: 429 }
         )
       }
