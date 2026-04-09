@@ -1827,6 +1827,8 @@ describe('menu components', () => {
 
     expect(getTextContent(elements)).toContain('Pedido cancelado')
     expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso')
+    expect(getTextContent(elements)).not.toContain('Pagamento na entrega')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
     expect(getTextContent(elements)).toContain('Acompanhar depois')
 
     const buttons = elements.filter(
