@@ -721,6 +721,7 @@ describe('public menu helpers', () => {
     expect(getPaymentStatusLabel('pending')).toBe('Pendente')
     expect(getPaymentStatusLabel('pending', 'delivery')).toBe('Na entrega')
     expect(getPaymentStatusLabel('pending', 'counter')).toBe('No local')
+    expect(getPaymentStatusLabel('pending', 'table')).toBe('No local')
     expect(getPublicOrderTrackingMessage({
       ...publicOrderStatus,
       status: 'confirmed',
