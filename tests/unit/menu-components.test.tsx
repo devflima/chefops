@@ -1787,6 +1787,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Retirada indisponivel no momento')
     expect(getTextContent(elements)).not.toContain('Pagamento na retirada')
     expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Pendente')
     expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
 
     const buttons = elements.filter(
