@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import { hasPlanFeature } from '@/features/plans/types'
 
 type OrderWhatsappEventKey =
@@ -224,7 +225,10 @@ export async function sendOrderWhatsappNotification(params: {
     .eq('id', order.tenant_id)
     .single()
 
-  if (!hasPlanFeature((tenant?.plan as 'free' | 'basic' | 'pro') ?? 'free', 'whatsapp_notifications')) {
+  const billingState = await ensureTenantBillingAccessState(order.tenant_id)
+  const effectivePlan = ((billingState?.downgraded ? 'free' : tenant?.plan) ?? 'free') as 'free' | 'basic' | 'pro'
+
+  if (!hasPlanFeature(effectivePlan, 'whatsapp_notifications')) {
     await createNotificationLog({
       orderId: order.id,
       tenantId: order.tenant_id,
