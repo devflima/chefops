@@ -1743,6 +1743,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso no pagamento online.')
     expect(getTextContent(elements)).not.toContain('Pagamento na retirada')
     expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
 
     const buttons = elements.filter(
       (element) => element.type === 'button' && typeof element.props.onClick === 'function',
