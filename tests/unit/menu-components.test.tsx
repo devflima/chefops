@@ -1251,6 +1251,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Voltar ao cardápio')
     expect(getTextContent(elements)).toContain('Acompanhe a retirada')
     expect(getTextContent(elements)).toContain('Pagamento na retirada')
+    expect(getTextContent(elements)).toContain('No local')
     expect(getTextContent(elements)).toContain('#321')
 
     const buttons = elements.filter(
