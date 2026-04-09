@@ -1707,6 +1707,50 @@ describe('menu components', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('não renderiza bloco de pagamento no fluxo de retirada cancelado sem reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 561,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-counter-cancelled',
+          order_number: 561,
+          status: 'cancelled',
+          payment_status: 'pending',
+          payment_method: 'counter',
+          cancelled_reason: 'Retirada indisponivel no momento',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Retirada indisponivel no momento')
+    expect(getTextContent(elements)).not.toContain('Pagamento na retirada')
+    expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Voltar ao cardápio')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('mantém o CTA final funcional no fluxo cancelado com reembolso fora da mesa', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
