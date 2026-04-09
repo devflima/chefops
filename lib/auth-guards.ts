@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import type { EstablishmentRole } from '@/lib/rbac'
 import type { PlanFeature } from '@/features/plans/types'
 import { hasPlanFeature } from '@/features/plans/types'
@@ -24,6 +25,10 @@ export async function getCurrentProfile() {
     return { supabase, user, profile: null }
   }
 
+  const billingState = profile.tenant_id
+    ? await ensureTenantBillingAccessState(profile.tenant_id)
+    : null
+
   const tenant = Array.isArray(profile.tenants)
     ? profile.tenants[0]
     : profile.tenants
@@ -38,7 +43,7 @@ export async function getCurrentProfile() {
       full_name: profile.full_name,
       tenant: tenant
         ? {
-            plan: tenant.plan as 'free' | 'basic' | 'pro',
+            plan: ((billingState?.downgraded ? 'free' : tenant.plan) as 'free' | 'basic' | 'pro'),
             name: tenant.name,
             slug: tenant.slug,
           }

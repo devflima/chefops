@@ -4,7 +4,12 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
+vi.mock('@/lib/saas-billing', () => ({
+  ensureTenantBillingAccessState: vi.fn().mockResolvedValue({ downgraded: false }),
+}))
+
 const { createClient } = await import('@/lib/supabase/server')
+const { ensureTenantBillingAccessState } = await import('@/lib/saas-billing')
 const authGuards = await import('@/lib/auth-guards')
 
 describe('auth guards', () => {
@@ -59,6 +64,36 @@ describe('auth guards', () => {
         slug: 'chefops',
       },
     })
+  })
+
+  it('getCurrentProfile força plano free quando o downgrade acabou de ser aplicado', async () => {
+    const supabase = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: 'user-downgraded', email: 'downgraded@test.com' } },
+        }),
+      },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: 'user-downgraded',
+            tenant_id: 'tenant-downgraded',
+            role: 'owner',
+            full_name: 'Owner',
+            tenants: { plan: 'basic', name: 'ChefOps', slug: 'chefops' },
+          },
+        }),
+      })),
+    }
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+
+    const result = await authGuards.getCurrentProfile()
+
+    expect(ensureTenantBillingAccessState).toHaveBeenCalledWith('tenant-downgraded')
+    expect(result.profile?.tenant?.plan).toBe('free')
   })
 
   it('getCurrentProfile trata tenants vazio como tenant nulo', async () => {
