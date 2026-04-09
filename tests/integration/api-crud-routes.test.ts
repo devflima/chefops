@@ -13,9 +13,14 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }))
 
+vi.mock('@/lib/saas-billing', () => ({
+  ensureTenantBillingAccessState: vi.fn().mockResolvedValue({ downgraded: false }),
+}))
+
 const { requireTenantRoles, requireTenantFeature } = await import('@/lib/auth-guards')
 const { createClient } = await import('@/lib/supabase/server')
 const { createAdminClient } = await import('@/lib/supabase/admin')
+const { ensureTenantBillingAccessState } = await import('@/lib/saas-billing')
 
 const categoriesRoute = await import('@/app/api/categories/route')
 const extrasRoute = await import('@/app/api/extras/route')
@@ -1388,6 +1393,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -1407,6 +1428,22 @@ describe('api crud routes', () => {
       },
     } as never)
     expect((await usersRoute.GET()).status).toBe(200)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -1443,6 +1480,22 @@ describe('api crud routes', () => {
         users: [{ id: 'cashier-1', email: '' }],
       },
     })
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -1505,6 +1558,22 @@ describe('api crud routes', () => {
       },
     } as never)
     expect((await usersRoute.GET()).status).toBe(500)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -1597,6 +1666,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -1621,6 +1706,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -1633,6 +1734,22 @@ describe('api crud routes', () => {
         body: JSON.stringify({ full_name: 'Carlos', email: 'c@test.com', password: '123456', role: 'manager' }),
       }) as never,
     )).status).toBe(500)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -1671,6 +1788,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -1691,6 +1824,22 @@ describe('api crud routes', () => {
         body: JSON.stringify({ full_name: 'Carlos', email: 'c2@test.com', password: '123456', role: 'cashier' }),
       }) as never,
     )).status).toBe(500)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -1737,6 +1886,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -1757,6 +1922,22 @@ describe('api crud routes', () => {
         body: JSON.stringify({ full_name: 'Carlos', email: 'c@test.com', password: '123456', role: 'cashier' }),
       }) as never,
     )).status).toBe(500)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -1803,6 +1984,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn((table: string) => {
         if (table === 'profiles') {
@@ -1831,6 +2028,22 @@ describe('api crud routes', () => {
         body: JSON.stringify({ full_name: 'Carlos', email: 'c@test.com', password: '123456', role: 'cashier' }),
       }) as never,
     )).status).toBe(201)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -1889,6 +2102,22 @@ describe('api crud routes', () => {
       }) as never,
       { params: Promise.resolve({ id: 'user-2' }) },
     )).status).toBe(200)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -2019,6 +2248,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -2033,6 +2278,22 @@ describe('api crud routes', () => {
       }) as never,
       { params: Promise.resolve({ id: 'user-404' }) },
     )).status).toBe(404)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -2245,6 +2506,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn((table: string) => {
         if (table === 'profiles') {
@@ -2276,6 +2553,22 @@ describe('api crud routes', () => {
       }) as never,
       { params: Promise.resolve({ id: 'user-2' }) },
     )).status).toBe(500)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -2325,6 +2618,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn((table: string) => {
         if (table === 'profiles') {
@@ -2359,6 +2668,22 @@ describe('api crud routes', () => {
       }) as never,
       { params: Promise.resolve({ id: 'user-2' }) },
     )).status).toBe(500)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -2442,6 +2767,22 @@ describe('api crud routes', () => {
         single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
       })),
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
@@ -2454,6 +2795,22 @@ describe('api crud routes', () => {
       {} as never,
       { params: Promise.resolve({ id: 'user-404' }) },
     )).status).toBe(404)
+
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
 
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
@@ -2478,6 +2835,22 @@ describe('api crud routes', () => {
     )).status).toBe(500)
 
     const deleteEqSpy = vi.fn().mockResolvedValue({ error: null })
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'owner-1', tenant_id: 'tenant-1', role: 'owner', tenants: { plan: 'basic' } } }),
+      })),
+    } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
+    expect((await usersRoute.POST(
+      new Request('https://chefops.test/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: 'Carlos', email: 'downgraded@test.com', password: '123456', role: 'owner' }),
+      }) as never,
+    )).status).toBe(422)
+
     vi.mocked(createClient).mockResolvedValueOnce({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } } }) },
       from: vi.fn(() => ({
