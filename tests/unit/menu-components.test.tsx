@@ -1129,6 +1129,48 @@ describe('menu components', () => {
 
 
 
+
+  it('renderiza bloco de pagamento online reembolsado no passo final', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 79,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-online-refunded',
+          order_number: 79,
+          status: 'cancelled',
+          payment_status: 'refunded',
+          payment_method: 'online',
+          cancelled_reason: 'Pagamento estornado',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).not.toContain('Pagamento online')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
+    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso no pagamento online.')
+    expect(getTextContent(elements)).toContain('Acompanhar depois')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Acompanhar depois')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('renderiza bloco de pagamento online aprovado no passo final', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
