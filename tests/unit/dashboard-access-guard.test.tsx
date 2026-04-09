@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 const replaceMock = vi.fn()
 const usePathnameMock = vi.fn()
 const useUserMock = vi.fn()
+const usePlanMock = vi.fn()
 
 vi.mock('react', async () => {
   const actualReact = await vi.importActual<typeof import('react')>('react')
@@ -29,6 +30,10 @@ vi.mock('@/features/auth/hooks/useUser', () => ({
   useUser: () => useUserMock(),
 }))
 
+vi.mock('@/features/plans/hooks/usePlan', () => ({
+  usePlan: () => usePlanMock(),
+}))
+
 describe('DashboardAccessGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -42,6 +47,7 @@ describe('DashboardAccessGuard', () => {
       user: null,
       loading: true,
     })
+    usePlanMock.mockReturnValue({ data: null, isLoading: false })
 
     const markup = renderToStaticMarkup(
       React.createElement(DashboardAccessGuard, null, 'guard-child')
@@ -63,6 +69,7 @@ describe('DashboardAccessGuard', () => {
       },
       loading: false,
     })
+    usePlanMock.mockReturnValue({ data: { plan: 'basic' }, isLoading: false })
 
     const markup = renderToStaticMarkup(
       React.createElement(DashboardAccessGuard, null, 'guard-child')
@@ -87,6 +94,7 @@ describe('DashboardAccessGuard', () => {
       },
       loading: false,
     })
+    usePlanMock.mockReturnValue({ data: { plan: 'basic' }, isLoading: false })
 
     const markup = renderToStaticMarkup(
       React.createElement(DashboardAccessGuard, null, 'guard-child')
@@ -111,6 +119,7 @@ describe('DashboardAccessGuard', () => {
       },
       loading: false,
     })
+    usePlanMock.mockReturnValue({ data: { plan: 'free' }, isLoading: false })
 
     const markup = renderToStaticMarkup(
       React.createElement(DashboardAccessGuard, null, 'guard-child')
@@ -120,7 +129,7 @@ describe('DashboardAccessGuard', () => {
     expect(replaceMock).toHaveBeenCalledWith('/dashboard')
   })
 
-  it('redireciona quando a rota exige feature e o plano ainda não carregou', async () => {
+  it('mantém loading enquanto o plano efetivo ainda está carregando', async () => {
     const { default: DashboardAccessGuard } = await import('@/features/auth/components/DashboardAccessGuard')
 
     usePathnameMock.mockReturnValue('/comandas')
@@ -133,12 +142,13 @@ describe('DashboardAccessGuard', () => {
       },
       loading: false,
     })
+    usePlanMock.mockReturnValue({ data: null, isLoading: true })
 
     const markup = renderToStaticMarkup(
       React.createElement(DashboardAccessGuard, null, 'guard-child')
     )
 
-    expect(markup).toContain('Redirecionando')
-    expect(replaceMock).toHaveBeenCalledWith('/dashboard')
+    expect(markup).toContain('Carregando permissões')
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 })
