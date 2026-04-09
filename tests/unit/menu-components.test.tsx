@@ -1204,6 +1204,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Comanda aberta!')
     expect(getTextContent(elements)).toContain('Número da comanda')
     expect(getTextContent(elements)).toContain('Pagamento no local')
+    expect(getTextContent(elements)).toContain('No local')
     expect(getTextContent(elements)).toContain('Voltar ao cardápio')
 
     const buttons = elements.filter(
