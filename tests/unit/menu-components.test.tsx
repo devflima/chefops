@@ -1521,6 +1521,7 @@ describe('menu components', () => {
       }),
     )
 
+    expect(getTextContent(elements)).toContain('Pagamento na entrega')
     expect(getTextContent(elements)).toContain('Reembolsado')
     expect(getTextContent(elements)).toContain('Cancelar pedido')
     expect(getTextContent(elements)).not.toContain('Saiu para entrega')
