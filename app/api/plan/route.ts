@@ -1,11 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { PLAN_INCLUDED_FEATURES, PLAN_RESOURCE_LIMITS, type Plan } from '@/features/plans/types'
+import type { Plan } from '@/features/plans/types'
 import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
-import {
-  getAvailableRolesForPlan,
-  PLAN_MAX_USERS,
-  PLAN_ROLE_LIMITS,
-} from '@/lib/rbac'
+import { getTenantPlanSnapshot } from '@/lib/tenant-plan'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -31,7 +27,7 @@ export async function GET() {
 
     const { data: tenant, error } = await supabase
       .from('tenants')
-      .select('plan, max_users, max_tables, max_products, features, trial_ends_at, plan_ends_at')
+      .select('plan, trial_ends_at, plan_ends_at')
       .eq('id', profile.tenant_id)
       .single()
 
@@ -42,12 +38,7 @@ export async function GET() {
     return NextResponse.json({
       data: {
         ...tenant,
-        plan,
-        max_users: PLAN_MAX_USERS[plan],
-        features: PLAN_INCLUDED_FEATURES[plan],
-        resource_limits: PLAN_RESOURCE_LIMITS[plan],
-        role_limits: PLAN_ROLE_LIMITS[plan],
-        available_roles: getAvailableRolesForPlan(plan),
+        ...getTenantPlanSnapshot(plan),
       },
     })
   } catch (error) {

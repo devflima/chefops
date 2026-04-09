@@ -1,4 +1,5 @@
 import { PLAN_LABELS, PLAN_PRICES, type Plan } from '@/features/plans/types'
+import { getPersistedTenantPlanSnapshot } from '@/lib/tenant-plan'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export type BillingPlan = Extract<Plan, 'basic' | 'pro'>
@@ -130,7 +131,7 @@ export async function ensureTenantBillingAccessState(tenantId: string) {
   const { error: tenantError } = await admin
     .from('tenants')
     .update({
-      plan: 'free',
+      ...getPersistedTenantPlanSnapshot('free'),
       next_billing_at: null,
       plan_ends_at: new Date().toISOString(),
     })
@@ -223,7 +224,7 @@ export async function syncTenantFromSaasSubscription(preapproval: MercadoPagoPre
     const { error } = await admin
       .from('tenants')
       .update({
-        plan: effectivePlan,
+        ...getPersistedTenantPlanSnapshot(effectivePlan),
         next_billing_at: preapproval.next_payment_date ?? null,
         plan_ends_at: null,
       })

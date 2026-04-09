@@ -212,6 +212,10 @@ describe('saas billing', () => {
 
     expect(tenantUpdate).toMatchObject({
       plan: 'free',
+      max_users: 2,
+      max_tables: 0,
+      max_products: 20,
+      features: ['orders', 'menu', 'payments', 'team'],
       next_billing_at: null,
     })
     expect(subscriptionUpdate).toHaveProperty('metadata')
@@ -369,6 +373,10 @@ describe('saas billing', () => {
     })
     expect(tenantUpdate).toMatchObject({
       plan: 'pro',
+      max_users: 27,
+      max_tables: -1,
+      max_products: -1,
+      features: ['orders', 'menu', 'tables', 'kds', 'stock', 'stock_automation', 'sales', 'payments', 'whatsapp_notifications', 'team', 'reports', 'white_label'],
       next_billing_at: '2026-04-21T00:00:00.000Z',
       plan_ends_at: null,
     })
