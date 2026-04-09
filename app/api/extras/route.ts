@@ -1,4 +1,5 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
+import { getPlanResourceLimit } from '@/lib/tenant-plan'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -51,16 +52,17 @@ export async function POST(request: NextRequest) {
     }
 
     const plan = profile.tenant?.plan ?? 'free'
-    if (plan === 'free') {
+    const limit = getPlanResourceLimit(plan, 'extras')
+    if (limit !== -1) {
       const { count } = await supabase
         .from('extras')
         .select('*', { count: 'exact', head: true })
         .eq('tenant_id', profile.tenant_id)
         .eq('active', true)
 
-      if ((count ?? 0) >= 20) {
+      if ((count ?? 0) >= limit) {
         return NextResponse.json(
-          { error: 'Limite de 20 adicionais atingido para o plano Free.' },
+          { error: `Limite de ${limit} adicionais atingido para o plano atual.` },
           { status: 429 }
         )
       }

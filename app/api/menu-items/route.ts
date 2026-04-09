@@ -1,5 +1,6 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
 import { hasPlanFeature } from '@/features/plans/types'
+import { getPlanResourceLimit } from '@/lib/tenant-plan'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -55,15 +56,16 @@ export async function POST(request: NextRequest) {
     }
 
     const plan = profile.tenant?.plan ?? 'free'
-    if (plan === 'free') {
+    const limit = getPlanResourceLimit(plan, 'menu_items')
+    if (limit !== -1) {
       const { count } = await supabase
         .from('menu_items')
         .select('*', { count: 'exact', head: true })
         .eq('tenant_id', profile.tenant_id)
 
-      if ((count ?? 0) >= 30) {
+      if ((count ?? 0) >= limit) {
         return NextResponse.json(
-          { error: 'Limite de 30 itens de cardápio atingido para o plano Free.' },
+          { error: `Limite de ${limit} itens de cardápio atingido para o plano atual.` },
           { status: 429 }
         )
       }

@@ -695,22 +695,12 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: 1 } }),
-            }
-          }
-
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: 1 }),
-          }
-        }),
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 20 }),
+        })),
       },
     } as never)
     expect((await productsRoute.POST(
@@ -722,27 +712,17 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: -1 } }),
-            }
-          }
-
-          return {
-            insert: vi.fn(() => ({
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: { code: '23505' },
-              }),
-            })),
-          }
-        }),
+        from: vi.fn(() => ({
+          insert: vi.fn(() => ({
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { code: '23505' },
+            }),
+          })),
+        })),
       },
     } as never)
     expect((await productsRoute.POST(
@@ -754,17 +734,9 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
         from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: 5 } }),
-            }
-          }
-
           if (table === 'products') {
             return {
               select: vi.fn().mockReturnThis(),
@@ -792,22 +764,19 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: 0 } }),
-            }
-          }
-
-          return {
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: null }),
+          insert: vi.fn(() => ({
             select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ count: null }),
-          }
-        }),
+            single: vi.fn().mockResolvedValue({
+              data: { id: 'prod-null-count', name: 'Sem limite útil' },
+              error: null,
+            }),
+          })),
+        })),
       },
     } as never)
     expect((await productsRoute.POST(
@@ -815,26 +784,23 @@ describe('api crud routes', () => {
         method: 'POST',
         body: JSON.stringify({ name: 'Sem limite útil', unit: 'un', cost_price: 1, min_stock: 0 }),
       }) as never,
-    )).status).toBe(429)
+    )).status).toBe(201)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: 0 } }),
-            }
-          }
-
-          return {
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({}),
+          insert: vi.fn(() => ({
             select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({}),
-          }
-        }),
+            single: vi.fn().mockResolvedValue({
+              data: { id: 'prod-missing-count', name: 'Sem contagem' },
+              error: null,
+            }),
+          })),
+        })),
       },
     } as never)
     expect((await productsRoute.POST(
@@ -842,21 +808,13 @@ describe('api crud routes', () => {
         method: 'POST',
         body: JSON.stringify({ name: 'Sem contagem', unit: 'un', cost_price: 2, min_stock: 0 }),
       }) as never,
-    )).status).toBe(429)
+    )).status).toBe(201)
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
         from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: 2 } }),
-            }
-          }
-
           if (table === 'products') {
             return {
               select: vi.fn(() => ({
@@ -885,17 +843,9 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'free' } },
       supabase: {
         from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: 2 } }),
-            }
-          }
-
           if (table === 'products') {
             return {
               select: vi.fn(() => ({
@@ -924,27 +874,17 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: null }),
-            }
-          }
-
-          return {
-            insert: vi.fn(() => ({
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({
-                data: { id: 'prod-null-limit', name: 'Calda' },
-                error: null,
-              }),
-            })),
-          }
-        }),
+        from: vi.fn(() => ({
+          insert: vi.fn(() => ({
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { id: 'prod-null-limit', name: 'Calda' },
+              error: null,
+            }),
+          })),
+        })),
       },
     } as never)
     expect((await productsRoute.POST(
@@ -956,27 +896,17 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: -1 } }),
-            }
-          }
-
-          return {
-            insert: vi.fn(() => ({
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({
-                data: { id: 'prod-2', name: 'Farinha' },
-                error: null,
-              }),
-            })),
-          }
-        }),
+        from: vi.fn(() => ({
+          insert: vi.fn(() => ({
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { id: 'prod-2', name: 'Farinha' },
+              error: null,
+            }),
+          })),
+        })),
       },
     } as never)
     expect((await productsRoute.POST(
@@ -999,27 +929,17 @@ describe('api crud routes', () => {
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
-      profile: { tenant_id: 'tenant-1' },
+      profile: { tenant_id: 'tenant-1', tenant: { plan: 'pro' } },
       supabase: {
-        from: vi.fn((table: string) => {
-          if (table === 'tenants') {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({ data: { max_products: -1 } }),
-            }
-          }
-
-          return {
-            insert: vi.fn(() => ({
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: new Error('insert failed'),
-              }),
-            })),
-          }
-        }),
+        from: vi.fn(() => ({
+          insert: vi.fn(() => ({
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: new Error('insert failed'),
+            }),
+          })),
+        })),
       },
     } as never)
     expect((await productsRoute.POST(
