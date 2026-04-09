@@ -1013,6 +1013,10 @@ describe('public menu helpers', () => {
     expect(shouldShowPublicDeliveryConfirmButton(publicOrderStatus)).toBe(true)
     expect(shouldShowPublicDeliveryConfirmButton({
       ...publicOrderStatus,
+      delivery_status: 'waiting_dispatch',
+    })).toBe(false)
+    expect(shouldShowPublicDeliveryConfirmButton({
+      ...publicOrderStatus,
       status: 'delivered',
     })).toBe(false)
     expect(getCheckoutNoticeTone(publicOrderStatus)).toBe('info')
