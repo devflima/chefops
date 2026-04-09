@@ -1082,7 +1082,8 @@ describe('menu components', () => {
   it('renderiza passo final com status em andamento e cancelamento disponível', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
-    const markup = renderToStaticMarkup(
+    const onClose = vi.fn()
+    const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 42,
         tableInfo: null,
@@ -1103,24 +1104,199 @@ describe('menu components', () => {
         getStepState: (key: 'pending' | 'confirmed') => (key === 'pending' ? 'done' : 'current'),
         cancelOrderLoading: false,
         onCancelOrder: vi.fn(),
-        onClose: vi.fn(),
-      })
+        onClose,
+      }),
     )
 
-    expect(markup).toContain('Pedido realizado!')
-    expect(markup).toContain('Acompanhe o andamento do pedido até a entrega.')
-    expect(markup).toContain('Número do pedido')
-    expect(markup).toContain('#42')
-    expect(markup).toContain('Acompanhe o status do pedido')
-    expect(markup).toContain('Pagamento na entrega')
-    expect(markup).toContain('Cancelar pedido')
-    expect(markup).toContain('Aprovado')
+    expect(getTextContent(elements)).toContain('Pedido realizado!')
+    expect(getTextContent(elements)).toContain('Acompanhe o andamento do pedido até a entrega.')
+    expect(getTextContent(elements)).toContain('Número do pedido')
+    expect(getTextContent(elements)).toContain('#42')
+    expect(getTextContent(elements)).toContain('Acompanhe o status do pedido')
+    expect(getTextContent(elements)).toContain('Pagamento na entrega')
+    expect(getTextContent(elements)).toContain('Cancelar pedido')
+    expect(getTextContent(elements)).toContain('Aprovado')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+
+
+
+
+  it('mantém o estado final correto no fluxo online cancelado sem reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 80,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-online-cancelled',
+          order_number: 80,
+          status: 'cancelled',
+          payment_status: 'pending',
+          payment_method: 'online',
+          cancelled_reason: 'Pagamento não concluído',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Pagamento não concluído')
+    expect(getTextContent(elements)).not.toContain('Pagamento online')
+    expect(getTextContent(elements)).not.toContain('Pendente')
+    expect(getTextContent(elements)).toContain('Acompanhar depois')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Acompanhar depois')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('renderiza bloco de pagamento online reembolsado no passo final', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 79,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-online-refunded',
+          order_number: 79,
+          status: 'cancelled',
+          payment_status: 'refunded',
+          payment_method: 'online',
+          cancelled_reason: 'Pagamento estornado',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).not.toContain('Pagamento online')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
+    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso no pagamento online.')
+    expect(getTextContent(elements)).toContain('Acompanhar depois')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Acompanhar depois')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('renderiza bloco de pagamento online aprovado no passo final', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 78,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-online-paid',
+          order_number: 78,
+          status: 'confirmed',
+          payment_status: 'paid',
+          payment_method: 'online',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [{ key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' }],
+        getStepState: () => 'current',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pagamento online')
+    expect(getTextContent(elements)).toContain('Aprovado')
+    expect(getTextContent(elements)).toContain('Acompanhar depois')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('renderiza bloco de pagamento online pendente no passo final', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 77,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-online-pending',
+          order_number: 77,
+          status: 'pending',
+          payment_status: 'pending',
+          payment_method: 'online',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [{ key: 'pending', label: 'Recebido', description: 'Entrou na fila.' }],
+        getStepState: () => 'current',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pagamento online')
+    expect(getTextContent(elements)).toContain('Pendente')
+    expect(getTextContent(elements)).toContain('Acompanhar depois')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('renderiza passo final cancelado com mensagem de reembolso', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
-    const markup = renderToStaticMarkup(
+    const onClose = vi.fn()
+    const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 99,
         tableInfo: { id: 'table-1', number: '8' },
@@ -1137,24 +1313,130 @@ describe('menu components', () => {
         getStepState: () => 'upcoming',
         cancelOrderLoading: false,
         onCancelOrder: vi.fn(),
-        onClose: vi.fn(),
-      })
+        onClose,
+      }),
     )
 
-    expect(markup).toContain('Pedido cancelado')
-    expect(markup).toContain('Comanda aberta!')
-    expect(markup).toContain('Acompanhe a comanda da sua mesa.')
-    expect(markup).toContain('Número da comanda')
-    expect(markup).toContain('Acompanhe a comanda')
-    expect(markup).toContain('Estoque indisponível')
-    expect(markup).toContain('Reembolso solicitado com sucesso')
-    expect(markup).toContain('Mesa 8')
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Comanda aberta!')
+    expect(getTextContent(elements)).toContain('Acompanhe a comanda da sua mesa.')
+    expect(getTextContent(elements)).toContain('Número da comanda')
+    expect(getTextContent(elements)).toContain('Acompanhe a comanda')
+    expect(getTextContent(elements)).toContain('Estoque indisponível')
+    expect(getTextContent(elements)).not.toContain('Pagamento no local')
+    expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
+    expect(getTextContent(elements)).not.toContain('Cancelar pedido')
+    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso')
+    expect(getTextContent(elements)).toContain('Mesa 8')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Voltar ao cardápio')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+
+  it('não renderiza bloco de pagamento no fluxo de mesa cancelado sem reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 100,
+        tableInfo: { id: 'table-2', number: '11' },
+        publicOrderStatus: {
+          id: 'order-table-cancelled',
+          order_number: 100,
+          status: 'cancelled',
+          payment_status: 'pending',
+          payment_method: 'table',
+          cancelled_reason: 'Atendimento encerrado',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Comanda aberta!')
+    expect(getTextContent(elements)).toContain('Atendimento encerrado')
+    expect(getTextContent(elements)).not.toContain('Pagamento no local')
+    expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Pendente')
+    expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
+    expect(getTextContent(elements)).toContain('Mesa 11')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Voltar ao cardápio')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('mantém o CTA final funcional no fluxo padrão de mesa', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 222,
+        tableInfo: { id: 'table-9', number: '9' },
+        publicOrderStatus: {
+          id: 'order-table-default',
+          order_number: 222,
+          status: 'confirmed',
+          payment_status: 'pending',
+          payment_method: 'table',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [
+          { key: 'pending', label: 'Recebido', description: 'Entrou na fila.' },
+          { key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' },
+        ],
+        getStepState: () => 'current',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Comanda aberta!')
+    expect(getTextContent(elements)).toContain('Número da comanda')
+    expect(getTextContent(elements)).toContain('Pagamento no local')
+    expect(getTextContent(elements)).toContain('No local')
+    expect(getTextContent(elements)).toContain('Voltar ao cardápio')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Voltar ao cardápio')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('renderiza rótulo de retirada no passo final de balcão', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
-    const markup = renderToStaticMarkup(
+    const onClose = vi.fn()
+    const elements = flattenElements(
       React.createElement(MenuDoneStep, {
         orderNumber: 321,
         tableInfo: null,
@@ -1174,17 +1456,27 @@ describe('menu components', () => {
         getStepState: () => 'current',
         cancelOrderLoading: false,
         onCancelOrder: vi.fn(),
-        onClose: vi.fn(),
+        onClose,
       }),
     )
 
-    expect(markup).toContain('Número para retirada')
-    expect(markup).toContain('Pedido pronto para retirada!')
-    expect(markup).toContain('Use este número para retirar o pedido.')
-    expect(markup).toContain('Voltar ao cardápio')
-    expect(markup).toContain('Acompanhe a retirada')
-    expect(markup).toContain('Pagamento na retirada')
-    expect(markup).toContain('#321')
+    expect(getTextContent(elements)).toContain('Número para retirada')
+    expect(getTextContent(elements)).toContain('Pedido pronto para retirada!')
+    expect(getTextContent(elements)).toContain('Use este número para retirar o pedido.')
+    expect(getTextContent(elements)).toContain('Voltar ao cardápio')
+    expect(getTextContent(elements)).toContain('Acompanhe a retirada')
+    expect(getTextContent(elements)).toContain('Pagamento na retirada')
+    expect(getTextContent(elements)).toContain('No local')
+    expect(getTextContent(elements)).toContain('#321')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[1])).toContain('Voltar ao cardápio')
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('aciona handlers e renderiza etapa de entrega no passo final', async () => {
@@ -1244,6 +1536,53 @@ describe('menu components', () => {
     expect(onCancelOrder).not.toHaveBeenCalled()
   })
 
+
+  it('renderiza carregamento na confirmação de recebimento no passo final', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 223,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-confirm-loading',
+          order_number: 223,
+          status: 'ready',
+          payment_status: 'paid',
+          payment_method: 'delivery',
+          delivery_status: 'out_for_delivery',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [
+          { key: 'pending', label: 'Recebido', description: 'Entrou na fila.' },
+          { key: 'confirmed', label: 'Confirmado', description: 'Confirmado.' },
+          { key: 'ready', label: 'Pronto', description: 'Pronto para sair.' },
+        ],
+        getStepState: (key: 'pending' | 'confirmed' | 'ready') =>
+          key === 'ready' ? 'current' : 'done',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: true,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[0])).toContain('Confirmando...')
+    expect(buttons[0].props.disabled).toBe(true)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('renderiza etapa de entrega pendente sem marcar como concluída', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
@@ -1279,6 +1618,7 @@ describe('menu components', () => {
     expect(markup).toContain('Saiu para entrega')
     expect(markup).toContain('Seu pedido vai aparecer aqui quando sair para entrega.')
     expect(markup).toContain('border-slate-300 bg-white text-slate-400')
+    expect(markup).not.toContain('Confirmar recebimento')
     expect(markup).not.toContain('com João')
   })
 
@@ -1316,6 +1656,7 @@ describe('menu components', () => {
       }),
     )
 
+    expect(getTextContent(elements)).toContain('Pagamento na entrega')
     expect(getTextContent(elements)).toContain('Reembolsado')
     expect(getTextContent(elements)).toContain('Cancelar pedido')
     expect(getTextContent(elements)).not.toContain('Saiu para entrega')
@@ -1368,6 +1709,227 @@ describe('menu components', () => {
     expect(markup).not.toContain('Confirmar recebimento')
   })
 
+
+
+
+  it('não renderiza bloco de pagamento no fluxo de retirada cancelado com reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 560,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-counter-refunded',
+          order_number: 560,
+          status: 'cancelled',
+          payment_status: 'refunded',
+          payment_method: 'counter',
+          cancelled_reason: 'Estorno manual',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso.')
+    expect(getTextContent(elements)).not.toContain('Pagamento na retirada')
+    expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Voltar ao cardápio')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('não renderiza bloco de pagamento no fluxo de retirada cancelado sem reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 561,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-counter-cancelled',
+          order_number: 561,
+          status: 'cancelled',
+          payment_status: 'pending',
+          payment_method: 'counter',
+          cancelled_reason: 'Retirada indisponivel no momento',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Retirada indisponivel no momento')
+    expect(getTextContent(elements)).not.toContain('Pagamento na retirada')
+    expect(getTextContent(elements)).not.toContain('No local')
+    expect(getTextContent(elements)).not.toContain('Pendente')
+    expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Voltar ao cardápio')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('mantém o CTA final funcional no fluxo cancelado com reembolso fora da mesa', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 559,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-cancel-refunded-default',
+          order_number: 559,
+          status: 'cancelled',
+          payment_status: 'refunded',
+          payment_method: 'delivery',
+          cancelled_reason: 'Pagamento estornado',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Reembolso solicitado com sucesso')
+    expect(getTextContent(elements)).not.toContain('Pagamento na entrega')
+    expect(getTextContent(elements)).not.toContain('Reembolsado')
+    expect(getTextContent(elements)).toContain('Acompanhar depois')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Acompanhar depois')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('não renderiza bloco de pagamento no fluxo de delivery cancelado sem reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 557,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-delivery-cancelled',
+          order_number: 557,
+          status: 'cancelled',
+          payment_status: 'pending',
+          payment_method: 'delivery',
+          cancelled_reason: 'Entregador indisponivel',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Entregador indisponivel')
+    expect(getTextContent(elements)).not.toContain('Pagamento na entrega')
+    expect(getTextContent(elements)).not.toContain('Na entrega')
+    expect(getTextContent(elements)).not.toContain('Pendente')
+    expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Acompanhar depois')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('mantém o CTA final funcional no fluxo cancelado sem reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 558,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-cancel-default',
+          order_number: 558,
+          status: 'cancelled',
+          payment_status: 'pending',
+          payment_method: 'delivery',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).not.toContain('Reembolso solicitado com sucesso')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Acompanhar depois')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('renderiza cancelamento em andamento e cancelado sem mensagem de reembolso', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
@@ -1417,7 +1979,48 @@ describe('menu components', () => {
 
     expect(loadingMarkup).toContain('Cancelando...')
     expect(cancelledMarkup).toContain('Pedido cancelado')
+    expect(cancelledMarkup).not.toContain('Cancelar pedido')
     expect(cancelledMarkup).not.toContain('Reembolso solicitado com sucesso')
+  })
+
+
+  it('renderiza carregamento no cancelamento do passo final com botão desabilitado', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 557,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-cancel-loading',
+          order_number: 557,
+          status: 'pending',
+          payment_status: 'pending',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [{ key: 'pending', label: 'Recebido', description: 'Entrou na fila.' }],
+        getStepState: () => 'current',
+        cancelOrderLoading: true,
+        confirmDeliveryLoading: false,
+        onCancelOrder: vi.fn(),
+        onConfirmDelivery: vi.fn(),
+        onClose,
+      }),
+    )
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(2)
+    expect(getTextContent(buttons[0])).toContain('Cancelando...')
+    expect(buttons[0].props.disabled).toBe(true)
+    expect(getTextContent(buttons[1])).toContain('Acompanhar depois')
+
+    buttons[1].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('renderiza filtro de categorias com estado ativo', async () => {

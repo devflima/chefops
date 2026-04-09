@@ -65,7 +65,7 @@ export async function cancelPublicOrder(
 
     const { data: updatedOrder, error: updatedOrderError } = await admin
       .from('orders')
-      .select('id, order_number, status, payment_status, refunded_at, created_at, updated_at')
+      .select('id, order_number, status, payment_status, payment_method, delivery_status, cancelled_reason, refunded_at, created_at, updated_at')
       .eq('id', orderId)
       .single()
 

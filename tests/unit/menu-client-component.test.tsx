@@ -198,6 +198,9 @@ describe('MenuClient component', () => {
               id: 'order-1',
               status: 'cancelled',
               payment_status: 'refunded',
+              payment_method: 'table',
+              delivery_status: null,
+              cancelled_reason: 'Cliente desistiu',
             }),
           }),
         }
@@ -474,7 +477,15 @@ describe('MenuClient component', () => {
     expect(stateSetters[13]).toHaveBeenCalledWith(false)
     expect(stateSetters[17]).toHaveBeenCalledWith('order-created')
     expect(stateSetters[16]).toHaveBeenCalledWith(77)
-    expect(stateSetters[22]).toHaveBeenCalled()
+    expect(stateSetters[22]).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'order-1',
+        status: 'cancelled',
+        payment_status: 'refunded',
+        payment_method: 'table',
+        cancelled_reason: 'Cliente desistiu',
+      }),
+    )
     expect(stateSetters[2]).toHaveBeenCalledWith('done')
     expect(stateSetters[0]).toHaveBeenCalledWith([])
     expect(stateSetters[23]).toHaveBeenCalledWith(true)

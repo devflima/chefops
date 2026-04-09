@@ -335,6 +335,37 @@ describe('public menu helpers', () => {
     expect(getCustomerBannerState(true, null, false)).toBeNull()
     expect(getAddressSubmitLabel('delivery', true)).toBe('Processando...')
     expect(shouldShowDeliveryStep(null)).toBe(false)
+    expect(shouldShowDeliveryStep({
+      id: 'order-1',
+      order_number: 42,
+      status: 'delivered',
+      payment_status: 'paid',
+      payment_method: 'delivery',
+      delivery_status: 'delivered',
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })).toBe(false)
+    expect(getDeliveryStepMessage({
+      id: 'order-1',
+      order_number: 42,
+      status: 'ready',
+      payment_status: 'paid',
+      payment_method: 'delivery',
+      delivery_status: 'waiting_dispatch',
+      delivery_driver: null,
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })).toBe('Seu pedido vai aparecer aqui quando sair para entrega.')
+    expect(isDeliveryStepCompleted({
+      id: 'order-1',
+      order_number: 42,
+      status: 'ready',
+      payment_status: 'paid',
+      payment_method: 'delivery',
+      delivery_status: 'waiting_dispatch',
+      created_at: '2026-03-21T00:00:00.000Z',
+      updated_at: '2026-03-21T00:00:00.000Z',
+    })).toBe(false)
     expect(isDeliveryStepCompleted({
       id: 'order-1',
       order_number: 42,
@@ -710,6 +741,7 @@ describe('public menu helpers', () => {
     expect(getCancelledOrderMessage(null)).toBe('O pedido foi cancelado.')
     expect(getCancelSuccessNotice('refunded')).toContain('reembolso')
     expect(getCancelSuccessNotice('paid')).toBe('Pedido cancelado com sucesso.')
+    expect(getCancelSuccessNotice('pending')).toBe('Pedido cancelado com sucesso.')
     expect(buildPublicOrderCancelPayload(' Motivo teste ')).toEqual({
       cancelled_reason: 'Motivo teste',
     })
@@ -721,6 +753,7 @@ describe('public menu helpers', () => {
     expect(getPaymentStatusLabel('pending')).toBe('Pendente')
     expect(getPaymentStatusLabel('pending', 'delivery')).toBe('Na entrega')
     expect(getPaymentStatusLabel('pending', 'counter')).toBe('No local')
+    expect(getPaymentStatusLabel('pending', 'table')).toBe('No local')
     expect(getPublicOrderTrackingMessage({
       ...publicOrderStatus,
       status: 'confirmed',
@@ -1008,8 +1041,13 @@ describe('public menu helpers', () => {
     expect(shouldShowCancelOrderButton('confirmed')).toBe(true)
     expect(shouldShowCancelOrderButton(undefined)).toBe(false)
     expect(shouldShowCancelOrderButton('ready')).toBe(false)
+    expect(shouldShowCancelOrderButton('cancelled')).toBe(false)
     expect(shouldShowDeliveryStep(publicOrderStatus)).toBe(true)
     expect(shouldShowPublicDeliveryConfirmButton(publicOrderStatus)).toBe(true)
+    expect(shouldShowPublicDeliveryConfirmButton({
+      ...publicOrderStatus,
+      delivery_status: 'waiting_dispatch',
+    })).toBe(false)
     expect(shouldShowPublicDeliveryConfirmButton({
       ...publicOrderStatus,
       status: 'delivered',
@@ -1060,10 +1098,78 @@ describe('public menu helpers', () => {
       cartOpen: false,
     })).toBe(false)
     expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Seu pedido está pronto para retirada.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'ready',
+        payment_method: 'counter',
+        delivery_status: null,
+      },
+      cartOpen: false,
+    })).toBe(false)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Seu pedido está pronto para servir.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'ready',
+        payment_method: 'table',
+        delivery_status: null,
+      },
+      cartOpen: false,
+    })).toBe(false)
+    expect(shouldShowCheckoutNoticeBanner({
       checkoutNotice: 'Pedido cancelado.',
       publicOrderStatus: {
         ...publicOrderStatus,
         status: 'cancelled',
+      },
+      cartOpen: false,
+    })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido entregue com sucesso.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'delivered',
+        payment_method: 'delivery',
+        delivery_status: 'delivered',
+      },
+      cartOpen: false,
+    })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido retirado com sucesso.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'delivered',
+        payment_method: 'counter',
+        delivery_status: null,
+      },
+      cartOpen: false,
+    })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido servido na mesa com sucesso.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'delivered',
+        payment_method: 'table',
+        delivery_status: null,
+      },
+      cartOpen: false,
+    })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido cancelado e reembolso solicitado com sucesso.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'cancelled',
+        payment_status: 'refunded',
+      },
+      cartOpen: false,
+    })).toBe(true)
+    expect(shouldShowCheckoutNoticeBanner({
+      checkoutNotice: 'Pedido cancelado.',
+      publicOrderStatus: {
+        ...publicOrderStatus,
+        status: 'cancelled',
+        payment_status: 'pending',
       },
       cartOpen: false,
     })).toBe(true)
