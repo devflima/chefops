@@ -741,6 +741,7 @@ describe('public menu helpers', () => {
     expect(getCancelledOrderMessage(null)).toBe('O pedido foi cancelado.')
     expect(getCancelSuccessNotice('refunded')).toContain('reembolso')
     expect(getCancelSuccessNotice('paid')).toBe('Pedido cancelado com sucesso.')
+    expect(getCancelSuccessNotice('pending')).toBe('Pedido cancelado com sucesso.')
     expect(buildPublicOrderCancelPayload(' Motivo teste ')).toEqual({
       cancelled_reason: 'Motivo teste',
     })
