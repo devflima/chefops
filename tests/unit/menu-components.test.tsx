@@ -1130,6 +1130,49 @@ describe('menu components', () => {
 
 
 
+
+  it('mantém o estado final correto no fluxo online cancelado sem reembolso', async () => {
+    const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
+
+    const onClose = vi.fn()
+    const elements = flattenElements(
+      React.createElement(MenuDoneStep, {
+        orderNumber: 80,
+        tableInfo: null,
+        publicOrderStatus: {
+          id: 'order-online-cancelled',
+          order_number: 80,
+          status: 'cancelled',
+          payment_status: 'pending',
+          payment_method: 'online',
+          cancelled_reason: 'Pagamento não concluído',
+          created_at: '2026-03-21T00:00:00.000Z',
+          updated_at: '2026-03-21T00:00:00.000Z',
+        },
+        orderSteps: [],
+        getStepState: () => 'upcoming',
+        cancelOrderLoading: false,
+        onCancelOrder: vi.fn(),
+        onClose,
+      }),
+    )
+
+    expect(getTextContent(elements)).toContain('Pedido cancelado')
+    expect(getTextContent(elements)).toContain('Pagamento não concluído')
+    expect(getTextContent(elements)).not.toContain('Pagamento online')
+    expect(getTextContent(elements)).not.toContain('Pendente')
+    expect(getTextContent(elements)).toContain('Acompanhar depois')
+
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function',
+    )
+
+    expect(buttons).toHaveLength(1)
+    expect(getTextContent(buttons[0])).toContain('Acompanhar depois')
+    buttons[0].props.onClick()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('renderiza bloco de pagamento online reembolsado no passo final', async () => {
     const { MenuDoneStep } = await import('@/features/menu/MenuDoneStep')
 
