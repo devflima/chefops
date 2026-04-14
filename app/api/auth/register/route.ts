@@ -14,6 +14,19 @@ const registerSchema = z.object({
       /^[a-z0-9-]+$/,
       'Slug deve conter apenas letras minúsculas, números e hífens'
     ),
+  cnpj: z.string().transform((value) => value.replace(/\D/g, '')).refine((value) => value.length === 14, {
+    message: 'CNPJ inválido',
+  }),
+  zip_code: z.string().transform((value) => value.replace(/\D/g, '')).refine((value) => value.length === 8, {
+    message: 'CEP inválido',
+  }),
+  street: z.string().min(2, 'Rua obrigatória'),
+  number: z.string().min(1, 'Número obrigatório'),
+  neighborhood: z.string().trim().optional().transform((value) => value || undefined),
+  city: z.string().min(2, 'Cidade obrigatória'),
+  state: z.string().trim().transform((value) => value.toUpperCase()).refine((value) => value.length === 2, {
+    message: 'Estado obrigatório',
+  }),
 })
 
 export async function POST(request: NextRequest) {
@@ -28,7 +41,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { full_name, email, password, tenant_name, tenant_slug } = parsed.data
+    const {
+      full_name,
+      email,
+      password,
+      tenant_name,
+      tenant_slug,
+      cnpj,
+      zip_code,
+      street,
+      number,
+      neighborhood,
+      city,
+      state,
+    } = parsed.data
     const admin = createAdminClient()
 
     const { data: tenant, error: tenantError } = await admin
@@ -55,6 +81,15 @@ export async function POST(request: NextRequest) {
         full_name,
         tenant_id: tenant.id,
         role: 'owner',
+        establishment: {
+          cnpj,
+          zip_code,
+          street,
+          number,
+          neighborhood,
+          city,
+          state,
+        },
       },
     })
 

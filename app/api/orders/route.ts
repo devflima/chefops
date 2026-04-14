@@ -1,4 +1,5 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -175,14 +176,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verifica limite do plano free
+    // Verifica limite do plano free com base no plano efetivo pós-billing
     const { data: tenantData } = await admin
       .from('tenants')
       .select('plan')
       .eq('id', tenant_id)
       .single()
+    const billingState = await ensureTenantBillingAccessState(tenant_id)
+    const effectivePlan = billingState.downgraded ? 'free' : tenantData?.plan
 
-    if (tenantData?.plan === 'free') {
+    if (effectivePlan === 'free') {
       const startOfMonth = new Date()
       startOfMonth.setDate(1)
       startOfMonth.setHours(0, 0, 0, 0)

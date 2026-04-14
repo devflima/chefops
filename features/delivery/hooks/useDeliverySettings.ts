@@ -6,6 +6,19 @@ export type DeliverySettings = {
   tenant_id: string
   delivery_enabled: boolean
   flat_fee: number
+  accepting_orders: boolean
+  schedule_enabled: boolean
+  opens_at: string | null
+  closes_at: string | null
+  pricing_mode?: 'flat' | 'distance'
+  max_radius_km?: number | null
+  fee_per_km?: number | null
+  origin_zip_code?: string | null
+  origin_street?: string | null
+  origin_number?: string | null
+  origin_neighborhood?: string | null
+  origin_city?: string | null
+  origin_state?: string | null
 }
 
 export function useDeliverySettings() {

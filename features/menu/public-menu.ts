@@ -1,4 +1,5 @@
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
+import { isWithinOperatingHours } from '@/lib/delivery-operations'
 
 export type MenuExtra = {
   id: string
@@ -108,8 +109,11 @@ export function getLookupCustomerMissingState() {
 export function createCartItem(
   item: PublicMenuItem,
   selectedBorder?: MenuExtra | null,
-  halfFlavor?: PublicMenuItem
+  selectedExtrasOrHalfFlavor?: MenuExtra[] | PublicMenuItem,
+  maybeHalfFlavor?: PublicMenuItem
 ) {
+  const selectedExtras = Array.isArray(selectedExtrasOrHalfFlavor) ? selectedExtrasOrHalfFlavor : []
+  const halfFlavor = Array.isArray(selectedExtrasOrHalfFlavor) ? maybeHalfFlavor : selectedExtrasOrHalfFlavor
   const itemName = halfFlavor ? `${item.name} / ${halfFlavor.name}` : item.name
 
   return {
@@ -117,7 +121,9 @@ export function createCartItem(
     name: itemName,
     price: halfFlavor ? Math.max(item.price, halfFlavor.price) : item.price,
     quantity: 1,
-    extras: selectedBorder ? [{ name: selectedBorder.name, price: selectedBorder.price }] : [],
+    extras: [selectedBorder, ...selectedExtras]
+      .filter(Boolean)
+      .map((extra) => ({ name: extra!.name, price: extra!.price })),
     half_flavor: halfFlavor ? { menu_item_id: halfFlavor.id, name: halfFlavor.name } : undefined,
   } satisfies CartItem
 }
@@ -148,6 +154,38 @@ export function getCheckoutNoticeFromResult(checkoutResult: string | null) {
 
   if (checkoutResult === 'failure') {
     return 'O pagamento nao foi concluido. Tente novamente.'
+  }
+
+  return null
+}
+
+export function getOperationClosedNotice(
+  deliverySettings?: {
+    delivery_enabled: boolean
+    flat_fee: number
+    accepting_orders?: boolean
+    schedule_enabled?: boolean
+    opens_at?: string | null
+    closes_at?: string | null
+  } | null,
+  now = new Date(),
+) {
+  if (deliverySettings?.accepting_orders === false) {
+    return 'O estabelecimento está fechado para novos pedidos no momento.'
+  }
+
+  if (
+    deliverySettings?.schedule_enabled &&
+    !isWithinOperatingHours(
+      {
+        schedule_enabled: deliverySettings.schedule_enabled,
+        opens_at: deliverySettings.opens_at ?? null,
+        closes_at: deliverySettings.closes_at ?? null,
+      },
+      now,
+    )
+  ) {
+    return 'O estabelecimento está fora do horário de funcionamento no momento.'
   }
 
   return null
@@ -426,6 +464,7 @@ export function buildPublicCheckoutPayload(params: {
   tableInfo: { id: string; number: string } | null
   notes: string
   deliveryFee: number
+  deliveryDistanceKm?: number | null
   deliveryAddress?: Partial<CustomerAddress>
   items: CartItem[]
 }) {
@@ -439,6 +478,7 @@ export function buildPublicCheckoutPayload(params: {
     table_id: params.tableInfo?.id,
     notes: params.notes || undefined,
     delivery_fee: params.deliveryFee,
+    delivery_distance_km: params.deliveryDistanceKm ?? undefined,
     delivery_address: params.deliveryAddress?.zip_code ? params.deliveryAddress as CustomerAddress : undefined,
     items: params.items,
   }
@@ -462,6 +502,7 @@ export function buildPublicOrderPayload(params: {
   paymentMethod: 'online' | 'table' | 'counter' | 'delivery'
   notes: string
   deliveryFee: number
+  deliveryDistanceKm?: number | null
   deliveryAddress?: Partial<CustomerAddress>
   items: CartItem[]
 }) {
@@ -476,6 +517,7 @@ export function buildPublicOrderPayload(params: {
     payment_method: params.paymentMethod,
     notes: params.notes || undefined,
     delivery_fee: params.deliveryFee,
+    delivery_distance_km: params.deliveryDistanceKm ?? undefined,
     delivery_address: params.deliveryAddress?.zip_code ? params.deliveryAddress as CustomerAddress : undefined,
     items: params.items,
   }
@@ -932,17 +974,24 @@ export function filterGroupsByCategory(
 export function getCartTotals(
   cart: CartItem[],
   tableInfo: { id: string; number: string } | null,
-  deliverySettings?: { delivery_enabled: boolean; flat_fee: number } | null
+  deliverySettings?: {
+    delivery_enabled: boolean
+    flat_fee: number
+    pricing_mode?: 'flat' | 'distance'
+    accepting_orders?: boolean
+  } | null,
+  quotedDeliveryFee?: number | null,
 ) {
   const cartTotal = cart.reduce((sum, item) => {
     const extras = item.extras?.reduce((inner, extra) => inner + extra.price, 0) ?? 0
     return sum + (item.price + extras) * item.quantity
   }, 0)
 
-  const deliveryFee =
-    !tableInfo && deliverySettings?.delivery_enabled
-      ? Number(deliverySettings.flat_fee ?? 0)
-      : 0
+  const deliveryFee = !tableInfo && deliverySettings?.delivery_enabled
+    ? deliverySettings.pricing_mode === 'distance'
+      ? Number(quotedDeliveryFee ?? 0)
+      : Number(deliverySettings.flat_fee ?? 0)
+    : 0
 
   const orderTotal = cartTotal + deliveryFee
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
@@ -954,6 +1003,45 @@ export function getBorders(item: PublicMenuItem) {
   return item.extras
     .filter((entry) => entry.extra?.category === 'border')
     .map((entry) => entry.extra!)
+}
+
+export function getOptionalExtras(item: PublicMenuItem) {
+  return item.extras
+    .filter((entry) => entry.extra && entry.extra.category !== 'border')
+    .map((entry) => entry.extra!)
+}
+
+export function getMenuExtraCategoryLabel(category: string) {
+  if (category === 'border') return 'Borda'
+  if (category === 'flavor') return 'Sabor extra'
+  if (category === 'other') return 'Outros'
+  return category
+}
+
+export function groupOptionalExtras(item: PublicMenuItem) {
+  const grouped = new Map<string, MenuExtra[]>()
+
+  for (const extra of getOptionalExtras(item)) {
+    grouped.set(extra.category, [...(grouped.get(extra.category) ?? []), extra])
+  }
+
+  return [...grouped.keys()].map((category) => ({
+    category,
+    label: getMenuExtraCategoryLabel(category),
+    extras: grouped.get(category) ?? [],
+  }))
+}
+
+export function togglePublicMenuExtraSelection(selectedExtras: MenuExtra[], extra: MenuExtra) {
+  if (selectedExtras.some((entry) => entry.id === extra.id)) {
+    return selectedExtras.filter((entry) => entry.id !== extra.id)
+  }
+
+  if (extra.category === 'flavor') {
+    return [...selectedExtras.filter((entry) => entry.category !== 'flavor'), extra]
+  }
+
+  return [...selectedExtras, extra]
 }
 
 export function validateCustomerInfo(
@@ -1029,7 +1117,42 @@ export function normalizePublicMenuItems(rawItems: RawItem[]) {
 }
 
 export function normalizeTenantDeliverySettings(
-  value: { delivery_enabled: boolean; flat_fee: number } | { delivery_enabled: boolean; flat_fee: number }[] | null
+  value:
+    | {
+        delivery_enabled: boolean
+        flat_fee: number
+        accepting_orders?: boolean
+        schedule_enabled?: boolean
+        opens_at?: string | null
+        closes_at?: string | null
+        pricing_mode?: 'flat' | 'distance'
+        max_radius_km?: number | null
+        fee_per_km?: number | null
+        origin_zip_code?: string | null
+        origin_street?: string | null
+        origin_number?: string | null
+        origin_neighborhood?: string | null
+        origin_city?: string | null
+        origin_state?: string | null
+      }
+    | {
+        delivery_enabled: boolean
+        flat_fee: number
+        accepting_orders?: boolean
+        schedule_enabled?: boolean
+        opens_at?: string | null
+        closes_at?: string | null
+        pricing_mode?: 'flat' | 'distance'
+        max_radius_km?: number | null
+        fee_per_km?: number | null
+        origin_zip_code?: string | null
+        origin_street?: string | null
+        origin_number?: string | null
+        origin_neighborhood?: string | null
+        origin_city?: string | null
+        origin_state?: string | null
+      }[]
+    | null
 ) {
 
   return Array.isArray(value) ? (value[0] ?? null) : (value ?? null)

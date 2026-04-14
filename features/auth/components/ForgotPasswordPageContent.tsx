@@ -6,23 +6,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 
-type LoginFormValues = {
+type ForgotPasswordFormValues = {
   email: string
-  password: string
 }
 
 type Props = {
-  form: UseFormReturn<LoginFormValues>
+  form: UseFormReturn<ForgotPasswordFormValues>
   error: string | null
-  onSubmit: SubmitHandler<LoginFormValues>
+  success: string | null
+  onSubmit: SubmitHandler<ForgotPasswordFormValues>
 }
 
-export function LoginPageContent({ form, error, onSubmit }: Props) {
+export function ForgotPasswordPageContent({ form, error, success, onSubmit }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Entrar</CardTitle>
-        <CardDescription>Acesse o painel do seu estabelecimento</CardDescription>
+        <CardTitle>Recuperar acesso</CardTitle>
+        <CardDescription>Enviaremos um link para redefinir sua senha</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -41,38 +41,19 @@ export function LoginPageContent({ form, error, onSubmit }: Props) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="text-right">
-              <Link href="/forgot-password" className="text-sm font-medium text-slate-900 hover:underline">
-                Esqueci minha senha
-              </Link>
-            </div>
-
             {error && <p className="text-sm text-destructive">{error}</p>}
+            {success && <p className="text-sm text-emerald-600">{success}</p>}
 
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Entrando...' : 'Entrar'}
+              {form.formState.isSubmitting ? 'Enviando link...' : 'Enviar link de redefinição'}
             </Button>
           </form>
         </Form>
 
         <p className="mt-4 text-center text-sm text-slate-500">
-          Não tem conta?{' '}
-          <Link href="/register" className="font-medium text-slate-900 hover:underline">
-            Cadastre seu estabelecimento
+          Lembrou a senha?{' '}
+          <Link href="/login" className="font-medium text-slate-900 hover:underline">
+            Voltar para login
           </Link>
         </p>
       </CardContent>

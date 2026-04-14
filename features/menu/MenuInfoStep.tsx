@@ -45,6 +45,7 @@ export function MenuInfoStep({
   isProcessing,
   onContinue,
   onBack,
+  disabled = false,
 }: {
   tableInfo: { id: string; number: string } | null
   phone: string
@@ -76,6 +77,7 @@ export function MenuInfoStep({
   isProcessing: boolean
   onContinue: () => void
   onBack: () => void
+  disabled?: boolean
 }) {
   const customerBannerState = getCustomerBannerState(isPaidPlan, existingCustomer, isNewCustomer)
   const requirePhoneVerification = shouldRequirePhoneVerification(isPaidPlan, tableInfo)
@@ -97,7 +99,7 @@ export function MenuInfoStep({
             placeholder="Ex: João Silva"
             value={customerName}
             onChange={(e) => onCustomerNameChange(e.target.value)}
-            disabled={isPaidPlan && !!existingCustomer}
+            disabled={disabled || (isPaidPlan && !!existingCustomer)}
           />
           {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
         </div>
@@ -112,13 +114,14 @@ export function MenuInfoStep({
               value={phone}
               onChange={(e) => onPhoneChange(e.target.value)}
               className="flex-1"
+              disabled={disabled}
             />
             {requirePhoneVerification && !phoneVerified && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={onPhoneLookup}
-                disabled={lookingUpPhone || phone.replace(/\D/g, '').length < 10}
+                disabled={disabled || lookingUpPhone || phone.replace(/\D/g, '').length < 10}
                 className="w-full"
               >
                 {lookingUpPhone ? 'Enviando...' : codeSent ? 'Reenviar código' : 'Enviar código'}
@@ -134,12 +137,13 @@ export function MenuInfoStep({
                 onChange={(e) => onVerificationCodeChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 inputMode="numeric"
                 maxLength={6}
+                disabled={disabled}
               />
               <Button
                 size="sm"
                 className="w-full"
                 onClick={onVerifyPhoneCode}
-                disabled={verifyingPhoneCode || verificationCode.length !== 6}
+                disabled={disabled || verifyingPhoneCode || verificationCode.length !== 6}
               >
                 {verifyingPhoneCode ? 'Confirmando...' : 'Confirmar código'}
               </Button>
@@ -169,6 +173,7 @@ export function MenuInfoStep({
               value={customerCpf}
               onChange={(e) => onCustomerCpfChange(e.target.value)}
               maxLength={14}
+              disabled={disabled}
             />
             {errors.cpf && <p className="text-xs text-red-500 mt-1">{errors.cpf}</p>}
           </div>
@@ -181,6 +186,7 @@ export function MenuInfoStep({
               <button
                 key={value}
                 onClick={() => onPaymentMethodChange(value)}
+                disabled={disabled}
                 className={`text-xs p-2.5 rounded-lg border text-center transition-colors ${paymentMethod === value ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               >
                 {label}
@@ -193,11 +199,14 @@ export function MenuInfoStep({
           <label className="text-sm font-medium text-slate-700 block mb-1">
             Observações <span className="text-slate-400">(opcional)</span>
           </label>
-          <Input placeholder="Ex: sem cebola" value={notes} onChange={(e) => onNotesChange(e.target.value)} />
+          <Input placeholder="Ex: sem cebola" value={notes} onChange={(e) => onNotesChange(e.target.value)} disabled={disabled} />
         </div>
       </div>
 
       <div className="p-4 border-t border-slate-200 space-y-2">
+        {disabled && (
+          <p className="text-xs text-amber-700">Estabelecimento fechado para novos pedidos</p>
+        )}
         <div className="flex justify-between text-sm mb-2">
           <span className="text-slate-500">Subtotal</span>
           <span className="font-semibold">R$ {cartTotal.toFixed(2)}</span>
@@ -215,11 +224,11 @@ export function MenuInfoStep({
         <Button
           className="w-full"
           onClick={onContinue}
-          disabled={isProcessing || (requirePhoneVerification && !phoneVerified)}
+          disabled={disabled || isProcessing || (requirePhoneVerification && !phoneVerified)}
         >
           {getInfoContinueLabel(isProcessing)}
         </Button>
-        <Button variant="outline" className="w-full" onClick={onBack}>
+        <Button variant="outline" className="w-full" onClick={onBack} disabled={disabled}>
           Voltar
         </Button>
       </div>

@@ -427,6 +427,45 @@ describe('menu components', () => {
     expect(markup).toContain('Limpar carrinho')
   })
 
+  it('renderiza passo do carrinho com continuar desabilitado quando o estabelecimento esta fechado', async () => {
+    const { MenuCartStep } = await import('@/features/menu/MenuCartStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuCartStep, {
+        cart: [
+          {
+            menu_item_id: 'item-1',
+            name: 'Pizza Margherita',
+            price: 32,
+            quantity: 1,
+            extras: [],
+          },
+        ],
+        cartTotal: 32,
+        deliveryFee: 0,
+        orderTotal: 32,
+        disabled: true,
+        onIncrement: vi.fn(),
+        onDecrement: vi.fn(),
+        onRemove: vi.fn(),
+        onContinue: vi.fn(),
+        onClear: vi.fn(),
+      })
+    )
+
+    const buttons = elements.filter((element) => element.type === 'button')
+    const continueButton = buttons.find((element) => getTextContent(element) === 'Continuar')
+    const clearButton = buttons.find((element) => getTextContent(element).includes('Limpar carrinho'))
+    const removeButton = buttons.find((element) => element.props.className === 'text-slate-300 hover:text-red-500 transition-colors')
+    const decrementButton = buttons.find((element) => element.props.className?.includes('bg-slate-100'))
+
+    expect(continueButton?.props.disabled).toBe(true)
+    expect(clearButton?.props.disabled).toBeUndefined()
+    expect(removeButton?.props.disabled).toBeUndefined()
+    expect(decrementButton?.props.disabled).toBeUndefined()
+    expect(getTextContent(elements)).toContain('Estabelecimento fechado para novos pedidos')
+  })
+
   it('renderiza passo do carrinho vazio', async () => {
     const { MenuCartStep } = await import('@/features/menu/MenuCartStep')
 
@@ -733,6 +772,52 @@ describe('menu components', () => {
     expect(markup).toContain('Continuar')
   })
 
+  it('renderiza passo de dados com continuar desabilitado quando o estabelecimento esta fechado', async () => {
+    const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuInfoStep, {
+        tableInfo: null,
+        phone: '(11) 99999-9999',
+        onPhoneChange: vi.fn(),
+        phoneVerified: true,
+        onPhoneLookup: vi.fn(),
+        verificationCode: '',
+        onVerificationCodeChange: vi.fn(),
+        onVerifyPhoneCode: vi.fn(),
+        codeSent: false,
+        lookingUpPhone: false,
+        verifyingPhoneCode: false,
+        errors: {},
+        isPaidPlan: true,
+        existingCustomer: null,
+        isNewCustomer: false,
+        customerName: 'Maria',
+        onCustomerNameChange: vi.fn(),
+        customerCpf: '',
+        onCustomerCpfChange: vi.fn(),
+        paymentOptions: [{ value: 'delivery', label: 'Na entrega' }],
+        paymentMethod: 'delivery',
+        onPaymentMethodChange: vi.fn(),
+        notes: '',
+        onNotesChange: vi.fn(),
+        cartTotal: 32,
+        deliveryFee: 8,
+        orderTotal: 40,
+        isProcessing: false,
+        disabled: true,
+        onContinue: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    const buttons = elements.filter((element) => element.type === 'button' && typeof element.props.onClick === 'function')
+    const continueButton = buttons.find((element) => getTextContent(element) === 'Continuar')
+
+    expect(continueButton?.props.disabled).toBe(true)
+    expect(getTextContent(elements)).toContain('Estabelecimento fechado para novos pedidos')
+  })
+
   it('renderiza passo de dados para novo cliente sem plano pago e com erro de telefone', async () => {
     const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
 
@@ -829,6 +914,58 @@ describe('menu components', () => {
     expect(getTextContent(elements)).not.toContain('Enviar código')
     expect(getTextContent(elements)).not.toContain('Confirmar código')
     expect(continueButton?.props.disabled).toBe(false)
+  })
+
+  it('desabilita os campos do passo de dados quando o estabelecimento esta fechado', async () => {
+    const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuInfoStep, {
+        tableInfo: null,
+        phone: '(11) 99999-9999',
+        onPhoneChange: vi.fn(),
+        phoneVerified: true,
+        onPhoneLookup: vi.fn(),
+        verificationCode: '',
+        onVerificationCodeChange: vi.fn(),
+        onVerifyPhoneCode: vi.fn(),
+        codeSent: false,
+        lookingUpPhone: false,
+        verifyingPhoneCode: false,
+        errors: {},
+        isPaidPlan: true,
+        existingCustomer: null,
+        isNewCustomer: false,
+        customerName: 'Maria',
+        onCustomerNameChange: vi.fn(),
+        customerCpf: '',
+        onCustomerCpfChange: vi.fn(),
+        paymentOptions: [{ value: 'delivery', label: 'Na entrega' }],
+        paymentMethod: 'delivery',
+        onPaymentMethodChange: vi.fn(),
+        notes: '',
+        onNotesChange: vi.fn(),
+        cartTotal: 32,
+        deliveryFee: 8,
+        orderTotal: 40,
+        isProcessing: false,
+        disabled: true,
+        onContinue: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    const inputs = elements.filter((element) => element.type === 'input')
+    const buttons = elements.filter((element) => element.type === 'button' && typeof element.props.onClick === 'function')
+    const paymentButton = buttons.find((element) => getTextContent(element) === 'Na entrega')
+    const continueButton = buttons.find((element) => getTextContent(element) === 'Continuar')
+    const backButton = buttons.find((element) => getTextContent(element) === 'Voltar')
+
+    expect(inputs.length).toBeGreaterThan(0)
+    expect(inputs.every((input) => input.props.disabled === true)).toBe(true)
+    expect(paymentButton?.props.disabled).toBe(true)
+    expect(continueButton?.props.disabled).toBe(true)
+    expect(backButton?.props.disabled).toBe(true)
   })
 
   it('aciona handlers e estados do passo de dados', async () => {
@@ -948,6 +1085,39 @@ describe('menu components', () => {
     expect(markup).toContain('Ir para pagamento')
   })
 
+  it('renderiza passo de endereco com envio desabilitado quando o estabelecimento esta fechado', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuAddressStep, {
+        address: {
+          zip_code: '12345678',
+          street: 'Rua A',
+          number: '10',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+        onAddressChange: vi.fn(),
+        onCepLookup: vi.fn(),
+        loadingCep: false,
+        errors: {},
+        paymentMethod: 'delivery',
+        isProcessing: false,
+        disabled: true,
+        onSubmit: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    const buttons = elements.filter((element) => element.type === 'button' && typeof element.props.onClick === 'function')
+    const submitButton = buttons.find((element) => getTextContent(element) === 'Fazer pedido')
+    const backButton = buttons.find((element) => getTextContent(element) === 'Voltar')
+
+    expect(submitButton?.props.disabled).toBe(true)
+    expect(backButton?.props.disabled).toBe(true)
+    expect(getTextContent(elements)).toContain('Estabelecimento fechado para novos pedidos')
+  })
+
   it('renderiza passo de endereço com erros e envio em processamento', async () => {
     const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
 
@@ -982,6 +1152,38 @@ describe('menu components', () => {
     expect(markup).toContain('Cidade obrigatória')
     expect(markup).toContain('Processando...')
     expect(markup).toContain('Voltar')
+  })
+
+  it('desabilita os campos do passo de endereco quando o estabelecimento esta fechado', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuAddressStep, {
+        address: {
+          zip_code: '12345678',
+          street: 'Rua A',
+          number: '10',
+          complement: 'Casa',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+        onAddressChange: vi.fn(),
+        onCepLookup: vi.fn(),
+        loadingCep: false,
+        errors: {},
+        paymentMethod: 'delivery',
+        isProcessing: false,
+        disabled: true,
+        onSubmit: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    const inputs = elements.filter((element) => element.type === 'input')
+
+    expect(inputs.length).toBeGreaterThan(0)
+    expect(inputs.every((input) => input.props.disabled === true)).toBe(true)
   })
 
   it('aciona handlers e normaliza campos do passo de endereço', async () => {
@@ -2129,6 +2331,62 @@ describe('menu components', () => {
     ).toBe('')
   })
 
+  it('renderiza card de item com adicionais por tipo e aciona toggle desses adicionais', async () => {
+    const { MenuItemCard } = await import('@/features/menu/MenuItemCard')
+
+    const onAdd = vi.fn()
+    const onBorderToggle = vi.fn()
+    const onExtraToggle = vi.fn()
+    const onHalfFlavor = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuItemCard, {
+        item: {
+          id: 'item-extra-1',
+          tenant_id: 'tenant-1',
+          category_id: 'cat-1',
+          name: 'Pizza Especial',
+          description: 'Com adicionais',
+          price: 42,
+          available: true,
+          display_order: 1,
+          category: { id: 'cat-1', name: 'Pizzas' },
+          extras: [
+            { extra: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' } },
+            { extra: { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' } },
+            { extra: { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' } },
+          ],
+        },
+        selectedBorder: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' },
+        selectedExtras: [{ id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' }],
+        onAdd,
+        onBorderToggle,
+        onExtraToggle,
+        onHalfFlavor,
+      })
+    )
+
+    expect(getTextContent(elements)).toContain('Sabor extra')
+    expect(getTextContent(elements)).toContain('Escolha 1 opção')
+    expect(getTextContent(elements)).toContain('Outros')
+    expect(getTextContent(elements)).toContain('Escolha quantos quiser')
+    expect(getTextContent(elements)).toContain('Cheddar')
+    expect(getTextContent(elements)).toContain('Calabresa extra')
+    expect(getTextContent(elements)).toContain('Selecionados: Borda Catupiry, Cheddar')
+    expect(getTextContent(elements)).toContain('Total com adicionais: R$ 51.00')
+
+    const buttons = elements.filter((element) => element.type === 'button')
+    const cheddarButton = buttons.find((element) => getTextContent(element).includes('Cheddar'))
+    const flavorButton = buttons.find((element) => getTextContent(element).includes('Calabresa extra'))
+
+    cheddarButton?.props.onClick()
+    flavorButton?.props.onClick()
+
+    expect(onExtraToggle).toHaveBeenNthCalledWith(1, { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' })
+    expect(onExtraToggle).toHaveBeenNthCalledWith(2, { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' })
+    expect(onAdd).not.toHaveBeenCalled()
+  })
+
   it('renderiza card de item com borda e meia a meia', async () => {
     const { MenuItemCard } = await import('@/features/menu/MenuItemCard')
 
@@ -2173,6 +2431,48 @@ describe('menu components', () => {
     expect(onBorderToggle).toHaveBeenCalledWith(null)
     expect(onHalfFlavor).toHaveBeenCalledTimes(1)
     expect(onAdd).not.toHaveBeenCalled()
+  })
+
+  it('renderiza card de item desabilitado quando o estabelecimento esta fechado', async () => {
+    const { MenuItemCard } = await import('@/features/menu/MenuItemCard')
+
+    const onAdd = vi.fn()
+    const onBorderToggle = vi.fn()
+    const onExtraToggle = vi.fn()
+    const onHalfFlavor = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuItemCard, {
+        item: {
+          id: 'item-extra-disabled',
+          tenant_id: 'tenant-1',
+          category_id: 'cat-1',
+          name: 'Pizza Fechada',
+          description: 'Indisponivel para novos pedidos',
+          price: 40,
+          available: true,
+          display_order: 1,
+          category: { id: 'cat-1', name: 'Pizzas' },
+          extras: [
+            { extra: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' } },
+            { extra: { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' } },
+          ],
+        },
+        selectedBorder: null,
+        selectedExtras: [],
+        disabled: true,
+        onAdd,
+        onBorderToggle,
+        onExtraToggle,
+        onHalfFlavor,
+      })
+    )
+
+    const buttons = elements.filter((element) => element.type === 'button')
+
+    expect(buttons.length).toBeGreaterThan(0)
+    expect(buttons.every((button) => button.props.disabled === true)).toBe(true)
+    expect(getTextContent(elements)).toContain('Estabelecimento fechado para novos pedidos')
   })
 
   it('renderiza card simples e aciona adicionar sem borda nem meia a meia', async () => {

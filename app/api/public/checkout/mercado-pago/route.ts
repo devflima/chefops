@@ -1,3 +1,4 @@
+import { resolveDeliveryQuote } from '@/lib/delivery-pricing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createCheckoutPreference, getMercadoPagoWebhookUrl } from '@/lib/mercadopago'
 import { getTenantMercadoPagoAccessToken, getTenantMercadoPagoAccount } from '@/lib/tenant-mercadopago'
@@ -32,6 +33,7 @@ const checkoutSchema = z.object({
   table_number: nullableString,
   notes: nullableString,
   delivery_fee: z.number().min(0).optional(),
+  delivery_distance_km: z.number().min(0).optional(),
   delivery_address: z.object({
     zip_code: nullableString,
     street: nullableString,
@@ -62,6 +64,24 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient()
     const tenantAccount = await getTenantMercadoPagoAccount(payload.tenant_id)
     const tenantAccessToken = await getTenantMercadoPagoAccessToken(payload.tenant_id)
+
+    if (payload.delivery_address) {
+      const { data: deliverySettings, error: deliverySettingsError } = await admin
+        .from('tenant_delivery_settings')
+        .select('delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at, pricing_mode, max_radius_km, fee_per_km, origin_zip_code, origin_street, origin_number, origin_neighborhood, origin_city, origin_state')
+        .eq('tenant_id', payload.tenant_id)
+        .maybeSingle()
+
+      if (deliverySettingsError) throw deliverySettingsError
+
+      const quote = await resolveDeliveryQuote(deliverySettings ?? { delivery_enabled: false, flat_fee: 0 }, payload.delivery_address)
+      if (!quote.ok) {
+        return NextResponse.json({ error: quote.error }, { status: 422 })
+      }
+
+      payload.delivery_fee = quote.deliveryFee
+      payload.delivery_distance_km = quote.distanceKm ?? undefined
+    }
 
     if (!tenantAccessToken) {
       return NextResponse.json(

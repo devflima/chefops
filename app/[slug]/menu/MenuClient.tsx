@@ -30,6 +30,7 @@ import {
   getPublicOrderPlacementErrorMessage,
   getPublicOrderStatusNotice,
   getOpenCartState,
+  getOperationClosedNotice,
   getSuccessfulPublicOrderState,
   groupMenuItems,
   incrementCartItem,
@@ -49,6 +50,7 @@ import {
   serializeStoredActiveOrder,
   getAddressFlowTarget,
   getTrackOrderState,
+  togglePublicMenuExtraSelection,
   shouldRequirePhoneVerification,
   getValidationErrorToastMessage,
   shouldContinueCheckoutPolling,
@@ -68,6 +70,19 @@ type Props = {
     delivery_settings?: {
       delivery_enabled: boolean
       flat_fee: number
+      accepting_orders?: boolean
+      schedule_enabled?: boolean
+      opens_at?: string | null
+      closes_at?: string | null
+      pricing_mode?: 'flat' | 'distance'
+      max_radius_km?: number | null
+      fee_per_km?: number | null
+      origin_zip_code?: string | null
+      origin_street?: string | null
+      origin_number?: string | null
+      origin_neighborhood?: string | null
+      origin_city?: string | null
+      origin_state?: string | null
     } | null
   }
   items: MenuItem[]
@@ -92,6 +107,7 @@ export default function MenuClient({
 }: Props) {
   const isPaidPlan = tenant.plan !== 'free'
   const requirePhoneVerification = shouldRequirePhoneVerification(isPaidPlan, tableInfo)
+  const operationClosedNotice = getOperationClosedNotice(tenant.delivery_settings)
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
@@ -124,6 +140,10 @@ export default function MenuClient({
   const [codeSent, setCodeSent] = useState(false)
   const [sendingPhoneCode, setSendingPhoneCode] = useState(false)
   const [verifyingPhoneCode, setVerifyingPhoneCode] = useState(false)
+  const [selectedExtraOptions, setSelectedExtraOptions] = useState<Record<string, MenuExtra[]>>({})
+  const [quotedDeliveryFee, setQuotedDeliveryFee] = useState<number | null>(null)
+  const [quotedDistanceKm, setQuotedDistanceKm] = useState<number | null>(null)
+  const [deliveryQuoteMessage, setDeliveryQuoteMessage] = useState<string | null>(null)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreatePublicOrder()
@@ -135,14 +155,22 @@ export default function MenuClient({
     cart,
     tableInfo,
     tenant.delivery_settings,
+    quotedDeliveryFee,
   )
 
   function addToCart(item: MenuItem, halfFlavor?: MenuItem) {
+    if (operationClosedNotice) {
+      toast.error(operationClosedNotice)
+      return
+    }
+
     const border = selectedBorders[item.id] ?? null
-    const cartItem = createCartItem(item, border, halfFlavor)
+    const selectedExtras = selectedExtraOptions[item.id] ?? []
+    const cartItem = createCartItem(item, border, selectedExtras, halfFlavor)
 
     setCart((prev) => [...prev, cartItem])
     setSelectedBorders((prev) => ({ ...prev, [item.id]: null }))
+    setSelectedExtraOptions((prev) => ({ ...prev, [item.id]: [] }))
     setHalfFlavorModal(null)
     toast.success(`${cartItem.name} adicionado ao carrinho`, {
       description: `Agora voce tem ${cartCount + 1} item(ns) no carrinho.`,
@@ -158,6 +186,11 @@ export default function MenuClient({
   }
 
   function incrementCart(index: number) {
+    if (operationClosedNotice) {
+      toast.error(operationClosedNotice)
+      return
+    }
+
     setCart((prev) => incrementCartItem(prev, index))
   }
 
@@ -197,6 +230,11 @@ export default function MenuClient({
   }
 
   async function handlePhoneLookup() {
+    if (operationClosedNotice) {
+      toast.error(operationClosedNotice)
+      return
+    }
+
     const cleanPhone = phone.replace(/\D/g, '')
     if (cleanPhone.length < 10) {
       toast.error('Informe um telefone válido para continuar.')
@@ -234,6 +272,11 @@ export default function MenuClient({
   }
 
   async function handlePhoneCodeVerify() {
+    if (operationClosedNotice) {
+      toast.error(operationClosedNotice)
+      return
+    }
+
     const cleanPhone = phone.replace(/\D/g, '')
     const cleanCode = verificationCode.replace(/\D/g, '')
 
@@ -287,6 +330,11 @@ export default function MenuClient({
   }
 
   async function handleCepLookup(cep: string) {
+    if (operationClosedNotice) {
+      toast.error(operationClosedNotice)
+      return
+    }
+
     const clean = cep.replace(/\D/g, '')
     if (clean.length !== 8) return
     setLoadingCep(true)
@@ -295,6 +343,54 @@ export default function MenuClient({
       const json = await res.json()
       if (json.data) setAddress((prev) => ({ ...prev, ...json.data }))
     } finally { setLoadingCep(false) }
+  }
+
+  async function resolveDeliveryQuote(nextAddress: Partial<CustomerAddress>) {
+    if (!nextAddress.zip_code || !nextAddress.street || !nextAddress.number || !nextAddress.city || !nextAddress.state) {
+      return { deliveryFee: 0, distanceKm: null }
+    }
+
+    if (!tenant.delivery_settings?.delivery_enabled) {
+      setQuotedDeliveryFee(0)
+      setQuotedDistanceKm(null)
+      setDeliveryQuoteMessage(null)
+      return { deliveryFee: 0, distanceKm: null }
+    }
+
+    if (tenant.delivery_settings.pricing_mode !== 'distance') {
+      const flatFee = Number(tenant.delivery_settings.flat_fee ?? 0)
+      setQuotedDeliveryFee(flatFee)
+      setQuotedDistanceKm(null)
+      setDeliveryQuoteMessage('Taxa fixa de entrega aplicada para este pedido.')
+      return { deliveryFee: flatFee, distanceKm: null }
+    }
+
+    const res = await fetch('/api/public/delivery-quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenant_id: tenant.id,
+        delivery_address: nextAddress,
+      }),
+    })
+    const json = await res.json()
+
+    if (!res.ok) {
+      throw new Error(json.error || 'Não foi possível calcular a entrega.')
+    }
+
+    setQuotedDeliveryFee(json.data.delivery_fee)
+    setQuotedDistanceKm(json.data.distance_km ?? null)
+    setDeliveryQuoteMessage(
+      json.data.pricing_mode === 'distance'
+        ? 'Taxa calculada com base na distância até o endereço informado.'
+        : 'Taxa fixa de entrega aplicada para este pedido.',
+    )
+
+    return {
+      deliveryFee: Number(json.data.delivery_fee ?? 0),
+      distanceKm: json.data.distance_km ?? null,
+    }
   }
 
   function validateInfo() {
@@ -423,6 +519,11 @@ export default function MenuClient({
   }, [activeOrderStorageKey, orderId, orderNumber, publicOrderStatus])
 
   async function handleContinueToAddress() {
+    if (operationClosedNotice) {
+      toast.error(operationClosedNotice)
+      return
+    }
+
     if (!validateInfo()) return
     const target = getContinueFlowTarget(paymentMethod, tableInfo)
     if (target === 'address') {
@@ -436,7 +537,7 @@ export default function MenuClient({
     await handlePlaceOrder()
   }
 
-  async function handleStartOnlineCheckout(deliveryAddress?: Partial<CustomerAddress>) {
+  async function handleStartOnlineCheckout(deliveryAddress?: Partial<CustomerAddress>, resolvedDeliveryFee?: number, resolvedDistanceKm?: number | null) {
     try {
       setOnlineCheckoutLoading(true)
 
@@ -451,7 +552,8 @@ export default function MenuClient({
           customerCpf,
           tableInfo,
           notes,
-          deliveryFee,
+          deliveryFee: resolvedDeliveryFee ?? deliveryFee,
+          deliveryDistanceKm: resolvedDistanceKm ?? quotedDistanceKm,
           deliveryAddress,
           items: cart,
         })),
@@ -477,7 +579,12 @@ export default function MenuClient({
     }
   }
 
-  async function handlePlaceOrder(deliveryAddress?: Partial<CustomerAddress>) {
+  async function handlePlaceOrder(deliveryAddress?: Partial<CustomerAddress>, resolvedDeliveryFee?: number, resolvedDistanceKm?: number | null) {
+    if (operationClosedNotice) {
+      alert(operationClosedNotice)
+      return
+    }
+
     try {
       let customerId: string | undefined
       if (isPaidPlan) {
@@ -514,7 +621,8 @@ export default function MenuClient({
           tableInfo,
           paymentMethod: paymentMethod as 'online' | 'table' | 'counter' | 'delivery',
           notes,
-          deliveryFee,
+          deliveryFee: resolvedDeliveryFee ?? deliveryFee,
+          deliveryDistanceKm: resolvedDistanceKm ?? quotedDistanceKm,
           deliveryAddress,
           items: cart,
         }),
@@ -542,12 +650,23 @@ export default function MenuClient({
   }
 
   async function handleAddressSubmit() {
-    if (!validateAddress()) return
-    if (getAddressFlowTarget(paymentMethod) === 'online-checkout') {
-      await handleStartOnlineCheckout(address)
+    if (operationClosedNotice) {
+      alert(operationClosedNotice)
       return
     }
-    await handlePlaceOrder(address)
+
+    if (!validateAddress()) return
+
+    try {
+      const quote = await resolveDeliveryQuote(address)
+      if (getAddressFlowTarget(paymentMethod) === 'online-checkout') {
+        await handleStartOnlineCheckout(address, quote.deliveryFee, quote.distanceKm)
+        return
+      }
+      await handlePlaceOrder(address, quote.deliveryFee, quote.distanceKm)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Não foi possível calcular a entrega.')
+    }
   }
 
   async function handleCancelOrder() {
@@ -630,7 +749,7 @@ export default function MenuClient({
         setCartOpen(nextState.cartOpen)
         setCheckoutStep(nextState.checkoutStep)
       }}
-      checkoutNotice={checkoutNotice}
+      checkoutNotice={checkoutNotice ?? operationClosedNotice}
       publicOrderStatus={publicOrderStatus}
       cartOpen={cartOpen}
       onTrackOrder={() => {
@@ -644,11 +763,36 @@ export default function MenuClient({
       items={items}
       filteredGroups={filteredGroups}
       selectedBorders={selectedBorders}
+      selectedExtras={selectedExtraOptions}
+      menuDisabled={Boolean(operationClosedNotice)}
       onAdd={addToCart}
-      onBorderToggle={(item, border) =>
+      onBorderToggle={(item, border) => {
+        if (operationClosedNotice) {
+          toast.error(operationClosedNotice)
+          return
+        }
+
         setSelectedBorders((prev) => ({ ...prev, [item.id]: border }))
-      }
-      onHalfFlavor={(item) => setHalfFlavorModal({ item })}
+      }}
+      onExtraToggle={(item, extra) => {
+        if (operationClosedNotice) {
+          toast.error(operationClosedNotice)
+          return
+        }
+
+        setSelectedExtraOptions((prev) => ({
+          ...prev,
+          [item.id]: togglePublicMenuExtraSelection(prev[item.id] ?? [], extra),
+        }))
+      }}
+      onHalfFlavor={(item) => {
+        if (operationClosedNotice) {
+          toast.error(operationClosedNotice)
+          return
+        }
+
+        setHalfFlavorModal({ item })
+      }}
       halfFlavorModal={halfFlavorModal}
       halfFlavorOptions={halfFlavorModal ? getHalfFlavorOptions(items, halfFlavorModal.item) : []}
       onCloseHalfFlavor={() => setHalfFlavorModal(null)}
@@ -661,22 +805,43 @@ export default function MenuClient({
         title: getCheckoutStepTitle(checkoutStep),
         checkoutStep,
         onClose: () => setCartOpen(false),
-        onStepChange: setCheckoutStep,
+        onStepChange: (step) => {
+          if (operationClosedNotice) {
+            toast.error(operationClosedNotice)
+            return
+          }
+
+          setCheckoutStep(step)
+        },
         cartStepProps: {
           cart,
           cartTotal,
           deliveryFee,
           orderTotal,
+          disabled: Boolean(operationClosedNotice),
           onIncrement: incrementCart,
           onDecrement: decrementCart,
           onRemove: removeFromCart,
-          onContinue: () => setCheckoutStep(getCartDrawerState('info').checkoutStep),
+          onContinue: () => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setCheckoutStep(getCartDrawerState('info').checkoutStep)
+          },
           onClear: clearCart,
         },
         infoStepProps: {
           tableInfo,
+          disabled: Boolean(operationClosedNotice),
           phone,
           onPhoneChange: (value) => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
             const nextState = getPhoneChangeState(value)
             setPhone(nextState.phone)
             setPhoneVerified(nextState.phoneVerified)
@@ -689,7 +854,14 @@ export default function MenuClient({
           phoneVerified,
           onPhoneLookup: handlePhoneLookup,
           verificationCode,
-          onVerificationCodeChange: setVerificationCode,
+          onVerificationCodeChange: (value) => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setVerificationCode(value)
+          },
           onVerifyPhoneCode: handlePhoneCodeVerify,
           codeSent,
           lookingUpPhone: lookingUpPhone || sendingPhoneCode,
@@ -699,32 +871,84 @@ export default function MenuClient({
           existingCustomer,
           isNewCustomer,
           customerName,
-          onCustomerNameChange: setCustomerName,
+          onCustomerNameChange: (value) => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setCustomerName(value)
+          },
           customerCpf,
-          onCustomerCpfChange: (value) => setCustomerCpf(formatCPF(value)),
+          onCustomerCpfChange: (value) => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setCustomerCpf(formatCPF(value))
+          },
           paymentOptions,
           paymentMethod,
-          onPaymentMethodChange: (value) =>
-            setPaymentMethod(value as '' | NonNullable<PublicOrderStatus['payment_method']>),
+          onPaymentMethodChange: (value) => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setPaymentMethod(value as '' | NonNullable<PublicOrderStatus['payment_method']>)
+          },
           notes,
-          onNotesChange: setNotes,
+          onNotesChange: (value) => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setNotes(value)
+          },
           cartTotal,
           deliveryFee,
           orderTotal,
           isProcessing: isCheckoutProcessing,
           onContinue: handleContinueToAddress,
-          onBack: () => setCheckoutStep('cart'),
+          onBack: () => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setCheckoutStep('cart')
+          },
         },
         addressStepProps: {
           address,
-          onAddressChange: (updater) => setAddress((prev) => updater(prev)),
+          disabled: Boolean(operationClosedNotice),
+          onAddressChange: (updater) => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setQuotedDeliveryFee(null)
+            setQuotedDistanceKm(null)
+            setDeliveryQuoteMessage(null)
+            setAddress((prev) => updater(prev))
+          },
           onCepLookup: handleCepLookup,
           loadingCep,
           errors,
           paymentMethod,
           isProcessing: isCheckoutProcessing,
           onSubmit: handleAddressSubmit,
-          onBack: () => setCheckoutStep('info'),
+          onBack: () => {
+            if (operationClosedNotice) {
+              toast.error(operationClosedNotice)
+              return
+            }
+
+            setCheckoutStep('info')
+          },
         },
         doneStepProps: {
           orderNumber,

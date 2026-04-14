@@ -6,47 +6,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 
-type LoginFormValues = {
-  email: string
+type ResetPasswordFormValues = {
   password: string
+  confirm_password: string
 }
 
 type Props = {
-  form: UseFormReturn<LoginFormValues>
+  form: UseFormReturn<ResetPasswordFormValues>
   error: string | null
-  onSubmit: SubmitHandler<LoginFormValues>
+  success: string | null
+  onSubmit: SubmitHandler<ResetPasswordFormValues>
 }
 
-export function LoginPageContent({ form, error, onSubmit }: Props) {
+export function ResetPasswordPageContent({ form, error, success, onSubmit }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Entrar</CardTitle>
-        <CardDescription>Acesse o painel do seu estabelecimento</CardDescription>
+        <CardTitle>Definir nova senha</CardTitle>
+        <CardDescription>Atualize sua senha para voltar ao painel com segurança</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>E-mail</FormLabel>
-                  <FormControl>
-                    <Input placeholder="voce@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Senha</FormLabel>
+                  <FormLabel>Nova senha</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -55,24 +42,33 @@ export function LoginPageContent({ form, error, onSubmit }: Props) {
               )}
             />
 
-            <div className="text-right">
-              <Link href="/forgot-password" className="text-sm font-medium text-slate-900 hover:underline">
-                Esqueci minha senha
-              </Link>
-            </div>
+            <FormField
+              control={form.control}
+              name="confirm_password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar nova senha</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {error && <p className="text-sm text-destructive">{error}</p>}
+            {success && <p className="text-sm text-emerald-600">{success}</p>}
 
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Entrando...' : 'Entrar'}
+              {form.formState.isSubmitting ? 'Atualizando senha...' : 'Atualizar senha'}
             </Button>
           </form>
         </Form>
 
         <p className="mt-4 text-center text-sm text-slate-500">
-          Não tem conta?{' '}
-          <Link href="/register" className="font-medium text-slate-900 hover:underline">
-            Cadastre seu estabelecimento
+          Já conseguiu entrar?{' '}
+          <Link href="/login" className="font-medium text-slate-900 hover:underline">
+            Voltar para login
           </Link>
         </p>
       </CardContent>

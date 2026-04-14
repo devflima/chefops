@@ -771,7 +771,11 @@ describe('heavy components smoke', () => {
         onAddIngredient: vi.fn(),
         onUpdateIngredient: vi.fn(),
         onRemoveIngredient: vi.fn(),
-        allExtras: [{ id: 'extra-1', name: 'Borda recheada', price: 5, category: 'Massas' }],
+        allExtras: [
+          { id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' },
+          { id: 'extra-2', name: 'Calabresa', price: 7, category: 'flavor' },
+          { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
+        ],
         selectedExtras: ['extra-1'],
         onSelectedExtrasChange: vi.fn(),
         onSubmit: vi.fn(),
@@ -781,7 +785,13 @@ describe('heavy components smoke', () => {
     expect(markup).toContain('Editar item')
     expect(markup).toContain('Produto base para baixa simples')
     expect(markup).toContain('Ficha técnica')
-    expect(markup).toContain('Borda recheada')
+    expect(markup).toContain('grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_120px_auto]')
+    expect(markup).toContain('Borda')
+    expect(markup).toContain('Sabor extra')
+    expect(markup).toContain('Outros')
+    expect(markup).toContain('Catupiry')
+    expect(markup).toContain('Calabresa')
+    expect(markup).toContain('Molho da casa')
   })
 
   it('aciona handlers básicos do MenuItemDialog', async () => {

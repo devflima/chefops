@@ -4,6 +4,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 import {
   buildDeliveryFeePayload,
+  buildDeliveryHoursPayload,
+  buildDeliveryOperationPayload,
+  buildDeliverySchedulePayload,
   buildDeliveryTogglePayload,
   buildNotificationTogglePayload,
   getDeliveryFeeValue,
@@ -93,14 +96,22 @@ describe('integrations page helpers', () => {
           tenant_id: 'tenant-1',
           delivery_enabled: true,
           flat_fee: 9,
+          accepting_orders: true,
+          schedule_enabled: true,
+          opens_at: '09:00',
+          closes_at: '18:00',
         },
         '15.75'
       )
     ).toEqual({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
-        flat_fee: 15.75,
-      })
+      flat_fee: 15.75,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
+    })
 
     expect(
       buildDeliveryFeePayload(
@@ -108,6 +119,10 @@ describe('integrations page helpers', () => {
           tenant_id: 'tenant-1',
           delivery_enabled: true,
           flat_fee: 9,
+          accepting_orders: true,
+          schedule_enabled: true,
+          opens_at: '09:00',
+          closes_at: '18:00',
         },
         ''
       )
@@ -115,6 +130,80 @@ describe('integrations page helpers', () => {
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 0,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
+    })
+
+    expect(
+      buildDeliveryOperationPayload(
+        {
+          tenant_id: 'tenant-1',
+          delivery_enabled: true,
+          flat_fee: 9,
+          accepting_orders: true,
+          schedule_enabled: true,
+          opens_at: '09:00',
+          closes_at: '18:00',
+        },
+        false
+      )
+    ).toEqual({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 9,
+      accepting_orders: false,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
+    })
+
+    expect(
+      buildDeliverySchedulePayload(
+        {
+          tenant_id: 'tenant-1',
+          delivery_enabled: true,
+          flat_fee: 9,
+          accepting_orders: true,
+          schedule_enabled: false,
+          opens_at: null,
+          closes_at: null,
+        },
+        true
+      )
+    ).toEqual({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 9,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: null,
+      closes_at: null,
+    })
+
+    expect(
+      buildDeliveryHoursPayload(
+        {
+          tenant_id: 'tenant-1',
+          delivery_enabled: true,
+          flat_fee: 9,
+          accepting_orders: true,
+          schedule_enabled: true,
+          opens_at: '09:00',
+          closes_at: '18:00',
+        },
+        '10:00',
+        '22:00'
+      )
+    ).toEqual({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 9,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '10:00',
+      closes_at: '22:00',
     })
 
     expect(
@@ -142,8 +231,12 @@ describe('IntegrationsPageContent', () => {
 
     const onDisconnect = vi.fn()
     const onDeliveryToggle = vi.fn()
+    const onDeliveryOperationChange = vi.fn()
+    const onDeliveryScheduleChange = vi.fn()
+    const onDeliveryHoursChange = vi.fn()
     const onDeliveryFeeInputChange = vi.fn()
     const onDeliveryFeeSave = vi.fn()
+    const onDeliveryHoursSave = vi.fn()
     const onToggleWhatsappOption = vi.fn()
 
     const accountData = {
@@ -156,6 +249,10 @@ describe('IntegrationsPageContent', () => {
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
     }
 
     const notificationSettingsData = {
@@ -179,9 +276,15 @@ describe('IntegrationsPageContent', () => {
         deliverySettingsData,
         deliverySettingsPending: false,
         deliveryFeeValue: '12.5',
+        openingHourValue: '09:00',
+        closingHourValue: '18:00',
         onDeliveryToggle,
+        onDeliveryOperationChange,
+        onDeliveryScheduleChange,
+        onDeliveryHoursChange,
         onDeliveryFeeInputChange,
         onDeliveryFeeSave,
+        onDeliveryHoursSave,
         hasWhatsappNotifications: true,
         notificationSettingsLoading: false,
         notificationSettingsData,
@@ -196,6 +299,8 @@ describe('IntegrationsPageContent', () => {
     expect(markup).toContain('seller-1')
     expect(markup).toContain('Produção')
     expect(markup).toContain('Notificações WhatsApp')
+    expect(markup).toContain('Estabelecimento aberto')
+    expect(markup).toContain('Horário de funcionamento')
 
     const elements = flattenElements(
       React.createElement(IntegrationsPageContent, {
@@ -208,9 +313,15 @@ describe('IntegrationsPageContent', () => {
         deliverySettingsData,
         deliverySettingsPending: false,
         deliveryFeeValue: '12.5',
+        openingHourValue: '09:00',
+        closingHourValue: '18:00',
         onDeliveryToggle,
+        onDeliveryOperationChange,
+        onDeliveryScheduleChange,
+        onDeliveryHoursChange,
         onDeliveryFeeInputChange,
         onDeliveryFeeSave,
+        onDeliveryHoursSave,
         hasWhatsappNotifications: true,
         notificationSettingsLoading: false,
         notificationSettingsData,
@@ -240,9 +351,11 @@ describe('IntegrationsPageContent', () => {
         getTextContent(element.props.children).trim() === ''
     )
 
-    expect(toggleButtons).toHaveLength(8)
+    expect(toggleButtons).toHaveLength(10)
     toggleButtons[0].props.onClick()
     toggleButtons[1].props.onClick()
+    toggleButtons[2].props.onClick()
+    toggleButtons[3].props.onClick()
 
     expect(onDisconnect).toHaveBeenCalledTimes(1)
     expect(onDeliveryFeeInputChange).toHaveBeenCalledWith('17.90')
@@ -250,11 +363,21 @@ describe('IntegrationsPageContent', () => {
       tenant_id: 'tenant-1',
       delivery_enabled: false,
       flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
     })
+    expect(onDeliveryOperationChange).toHaveBeenCalledWith(false)
+    expect(onDeliveryScheduleChange).toHaveBeenCalledWith(false)
     expect(onDeliveryFeeSave).toHaveBeenCalledWith({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 12.5,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
     })
     expect(onToggleWhatsappOption).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -277,9 +400,15 @@ describe('IntegrationsPageContent', () => {
         deliverySettingsData: null,
         deliverySettingsPending: false,
         deliveryFeeValue: '0',
+        openingHourValue: '',
+        closingHourValue: '',
         onDeliveryToggle: vi.fn(),
+        onDeliveryOperationChange: vi.fn(),
+        onDeliveryScheduleChange: vi.fn(),
+        onDeliveryHoursChange: vi.fn(),
         onDeliveryFeeInputChange: vi.fn(),
         onDeliveryFeeSave: vi.fn(),
+        onDeliveryHoursSave: vi.fn(),
         hasWhatsappNotifications: false,
         notificationSettingsLoading: false,
         notificationSettingsData: null,
@@ -308,9 +437,15 @@ describe('IntegrationsPageContent', () => {
         deliverySettingsData: null,
         deliverySettingsPending: false,
         deliveryFeeValue: '0',
+        openingHourValue: '',
+        closingHourValue: '',
         onDeliveryToggle: vi.fn(),
+        onDeliveryOperationChange: vi.fn(),
+        onDeliveryScheduleChange: vi.fn(),
+        onDeliveryHoursChange: vi.fn(),
         onDeliveryFeeInputChange: vi.fn(),
         onDeliveryFeeSave: vi.fn(),
+        onDeliveryHoursSave: vi.fn(),
         hasWhatsappNotifications: true,
         notificationSettingsLoading: true,
         notificationSettingsData: null,
@@ -323,7 +458,7 @@ describe('IntegrationsPageContent', () => {
     expect(markup).toContain('Desconectado')
     expect(markup).toContain('Conectar Mercado Pago')
     expect(markup).toContain('Carregando configuração de entrega...')
-    expect(markup).toContain('Carregando configurações...')
+    expect(markup).toContain('Carregando configurações de notificação...')
   })
 
   it('renderiza modo teste, expiração ausente e ações pendentes', async () => {
@@ -339,6 +474,10 @@ describe('IntegrationsPageContent', () => {
       tenant_id: 'tenant-1',
       delivery_enabled: false,
       flat_fee: 0,
+      accepting_orders: false,
+      schedule_enabled: false,
+      opens_at: null,
+      closes_at: null,
     }
 
     const notificationSettingsData = {
@@ -362,9 +501,15 @@ describe('IntegrationsPageContent', () => {
         deliverySettingsData,
         deliverySettingsPending: true,
         deliveryFeeValue: '0',
+        openingHourValue: '',
+        closingHourValue: '',
         onDeliveryToggle: vi.fn(),
+        onDeliveryOperationChange: vi.fn(),
+        onDeliveryScheduleChange: vi.fn(),
+        onDeliveryHoursChange: vi.fn(),
         onDeliveryFeeInputChange: vi.fn(),
         onDeliveryFeeSave: vi.fn(),
+        onDeliveryHoursSave: vi.fn(),
         hasWhatsappNotifications: true,
         notificationSettingsLoading: false,
         notificationSettingsData,
@@ -378,6 +523,9 @@ describe('IntegrationsPageContent', () => {
     expect(markup).toContain('não informado')
     expect(markup).toContain('Desconectando...')
     expect(markup).toContain('Salvando...')
+    expect(markup).toContain('Estabelecimento fechado')
+    expect(markup).toContain('Horário de funcionamento')
+    expect(markup).not.toContain('Salvar horário')
   })
 
   it('renderiza bloco de notificações mesmo sem opções disponíveis', async () => {
@@ -399,10 +547,15 @@ describe('IntegrationsPageContent', () => {
           tenant_id: 'tenant-1',
           delivery_enabled: true,
           flat_fee: 10,
+          accepting_orders: true,
+          schedule_enabled: true,
+          opens_at: '09:00',
+          closes_at: '18:00',
         },
         deliverySettingsPending: false,
         deliveryFeeValue: '10',
         onDeliveryToggle: vi.fn(),
+        onDeliveryOperationChange: vi.fn(),
         onDeliveryFeeInputChange: vi.fn(),
         onDeliveryFeeSave: vi.fn(),
         hasWhatsappNotifications: true,
@@ -423,7 +576,9 @@ describe('IntegrationsPageContent', () => {
     )
 
     expect(markup).toContain('Notificações WhatsApp')
-    expect(markup).not.toContain('Carregando configurações...')
+    expect(markup).toContain('Estabelecimento aberto')
+    expect(markup).toContain('Horário de funcionamento')
+    expect(markup).not.toContain('Carregando configurações de notificação...')
     expect(markup).not.toContain('Recurso disponível apenas nos planos Standard e Premium.')
   })
 
@@ -446,10 +601,15 @@ describe('IntegrationsPageContent', () => {
           tenant_id: 'tenant-1',
           delivery_enabled: true,
           flat_fee: 10,
+          accepting_orders: true,
+          schedule_enabled: true,
+          opens_at: '09:00',
+          closes_at: '18:00',
         },
         deliverySettingsPending: false,
         deliveryFeeValue: '10',
         onDeliveryToggle: vi.fn(),
+        onDeliveryOperationChange: vi.fn(),
         onDeliveryFeeInputChange: vi.fn(),
         onDeliveryFeeSave: vi.fn(),
         hasWhatsappNotifications: true,
@@ -461,6 +621,6 @@ describe('IntegrationsPageContent', () => {
       })
     )
 
-    expect(markup).toContain('Não foi possível carregar as configurações de WhatsApp.')
+    expect(markup).toContain('Não foi possível carregar as notificações.')
   })
 })

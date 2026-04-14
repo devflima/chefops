@@ -1,3 +1,6 @@
+import { isTenantAcceptingOrders } from '@/lib/delivery-operations'
+import { resolveDeliveryQuote } from '@/lib/delivery-pricing'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -30,6 +33,7 @@ const createPublicOrderSchema = z.object({
   payment_method: z.enum(['online', 'table', 'delivery']),
   notes: z.string().optional(),
   delivery_fee: z.number().min(0).optional(),
+  delivery_distance_km: z.number().min(0).optional(),
   delivery_address: z.object({
     zip_code: z.string().nullable().optional(),
     street: z.string().nullable().optional(),
@@ -112,6 +116,7 @@ export async function POST(request: NextRequest) {
       tenant_id,
       items,
       delivery_address,
+      delivery_distance_km: _deliveryDistanceKm,
       table_id,
       tab_id,
       ...orderData
@@ -129,8 +134,23 @@ export async function POST(request: NextRequest) {
       .select('plan')
       .eq('id', tenant_id)
       .single()
+    const billingState = await ensureTenantBillingAccessState(tenant_id)
+    const effectivePlan = billingState.downgraded ? 'free' : tenantData?.plan
 
-    if (tenantData?.plan === 'free') {
+    const { data: deliverySettings } = await admin
+      .from('tenant_delivery_settings')
+      .select('delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at, pricing_mode, max_radius_km, fee_per_km, origin_zip_code, origin_street, origin_number, origin_neighborhood, origin_city, origin_state')
+      .eq('tenant_id', tenant_id)
+      .maybeSingle()
+
+    if (deliverySettings && !isTenantAcceptingOrders(deliverySettings)) {
+      return NextResponse.json(
+        { error: 'O estabelecimento está fechado para novos pedidos no momento.' },
+        { status: 409 }
+      )
+    }
+
+    if (effectivePlan === 'free') {
       const startOfMonth = new Date()
       startOfMonth.setDate(1)
       startOfMonth.setHours(0, 0, 0, 0)
@@ -154,10 +174,15 @@ export async function POST(request: NextRequest) {
       return sum + (item.price + extrasTotal) * item.quantity
     }, 0)
 
-    const deliveryFee =
-      ['online', 'delivery'].includes(parsed.data.payment_method) && delivery_address
-        ? Number(parsed.data.delivery_fee ?? 0)
-        : 0
+    let deliveryFee = 0
+
+    if (['online', 'delivery'].includes(parsed.data.payment_method) && delivery_address) {
+      const quote = await resolveDeliveryQuote(deliverySettings ?? { delivery_enabled: false, flat_fee: 0 }, delivery_address)
+      if (!quote.ok) {
+        return NextResponse.json({ error: quote.error }, { status: 422 })
+      }
+      deliveryFee = quote.deliveryFee
+    }
     const initialPaymentStatus = 'pending'
 
     const tableSessionId = table_id

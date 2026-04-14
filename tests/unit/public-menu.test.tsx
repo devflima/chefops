@@ -38,6 +38,7 @@ import {
   getOrderStepState,
   getOrderSteps,
   getOpenCartState,
+  getOperationClosedNotice,
   getPaymentStatusLabel,
   getPhoneChangeState,
   getPublicOrderHeadline,
@@ -72,6 +73,7 @@ import {
   resolvePublicCheckoutUrl,
   serializeStoredActiveOrder,
   shouldRequirePhoneVerification,
+  togglePublicMenuExtraSelection,
   shouldShowCancelOrderButton,
   shouldShowDeliveryStep,
   shouldContinueCheckoutPolling,
@@ -88,6 +90,7 @@ import {
 const createOrderMock = vi.fn()
 const supabaseFromMock = vi.fn()
 const notFoundMock = vi.fn()
+const menuClientPropsMock = vi.fn()
 
 vi.mock('sonner', () => ({
   toast: {
@@ -119,6 +122,12 @@ vi.mock('next/navigation', async () => {
     notFound: () => notFoundMock(),
   }
 })
+
+vi.mock('@/lib/saas-billing', () => ({
+  ensureTenantBillingAccessState: vi.fn(),
+}))
+
+const { ensureTenantBillingAccessState } = await import('@/lib/saas-billing')
 
 describe('public menu helpers', () => {
   it('formata dados e valida cpf', () => {
@@ -233,9 +242,20 @@ describe('public menu helpers', () => {
     expect(getOrderStepState('cancelled', ['pending', 'confirmed'], 'pending')).toBe('upcoming')
 
     expect(paymentOptionsByContext.table).toHaveLength(3)
-    expect(normalizeTenantDeliverySettings([{ delivery_enabled: true, flat_fee: 8 }])).toEqual({
+    expect(normalizeTenantDeliverySettings([{
       delivery_enabled: true,
       flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '18:00',
+      closes_at: '23:00',
+    }])).toEqual({
+      delivery_enabled: true,
+      flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '18:00',
+      closes_at: '23:00',
     })
     expect(normalizeTenantDeliverySettings(null)).toBeNull()
 
@@ -315,6 +335,13 @@ describe('public menu helpers', () => {
       cartCount: 1,
     })
     expect(getBorders(plainItem as never)).toEqual([])
+    expect(togglePublicMenuExtraSelection([{ id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' }], { id: 'extra-4', name: 'Bacon', price: 5, category: 'other' })).toEqual([
+      { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' },
+      { id: 'extra-4', name: 'Bacon', price: 5, category: 'other' },
+    ])
+    expect(togglePublicMenuExtraSelection([{ id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' }], { id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' })).toEqual([
+      { id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' },
+    ])
 
     expect(validateCustomerInfo('Maria', '(11) 99999-9999', '', null, 'delivery')).toEqual({})
     expect(validateCustomerAddress({
@@ -453,19 +480,31 @@ describe('public menu helpers', () => {
       extras: [],
     }
 
-    const cartItem = createCartItem(item, { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' }, {
-      ...item,
-      id: 'item-2',
-      name: 'Calabresa',
-      price: 32,
-    })
+    const cartItem = createCartItem(
+      item,
+      { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' },
+      [
+        { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' },
+        { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' },
+      ],
+      {
+        ...item,
+        id: 'item-2',
+        name: 'Calabresa',
+        price: 32,
+      }
+    )
 
     expect(cartItem).toEqual({
       menu_item_id: 'item-1',
       name: 'Pizza / Calabresa',
       price: 32,
       quantity: 1,
-      extras: [{ name: 'Catupiry', price: 5 }],
+      extras: [
+        { name: 'Catupiry', price: 5 },
+        { name: 'Cheddar', price: 4 },
+        { name: 'Calabresa extra', price: 6 },
+      ],
       half_flavor: { menu_item_id: 'item-2', name: 'Calabresa' },
     })
 
@@ -1361,6 +1400,7 @@ describe('public menu helpers', () => {
 describe('public menu smoke', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValue({ downgraded: false } as never)
     notFoundMock.mockImplementation(() => {
       throw new Error('not-found')
     })
@@ -1476,6 +1516,36 @@ describe('public menu smoke', () => {
     expect(markup).toContain('Pizza')
     expect(markup).toContain('Mesa 10')
   }, 15000)
+
+  it('rebaixa o plano público efetivo para free quando o billing já expirou', async () => {
+    vi.resetModules()
+    vi.doMock('@/app/[slug]/menu/MenuClient', () => ({
+      default: (props: { tenant: { plan: string } }) => {
+        menuClientPropsMock(props)
+        return React.createElement('div', null, `plan:${props.tenant.plan}`)
+      },
+    }))
+
+    try {
+      const { ensureTenantBillingAccessState: ensureTenantBillingAccessStateMock } = await import('@/lib/saas-billing')
+      vi.mocked(ensureTenantBillingAccessStateMock).mockResolvedValueOnce({ downgraded: true } as never)
+      const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+      const element = await MenuPage({
+        params: Promise.resolve({ slug: 'chefops-house' }),
+        searchParams: Promise.resolve({}),
+      })
+
+      const markup = renderToStaticMarkup(element)
+      expect(markup).toContain('plan:free')
+      expect(menuClientPropsMock).toHaveBeenCalledWith(expect.objectContaining({
+        tenant: expect.objectContaining({ plan: 'free' }),
+      }))
+    } finally {
+      vi.doUnmock('@/app/[slug]/menu/MenuClient')
+      vi.resetModules()
+    }
+  })
 
   it('usa a primeira mesa quando o join do qrcode retorna array', async () => {
     supabaseFromMock.mockImplementation((table: string) => {

@@ -26,6 +26,7 @@ const ordersHooks = await import('@/features/orders/hooks/useOrders')
 const paymentsHooks = await import('@/features/payments/hooks/useMercadoPagoAccount')
 const planHooks = await import('@/features/plans/hooks/usePlan')
 const productHooks = await import('@/features/products/hooks/useProducts')
+const customersHooks = await import('@/features/customers/hooks/useCustomers')
 const stockHooks = await import('@/features/stock/hooks/useStock')
 const tableHooks = await import('@/features/tables/hooks/useTables')
 const tabHooks = await import('@/features/tabs/hooks/useTabs')
@@ -108,7 +109,7 @@ describe('react-query hooks', () => {
       mutationFn: (payload: unknown) => Promise<unknown>
       onSuccess: () => void
     }
-    await deliveryMutation.mutationFn({ delivery_enabled: true, flat_fee: 10 })
+    await deliveryMutation.mutationFn({ delivery_enabled: true, flat_fee: 10, accepting_orders: false })
     deliveryMutation.onSuccess()
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['delivery-settings'] })
 
@@ -133,7 +134,7 @@ describe('react-query hooks', () => {
       jsonResponse({ error: 'Falha ao atualizar configuracoes de entrega' }, { status: 400 })
     )
     await expect(
-      deliveryMutation.mutationFn({ delivery_enabled: true, flat_fee: 10 })
+      deliveryMutation.mutationFn({ delivery_enabled: true, flat_fee: 10, accepting_orders: false })
     ).rejects.toThrow('Falha ao atualizar configuracoes de entrega')
 
     vi.mocked(globalThis.fetch).mockResolvedValueOnce(
@@ -623,6 +624,11 @@ describe('react-query hooks', () => {
     await users.queryFn()
     expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/users')
 
+    const customers = customersHooks.useCustomers() as { queryKey: unknown; queryFn: () => Promise<unknown> }
+    expect(customers.queryKey).toEqual(['customers'])
+    await customers.queryFn()
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/customers')
+
     const createUser = userHooks.useCreateUser() as { mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void }
     await createUser.mutationFn({ full_name: 'Felipe' })
     createUser.onSuccess()
@@ -701,6 +707,7 @@ describe('react-query hooks', () => {
 
   it('propaga erros dos hooks de usuários', async () => {
     const users = userHooks.useUsers() as { queryFn: () => Promise<unknown> }
+    const customers = customersHooks.useCustomers() as { queryFn: () => Promise<unknown> }
     const createUser = userHooks.useCreateUser() as {
       mutationFn: (payload: unknown) => Promise<unknown>
     }
@@ -715,6 +722,11 @@ describe('react-query hooks', () => {
       new Response(JSON.stringify({ error: 'Falha ao listar usuários' }), { status: 500 })
     )
     await expect(users.queryFn()).rejects.toThrow('Falha ao listar usuários')
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Falha ao listar clientes' }), { status: 500 })
+    )
+    await expect(customers.queryFn()).rejects.toThrow('Falha ao listar clientes')
 
     vi.mocked(globalThis.fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ error: 'Falha ao criar usuário' }), { status: 400 })

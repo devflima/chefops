@@ -1,3 +1,4 @@
+import { requireTenantRoles } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -27,10 +28,25 @@ const createCustomerSchema = customerSchema.extend({
 // Busca cliente por telefone e tenant
 export async function GET(request: NextRequest) {
   try {
-    const admin = createAdminClient()
     const { searchParams } = new URL(request.url)
     const phone = searchParams.get('phone')
     const tenant_id = searchParams.get('tenant_id')
+
+    if (!phone && !tenant_id) {
+      const auth = await requireTenantRoles(['owner', 'manager', 'cashier'])
+      if (!auth.ok) return auth.response
+      const { supabase, profile } = auth
+
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, phone, cpf, created_at, addresses:customer_addresses(*)')
+        .eq('tenant_id', profile.tenant_id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      return NextResponse.json({ data: data ?? [] })
+    }
 
     if (!phone || !tenant_id) {
       return NextResponse.json(
@@ -39,6 +55,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const admin = createAdminClient()
     const { data, error } = await admin
       .from('customers')
       .select('*, addresses:customer_addresses(*)')

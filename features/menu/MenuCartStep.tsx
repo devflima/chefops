@@ -13,6 +13,7 @@ export function MenuCartStep({
   onRemove,
   onContinue,
   onClear,
+  disabled = false,
 }: {
   cart: CartItem[]
   cartTotal: number
@@ -23,6 +24,7 @@ export function MenuCartStep({
   onRemove: (index: number) => void
   onContinue: () => void
   onClear: () => void
+  disabled?: boolean
 }) {
   if (cart.length === 0) {
     return (
@@ -47,7 +49,8 @@ export function MenuCartStep({
               <span className="text-sm font-semibold w-4 text-center">{item.quantity}</span>
               <button
                 onClick={() => onIncrement(idx)}
-                className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center hover:bg-slate-700 transition-colors"
+                disabled={disabled}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${disabled ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-700'}`}
               >
                 <Plus className="w-3 h-3 text-white" />
               </button>
@@ -90,7 +93,10 @@ export function MenuCartStep({
           <span className="text-slate-500">Total</span>
           <span className="font-semibold text-slate-900">R$ {orderTotal.toFixed(2)}</span>
         </div>
-        <Button className="w-full mb-2" onClick={onContinue}>
+        {disabled && (
+          <p className="text-xs text-amber-700 mb-2">Estabelecimento fechado para novos pedidos</p>
+        )}
+        <Button className="w-full mb-2" onClick={onContinue} disabled={disabled}>
           Continuar
         </Button>
         <button

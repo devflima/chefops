@@ -13,6 +13,10 @@ export function MenuAddressStep({
   isProcessing,
   onSubmit,
   onBack,
+  disabled = false,
+  quotedDeliveryFee = null,
+  quotedDistanceKm = null,
+  deliveryQuoteMessage = null,
 }: {
   address: Partial<CustomerAddress>
   onAddressChange: (updater: (prev: Partial<CustomerAddress>) => Partial<CustomerAddress>) => void
@@ -23,6 +27,10 @@ export function MenuAddressStep({
   isProcessing: boolean
   onSubmit: () => void
   onBack: () => void
+  disabled?: boolean
+  quotedDeliveryFee?: number | null
+  quotedDistanceKm?: number | null
+  deliveryQuoteMessage?: string | null
 }) {
   return (
     <div className="flex-1 flex flex-col">
@@ -43,6 +51,7 @@ export function MenuAddressStep({
               }}
               maxLength={9}
               className="flex-1"
+              disabled={disabled}
             />
             {loadingCep && <span className="text-xs text-slate-400 self-center">Buscando...</span>}
           </div>
@@ -54,6 +63,7 @@ export function MenuAddressStep({
             placeholder="Nome da rua"
             value={address.street ?? ''}
             onChange={(e) => onAddressChange((prev) => ({ ...prev, street: e.target.value }))}
+            disabled={disabled}
           />
           {errors.street && <p className="text-xs text-red-500 mt-1">{errors.street}</p>}
         </div>
@@ -64,6 +74,7 @@ export function MenuAddressStep({
               placeholder="123"
               value={address.number ?? ''}
               onChange={(e) => onAddressChange((prev) => ({ ...prev, number: e.target.value }))}
+              disabled={disabled}
             />
             {errors.number && <p className="text-xs text-red-500 mt-1">{errors.number}</p>}
           </div>
@@ -73,6 +84,7 @@ export function MenuAddressStep({
               placeholder="Apto..."
               value={address.complement ?? ''}
               onChange={(e) => onAddressChange((prev) => ({ ...prev, complement: e.target.value }))}
+              disabled={disabled}
             />
           </div>
         </div>
@@ -82,6 +94,7 @@ export function MenuAddressStep({
             placeholder="Bairro"
             value={address.neighborhood ?? ''}
             onChange={(e) => onAddressChange((prev) => ({ ...prev, neighborhood: e.target.value }))}
+            disabled={disabled}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -91,6 +104,7 @@ export function MenuAddressStep({
               placeholder="Cidade"
               value={address.city ?? ''}
               onChange={(e) => onAddressChange((prev) => ({ ...prev, city: e.target.value }))}
+              disabled={disabled}
             />
             {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
           </div>
@@ -101,15 +115,28 @@ export function MenuAddressStep({
               maxLength={2}
               value={address.state ?? ''}
               onChange={(e) => onAddressChange((prev) => ({ ...prev, state: e.target.value.toUpperCase() }))}
+              disabled={disabled}
             />
           </div>
         </div>
       </div>
       <div className="p-4 border-t border-slate-200 space-y-2">
-        <Button className="w-full" onClick={onSubmit} disabled={isProcessing}>
+        {deliveryQuoteMessage && !disabled && (
+          <p className="text-xs text-slate-600">{deliveryQuoteMessage}</p>
+        )}
+        {quotedDistanceKm !== null && !disabled && (
+          <p className="text-xs text-slate-500">Distância estimada: {quotedDistanceKm.toFixed(1)} km</p>
+        )}
+        {quotedDeliveryFee !== null && !disabled && (
+          <p className="text-xs text-slate-500">Taxa calculada: R$ {quotedDeliveryFee.toFixed(2)}</p>
+        )}
+        {disabled && (
+          <p className="text-xs text-amber-700">Estabelecimento fechado para novos pedidos</p>
+        )}
+        <Button className="w-full" onClick={onSubmit} disabled={disabled || isProcessing}>
           {getAddressSubmitLabel(paymentMethod, isProcessing)}
         </Button>
-        <Button variant="outline" className="w-full" onClick={onBack}>
+        <Button variant="outline" className="w-full" onClick={onBack} disabled={disabled}>
           Voltar
         </Button>
       </div>
