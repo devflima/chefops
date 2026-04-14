@@ -169,6 +169,7 @@ export type CreateOrderPayload = {
   payment_method: PaymentMethod
   notes?: string
   delivery_fee?: number
+  delivery_distance_km?: number
   delivery_address?: CustomerAddress
   items: CartItem[]
 }

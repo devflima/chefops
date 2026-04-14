@@ -7,10 +7,14 @@ import { buildTenantSlug } from '@/features/auth/register-page'
 const pushMock = vi.fn()
 const refreshMock = vi.fn()
 const setValueMock = vi.fn()
+const resetPasswordForEmailMock = vi.fn()
+const updateUserMock = vi.fn()
 
 let currentUseFormValue: Record<string, unknown>
 let capturedLoginContentProps: Record<string, unknown> | null = null
 let capturedRegisterContentProps: Record<string, unknown> | null = null
+let capturedForgotPasswordContentProps: Record<string, unknown> | null = null
+let capturedResetPasswordContentProps: Record<string, unknown> | null = null
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -27,6 +31,15 @@ vi.mock('react-hook-form', () => ({
   useForm: () => currentUseFormValue,
 }))
 
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => ({
+    auth: {
+      resetPasswordForEmail: resetPasswordForEmailMock,
+      updateUser: updateUserMock,
+    },
+  }),
+}))
+
 vi.mock('@/features/auth/components/LoginPageContent', () => ({
   LoginPageContent: (props: Record<string, unknown>) => {
     capturedLoginContentProps = props
@@ -41,11 +54,27 @@ vi.mock('@/features/auth/components/RegisterPageContent', () => ({
   },
 }))
 
+vi.mock('@/features/auth/components/ForgotPasswordPageContent', () => ({
+  ForgotPasswordPageContent: (props: Record<string, unknown>) => {
+    capturedForgotPasswordContentProps = props
+    return React.createElement('div', null, 'Forgot Password Page Content Mock')
+  },
+}))
+
+vi.mock('@/features/auth/components/ResetPasswordPageContent', () => ({
+  ResetPasswordPageContent: (props: Record<string, unknown>) => {
+    capturedResetPasswordContentProps = props
+    return React.createElement('div', null, 'Reset Password Page Content Mock')
+  },
+}))
+
 describe('auth pages components', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedLoginContentProps = null
     capturedRegisterContentProps = null
+    capturedForgotPasswordContentProps = null
+    capturedResetPasswordContentProps = null
     currentUseFormValue = {
       control: {},
       setValue: setValueMock,
@@ -54,6 +83,9 @@ describe('auth pages components', () => {
         isSubmitting: false,
       },
     }
+    process.env.NEXT_PUBLIC_APP_URL = 'https://chefops.test'
+    resetPasswordForEmailMock.mockResolvedValue({ error: null })
+    updateUserMock.mockResolvedValue({ error: null })
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -122,7 +154,7 @@ describe('auth pages components', () => {
     expect(refreshMock).not.toHaveBeenCalled()
   })
 
-  it('gera slug automaticamente e submete o cadastro com sucesso', async () => {
+  it('gera slug automaticamente e submete o cadastro forte com sucesso', async () => {
     const { default: RegisterPage } = await import('@/app/(auth)/register/page')
 
     expect(renderToStaticMarkup(React.createElement(RegisterPage))).toContain('Register Page Content Mock')
@@ -144,6 +176,13 @@ describe('auth pages components', () => {
     await props.onSubmit({
       tenant_name: 'Pizzaria do João',
       tenant_slug: 'pizzaria-do-joao',
+      cnpj: '12.345.678/0001-90',
+      zip_code: '01001-000',
+      street: 'Rua A',
+      number: '123',
+      neighborhood: 'Centro',
+      city: 'São Paulo',
+      state: 'sp',
       full_name: 'João Silva',
       email: 'joao@chefops.test',
       password: '123456',
@@ -155,6 +194,13 @@ describe('auth pages components', () => {
       body: JSON.stringify({
         tenant_name: 'Pizzaria do João',
         tenant_slug: 'pizzaria-do-joao',
+        cnpj: '12.345.678/0001-90',
+        zip_code: '01001-000',
+        street: 'Rua A',
+        number: '123',
+        neighborhood: 'Centro',
+        city: 'São Paulo',
+        state: 'sp',
         full_name: 'João Silva',
         email: 'joao@chefops.test',
         password: '123456',
@@ -182,12 +228,55 @@ describe('auth pages components', () => {
     await props.onSubmit({
       tenant_name: 'Pizzaria do João',
       tenant_slug: 'pizzaria-do-joao',
+      cnpj: '12.345.678/0001-90',
+      zip_code: '01001-000',
+      street: 'Rua A',
+      number: '123',
+      neighborhood: 'Centro',
+      city: 'São Paulo',
+      state: 'SP',
       full_name: 'João Silva',
       email: 'joao@chefops.test',
       password: '123456',
     })
 
     expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it('envia link de recuperação de senha', async () => {
+    const { default: ForgotPasswordPage } = await import('@/app/(auth)/forgot-password/page')
+
+    expect(renderToStaticMarkup(React.createElement(ForgotPasswordPage))).toContain('Forgot Password Page Content Mock')
+    expect(capturedForgotPasswordContentProps).toBeTruthy()
+
+    const props = capturedForgotPasswordContentProps as {
+      onSubmit: (values: Record<string, unknown>) => Promise<void>
+    }
+
+    await props.onSubmit({ email: 'chef@ops.test' })
+
+    expect(resetPasswordForEmailMock).toHaveBeenCalledWith('chef@ops.test', {
+      redirectTo: 'https://chefops.test/reset-password',
+    })
+  })
+
+  it('atualiza a senha e redireciona para o login', async () => {
+    const { default: ResetPasswordPage } = await import('@/app/(auth)/reset-password/page')
+
+    expect(renderToStaticMarkup(React.createElement(ResetPasswordPage))).toContain('Reset Password Page Content Mock')
+    expect(capturedResetPasswordContentProps).toBeTruthy()
+
+    const props = capturedResetPasswordContentProps as {
+      onSubmit: (values: Record<string, unknown>) => Promise<void>
+    }
+
+    await props.onSubmit({
+      password: 'nova-senha-123',
+      confirm_password: 'nova-senha-123',
+    })
+
+    expect(updateUserMock).toHaveBeenCalledWith({ password: 'nova-senha-123' })
+    expect(pushMock).toHaveBeenCalledWith('/login?reset=true')
   })
 
   it('normaliza o slug do estabelecimento', () => {

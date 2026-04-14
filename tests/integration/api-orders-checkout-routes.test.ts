@@ -38,6 +38,10 @@ vi.mock('@/lib/saas-billing', () => ({
   ensureTenantBillingAccessState: vi.fn(),
 }))
 
+vi.mock('@/lib/delivery-pricing', () => ({
+  resolveDeliveryQuote: vi.fn(),
+}))
+
 const { requireTenantRoles } = await import('@/lib/auth-guards')
 const { createAdminClient } = await import('@/lib/supabase/admin')
 const { refundOrderIfNeeded } = await import('@/lib/order-refunds')
@@ -47,6 +51,7 @@ const { createCheckoutPreference, getMercadoPagoWebhookUrl } = await import('@/l
 const { getTenantMercadoPagoAccessToken, getTenantMercadoPagoAccount } = await import('@/lib/tenant-mercadopago')
 const { createOrderFromCheckoutSession } = await import('@/lib/checkout-session')
 const { ensureTenantBillingAccessState } = await import('@/lib/saas-billing')
+const { resolveDeliveryQuote } = await import('@/lib/delivery-pricing')
 
 const ordersRoute = await import('@/app/api/orders/route')
 const orderByIdRoute = await import('@/app/api/orders/[id]/route')
@@ -62,6 +67,7 @@ describe('api orders and checkout routes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(ensureTenantBillingAccessState).mockResolvedValue({ downgraded: false } as never)
+    vi.mocked(resolveDeliveryQuote).mockResolvedValue({ ok: true, deliveryFee: 12, distanceKm: 4.5, pricingMode: 'distance' } as never)
   })
 
   it('orders GET/POST cobrem auth, filtros, validacao, mismatch, limite e sucesso', async () => {

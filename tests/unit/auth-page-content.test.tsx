@@ -66,7 +66,7 @@ describe('auth page contents', () => {
     return [node, ...flattenElements(node.props.children)]
   }
 
-  it('renderiza o conteúdo de login', async () => {
+  it('renderiza o conteúdo de login com link de recuperação', async () => {
     const { LoginPageContent } = await import('@/features/auth/components/LoginPageContent')
 
     const markup = renderToStaticMarkup(
@@ -84,6 +84,7 @@ describe('auth page contents', () => {
     expect(markup).toContain('Entrar')
     expect(markup).toContain('Falha no login')
     expect(markup).toContain('Cadastre seu estabelecimento')
+    expect(markup).toContain('Esqueci minha senha')
   })
 
   it('renderiza login em loading sem erro', async () => {
@@ -118,7 +119,7 @@ describe('auth page contents', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 
-  it('renderiza o conteúdo de cadastro', async () => {
+  it('renderiza o conteúdo de cadastro com dados fortes do estabelecimento', async () => {
     const { RegisterPageContent } = await import('@/features/auth/components/RegisterPageContent')
 
     const markup = renderToStaticMarkup(
@@ -137,6 +138,9 @@ describe('auth page contents', () => {
     expect(markup).toContain('Criar conta')
     expect(markup).toContain('Criando conta...')
     expect(markup).toContain('Usado na URL do seu cardápio digital')
+    expect(markup).toContain('Dados do estabelecimento')
+    expect(markup).toContain('CNPJ')
+    expect(markup).toContain('CEP')
     expect(markup).toContain('Já tem conta?')
   })
 
@@ -161,5 +165,49 @@ describe('auth page contents', () => {
     })
 
     expect(onTenantNameChange).toHaveBeenCalledWith('Pizzaria ChefOps')
+  })
+
+  it('renderiza o conteúdo de recuperação de senha', async () => {
+    const { ForgotPasswordPageContent } = await import('@/features/auth/components/ForgotPasswordPageContent')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ForgotPasswordPageContent, {
+        form: {
+          control: {},
+          handleSubmit: () => vi.fn(),
+          formState: { isSubmitting: false },
+        },
+        error: null,
+        success: 'Enviamos um link de redefinição para o seu e-mail.',
+        onSubmit: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Recuperar acesso')
+    expect(markup).toContain('Enviar link de redefinição')
+    expect(markup).toContain('Enviamos um link de redefinição para o seu e-mail.')
+    expect(markup).toContain('Voltar para login')
+  })
+
+  it('renderiza o conteúdo de redefinição de senha', async () => {
+    const { ResetPasswordPageContent } = await import('@/features/auth/components/ResetPasswordPageContent')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ResetPasswordPageContent, {
+        form: {
+          control: {},
+          handleSubmit: () => vi.fn(),
+          formState: { isSubmitting: true },
+        },
+        error: null,
+        success: 'Senha atualizada com sucesso. Redirecionando para o login...',
+        onSubmit: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Definir nova senha')
+    expect(markup).toContain('Atualizando senha...')
+    expect(markup).toContain('Confirmar nova senha')
+    expect(markup).toContain('Senha atualizada com sucesso. Redirecionando para o login...')
   })
 })

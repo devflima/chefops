@@ -6,11 +6,27 @@ export type RegisterPayload = {
   password: string
   tenant_name: string
   tenant_slug: string
+  cnpj: string
+  zip_code: string
+  street: string
+  number: string
+  neighborhood?: string
+  city: string
+  state: string
 }
 
 export type LoginPayload = {
   email: string
   password: string
+}
+
+export type ForgotPasswordPayload = {
+  email: string
+}
+
+export type ResetPasswordPayload = {
+  password: string
+  confirm_password: string
 }
 
 export type AuthUser = {

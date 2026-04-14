@@ -458,7 +458,7 @@ describe('IntegrationsPageContent', () => {
     expect(markup).toContain('Desconectado')
     expect(markup).toContain('Conectar Mercado Pago')
     expect(markup).toContain('Carregando configuração de entrega...')
-    expect(markup).toContain('Carregando configurações...')
+    expect(markup).toContain('Carregando configurações de notificação...')
   })
 
   it('renderiza modo teste, expiração ausente e ações pendentes', async () => {
@@ -578,7 +578,7 @@ describe('IntegrationsPageContent', () => {
     expect(markup).toContain('Notificações WhatsApp')
     expect(markup).toContain('Estabelecimento aberto')
     expect(markup).toContain('Horário de funcionamento')
-    expect(markup).not.toContain('Carregando configurações...')
+    expect(markup).not.toContain('Carregando configurações de notificação...')
     expect(markup).not.toContain('Recurso disponível apenas nos planos Standard e Premium.')
   })
 
@@ -621,6 +621,6 @@ describe('IntegrationsPageContent', () => {
       })
     )
 
-    expect(markup).toContain('Não foi possível carregar as configurações de WhatsApp.')
+    expect(markup).toContain('Não foi possível carregar as notificações.')
   })
 })

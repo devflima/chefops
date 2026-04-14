@@ -74,6 +74,15 @@ type Props = {
       schedule_enabled?: boolean
       opens_at?: string | null
       closes_at?: string | null
+      pricing_mode?: 'flat' | 'distance'
+      max_radius_km?: number | null
+      fee_per_km?: number | null
+      origin_zip_code?: string | null
+      origin_street?: string | null
+      origin_number?: string | null
+      origin_neighborhood?: string | null
+      origin_city?: string | null
+      origin_state?: string | null
     } | null
   }
   items: MenuItem[]
@@ -132,6 +141,9 @@ export default function MenuClient({
   const [sendingPhoneCode, setSendingPhoneCode] = useState(false)
   const [verifyingPhoneCode, setVerifyingPhoneCode] = useState(false)
   const [selectedExtraOptions, setSelectedExtraOptions] = useState<Record<string, MenuExtra[]>>({})
+  const [quotedDeliveryFee, setQuotedDeliveryFee] = useState<number | null>(null)
+  const [quotedDistanceKm, setQuotedDistanceKm] = useState<number | null>(null)
+  const [deliveryQuoteMessage, setDeliveryQuoteMessage] = useState<string | null>(null)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreatePublicOrder()
@@ -143,6 +155,7 @@ export default function MenuClient({
     cart,
     tableInfo,
     tenant.delivery_settings,
+    quotedDeliveryFee,
   )
 
   function addToCart(item: MenuItem, halfFlavor?: MenuItem) {
@@ -332,6 +345,54 @@ export default function MenuClient({
     } finally { setLoadingCep(false) }
   }
 
+  async function resolveDeliveryQuote(nextAddress: Partial<CustomerAddress>) {
+    if (!nextAddress.zip_code || !nextAddress.street || !nextAddress.number || !nextAddress.city || !nextAddress.state) {
+      return { deliveryFee: 0, distanceKm: null }
+    }
+
+    if (!tenant.delivery_settings?.delivery_enabled) {
+      setQuotedDeliveryFee(0)
+      setQuotedDistanceKm(null)
+      setDeliveryQuoteMessage(null)
+      return { deliveryFee: 0, distanceKm: null }
+    }
+
+    if (tenant.delivery_settings.pricing_mode !== 'distance') {
+      const flatFee = Number(tenant.delivery_settings.flat_fee ?? 0)
+      setQuotedDeliveryFee(flatFee)
+      setQuotedDistanceKm(null)
+      setDeliveryQuoteMessage('Taxa fixa de entrega aplicada para este pedido.')
+      return { deliveryFee: flatFee, distanceKm: null }
+    }
+
+    const res = await fetch('/api/public/delivery-quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenant_id: tenant.id,
+        delivery_address: nextAddress,
+      }),
+    })
+    const json = await res.json()
+
+    if (!res.ok) {
+      throw new Error(json.error || 'Não foi possível calcular a entrega.')
+    }
+
+    setQuotedDeliveryFee(json.data.delivery_fee)
+    setQuotedDistanceKm(json.data.distance_km ?? null)
+    setDeliveryQuoteMessage(
+      json.data.pricing_mode === 'distance'
+        ? 'Taxa calculada com base na distância até o endereço informado.'
+        : 'Taxa fixa de entrega aplicada para este pedido.',
+    )
+
+    return {
+      deliveryFee: Number(json.data.delivery_fee ?? 0),
+      distanceKm: json.data.distance_km ?? null,
+    }
+  }
+
   function validateInfo() {
     const errs = validateCustomerInfo(customerName, phone, customerCpf, tableInfo, paymentMethod)
     setErrors(errs)
@@ -476,7 +537,7 @@ export default function MenuClient({
     await handlePlaceOrder()
   }
 
-  async function handleStartOnlineCheckout(deliveryAddress?: Partial<CustomerAddress>) {
+  async function handleStartOnlineCheckout(deliveryAddress?: Partial<CustomerAddress>, resolvedDeliveryFee?: number, resolvedDistanceKm?: number | null) {
     try {
       setOnlineCheckoutLoading(true)
 
@@ -491,7 +552,8 @@ export default function MenuClient({
           customerCpf,
           tableInfo,
           notes,
-          deliveryFee,
+          deliveryFee: resolvedDeliveryFee ?? deliveryFee,
+          deliveryDistanceKm: resolvedDistanceKm ?? quotedDistanceKm,
           deliveryAddress,
           items: cart,
         })),
@@ -517,7 +579,7 @@ export default function MenuClient({
     }
   }
 
-  async function handlePlaceOrder(deliveryAddress?: Partial<CustomerAddress>) {
+  async function handlePlaceOrder(deliveryAddress?: Partial<CustomerAddress>, resolvedDeliveryFee?: number, resolvedDistanceKm?: number | null) {
     if (operationClosedNotice) {
       alert(operationClosedNotice)
       return
@@ -559,7 +621,8 @@ export default function MenuClient({
           tableInfo,
           paymentMethod: paymentMethod as 'online' | 'table' | 'counter' | 'delivery',
           notes,
-          deliveryFee,
+          deliveryFee: resolvedDeliveryFee ?? deliveryFee,
+          deliveryDistanceKm: resolvedDistanceKm ?? quotedDistanceKm,
           deliveryAddress,
           items: cart,
         }),
@@ -593,11 +656,17 @@ export default function MenuClient({
     }
 
     if (!validateAddress()) return
-    if (getAddressFlowTarget(paymentMethod) === 'online-checkout') {
-      await handleStartOnlineCheckout(address)
-      return
+
+    try {
+      const quote = await resolveDeliveryQuote(address)
+      if (getAddressFlowTarget(paymentMethod) === 'online-checkout') {
+        await handleStartOnlineCheckout(address, quote.deliveryFee, quote.distanceKm)
+        return
+      }
+      await handlePlaceOrder(address, quote.deliveryFee, quote.distanceKm)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Não foi possível calcular a entrega.')
     }
-    await handlePlaceOrder(address)
   }
 
   async function handleCancelOrder() {
@@ -861,6 +930,9 @@ export default function MenuClient({
               return
             }
 
+            setQuotedDeliveryFee(null)
+            setQuotedDistanceKm(null)
+            setDeliveryQuoteMessage(null)
             setAddress((prev) => updater(prev))
           },
           onCepLookup: handleCepLookup,

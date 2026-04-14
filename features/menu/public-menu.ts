@@ -464,6 +464,7 @@ export function buildPublicCheckoutPayload(params: {
   tableInfo: { id: string; number: string } | null
   notes: string
   deliveryFee: number
+  deliveryDistanceKm?: number | null
   deliveryAddress?: Partial<CustomerAddress>
   items: CartItem[]
 }) {
@@ -477,6 +478,7 @@ export function buildPublicCheckoutPayload(params: {
     table_id: params.tableInfo?.id,
     notes: params.notes || undefined,
     delivery_fee: params.deliveryFee,
+    delivery_distance_km: params.deliveryDistanceKm ?? undefined,
     delivery_address: params.deliveryAddress?.zip_code ? params.deliveryAddress as CustomerAddress : undefined,
     items: params.items,
   }
@@ -500,6 +502,7 @@ export function buildPublicOrderPayload(params: {
   paymentMethod: 'online' | 'table' | 'counter' | 'delivery'
   notes: string
   deliveryFee: number
+  deliveryDistanceKm?: number | null
   deliveryAddress?: Partial<CustomerAddress>
   items: CartItem[]
 }) {
@@ -514,6 +517,7 @@ export function buildPublicOrderPayload(params: {
     payment_method: params.paymentMethod,
     notes: params.notes || undefined,
     delivery_fee: params.deliveryFee,
+    delivery_distance_km: params.deliveryDistanceKm ?? undefined,
     delivery_address: params.deliveryAddress?.zip_code ? params.deliveryAddress as CustomerAddress : undefined,
     items: params.items,
   }
@@ -970,17 +974,24 @@ export function filterGroupsByCategory(
 export function getCartTotals(
   cart: CartItem[],
   tableInfo: { id: string; number: string } | null,
-  deliverySettings?: { delivery_enabled: boolean; flat_fee: number; accepting_orders?: boolean } | null
+  deliverySettings?: {
+    delivery_enabled: boolean
+    flat_fee: number
+    pricing_mode?: 'flat' | 'distance'
+    accepting_orders?: boolean
+  } | null,
+  quotedDeliveryFee?: number | null,
 ) {
   const cartTotal = cart.reduce((sum, item) => {
     const extras = item.extras?.reduce((inner, extra) => inner + extra.price, 0) ?? 0
     return sum + (item.price + extras) * item.quantity
   }, 0)
 
-  const deliveryFee =
-    !tableInfo && deliverySettings?.delivery_enabled
-      ? Number(deliverySettings.flat_fee ?? 0)
-      : 0
+  const deliveryFee = !tableInfo && deliverySettings?.delivery_enabled
+    ? deliverySettings.pricing_mode === 'distance'
+      ? Number(quotedDeliveryFee ?? 0)
+      : Number(deliverySettings.flat_fee ?? 0)
+    : 0
 
   const orderTotal = cartTotal + deliveryFee
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
@@ -1114,6 +1125,15 @@ export function normalizeTenantDeliverySettings(
         schedule_enabled?: boolean
         opens_at?: string | null
         closes_at?: string | null
+        pricing_mode?: 'flat' | 'distance'
+        max_radius_km?: number | null
+        fee_per_km?: number | null
+        origin_zip_code?: string | null
+        origin_street?: string | null
+        origin_number?: string | null
+        origin_neighborhood?: string | null
+        origin_city?: string | null
+        origin_state?: string | null
       }
     | {
         delivery_enabled: boolean
@@ -1122,6 +1142,15 @@ export function normalizeTenantDeliverySettings(
         schedule_enabled?: boolean
         opens_at?: string | null
         closes_at?: string | null
+        pricing_mode?: 'flat' | 'distance'
+        max_radius_km?: number | null
+        fee_per_km?: number | null
+        origin_zip_code?: string | null
+        origin_street?: string | null
+        origin_number?: string | null
+        origin_neighborhood?: string | null
+        origin_city?: string | null
+        origin_state?: string | null
       }[]
     | null
 ) {

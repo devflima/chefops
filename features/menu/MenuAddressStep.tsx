@@ -14,6 +14,9 @@ export function MenuAddressStep({
   onSubmit,
   onBack,
   disabled = false,
+  quotedDeliveryFee = null,
+  quotedDistanceKm = null,
+  deliveryQuoteMessage = null,
 }: {
   address: Partial<CustomerAddress>
   onAddressChange: (updater: (prev: Partial<CustomerAddress>) => Partial<CustomerAddress>) => void
@@ -25,6 +28,9 @@ export function MenuAddressStep({
   onSubmit: () => void
   onBack: () => void
   disabled?: boolean
+  quotedDeliveryFee?: number | null
+  quotedDistanceKm?: number | null
+  deliveryQuoteMessage?: string | null
 }) {
   return (
     <div className="flex-1 flex flex-col">
@@ -115,6 +121,15 @@ export function MenuAddressStep({
         </div>
       </div>
       <div className="p-4 border-t border-slate-200 space-y-2">
+        {deliveryQuoteMessage && !disabled && (
+          <p className="text-xs text-slate-600">{deliveryQuoteMessage}</p>
+        )}
+        {quotedDistanceKm !== null && !disabled && (
+          <p className="text-xs text-slate-500">Distância estimada: {quotedDistanceKm.toFixed(1)} km</p>
+        )}
+        {quotedDeliveryFee !== null && !disabled && (
+          <p className="text-xs text-slate-500">Taxa calculada: R$ {quotedDeliveryFee.toFixed(2)}</p>
+        )}
         {disabled && (
           <p className="text-xs text-amber-700">Estabelecimento fechado para novos pedidos</p>
         )}

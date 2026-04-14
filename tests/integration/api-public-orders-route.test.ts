@@ -8,14 +8,20 @@ vi.mock('@/lib/saas-billing', () => ({
   ensureTenantBillingAccessState: vi.fn(),
 }))
 
+vi.mock('@/lib/delivery-pricing', () => ({
+  resolveDeliveryQuote: vi.fn(),
+}))
+
 const { createAdminClient } = await import('@/lib/supabase/admin')
 const { ensureTenantBillingAccessState } = await import('@/lib/saas-billing')
+const { resolveDeliveryQuote } = await import('@/lib/delivery-pricing')
 const publicOrdersRoute = await import('@/app/api/public/orders/route')
 
 describe('api public orders route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(ensureTenantBillingAccessState).mockResolvedValue({ downgraded: false } as never)
+    vi.mocked(resolveDeliveryQuote).mockResolvedValue({ ok: true, deliveryFee: 8, distanceKm: null, pricingMode: 'flat' } as never)
   })
 
   it('cria pedido público de delivery sem autenticação de dashboard', async () => {
@@ -125,7 +131,67 @@ describe('api public orders route', () => {
       payment_method: 'delivery',
       payment_status: 'pending',
       delivery_status: 'waiting_dispatch',
+      delivery_fee: 8,
     }))
+  })
+
+  it('bloqueia pedidos públicos quando o endereço fica fora do raio configurado', async () => {
+    vi.mocked(resolveDeliveryQuote).mockResolvedValueOnce({ ok: false, error: 'Endereço fora do raio de entrega de 5 km.' } as never)
+
+    vi.mocked(createAdminClient).mockReturnValue({
+      from: vi.fn((table: string) => {
+        if (table === 'tenants') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { plan: 'basic' } }),
+          }
+        }
+
+        if (table === 'tenant_delivery_settings') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { delivery_enabled: true, flat_fee: 8, accepting_orders: true, pricing_mode: 'distance' },
+              error: null,
+            }),
+          }
+        }
+
+        throw new Error(`Unexpected table ${table}`)
+      }),
+    } as never)
+
+    const response = await publicOrdersRoute.POST(
+      new Request('https://chefops.test/api/public/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+          customer_name: 'Maria',
+          customer_phone: '11999999999',
+          payment_method: 'delivery',
+          delivery_address: {
+            zip_code: '12345-678',
+            street: 'Rua A',
+            number: '10',
+            city: 'São Paulo',
+            state: 'SP',
+          },
+          items: [{
+            menu_item_id: '550e8400-e29b-41d4-a716-446655440001',
+            name: 'Pizza Margherita',
+            price: 32,
+            quantity: 1,
+          }],
+        }),
+      }) as never,
+    )
+
+    expect(response.status).toBe(422)
+    await expect(response.json()).resolves.toMatchObject({
+      error: 'Endereço fora do raio de entrega de 5 km.',
+    })
   })
 
   it('bloqueia pedidos públicos quando o billing efetivo rebaixa o tenant para free e o limite mensal já foi atingido', async () => {

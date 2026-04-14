@@ -60,7 +60,7 @@ describe('api operations routes', () => {
         insert: vi.fn(() => ({
           select: vi.fn().mockReturnThis(),
           single: vi.fn().mockResolvedValue({
-            data: { tenant_id: 'tenant-1', delivery_enabled: false, flat_fee: 0, accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null },
+            data: { tenant_id: 'tenant-1', delivery_enabled: false, flat_fee: 0, accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null },
             error: null,
           }),
         })),
@@ -75,7 +75,7 @@ describe('api operations routes', () => {
     expect((await deliverySettingsRoute.PATCH(
       new Request('https://chefops.test/api/delivery-settings', {
         method: 'PATCH',
-        body: JSON.stringify({ delivery_enabled: true, flat_fee: 9.5, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00' }),
+        body: JSON.stringify({ delivery_enabled: true, flat_fee: 9.5, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00', pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }),
       }) as never,
     )).status).toBe(403)
 
@@ -86,7 +86,7 @@ describe('api operations routes', () => {
     expect((await deliverySettingsRoute.PATCH(
       new Request('https://chefops.test/api/delivery-settings', {
         method: 'PATCH',
-        body: JSON.stringify({ delivery_enabled: true, flat_fee: 1000, accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null }),
+        body: JSON.stringify({ delivery_enabled: true, flat_fee: 1000, accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }),
       }) as never,
     )).status).toBe(400)
 
@@ -98,14 +98,14 @@ describe('api operations routes', () => {
       eq: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { tenant_id: 'tenant-1', delivery_enabled: true, flat_fee: 9.5, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00' },
+        data: { tenant_id: 'tenant-1', delivery_enabled: true, flat_fee: 9.5, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00', pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null },
         error: null,
       }),
     }
     const deliverySettingsQuery = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1', accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null }, error: null }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1', accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }, error: null }),
       update: vi.fn(() => updateQuery),
     }
     vi.mocked(createAdminClient).mockReturnValue({
@@ -114,7 +114,7 @@ describe('api operations routes', () => {
     expect((await deliverySettingsRoute.PATCH(
       new Request('https://chefops.test/api/delivery-settings', {
         method: 'PATCH',
-        body: JSON.stringify({ delivery_enabled: true, flat_fee: 9.5, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00' }),
+        body: JSON.stringify({ delivery_enabled: true, flat_fee: 9.5, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00', pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }),
       }) as never,
     )).status).toBe(200)
   })
@@ -695,7 +695,7 @@ describe('api operations routes', () => {
     expect((await deliverySettingsRoute.PATCH(
       new Request('https://chefops.test/api/delivery-settings', {
         method: 'PATCH',
-        body: JSON.stringify({ delivery_enabled: false, flat_fee: 3, accepting_orders: false, schedule_enabled: false, opens_at: null, closes_at: null }),
+        body: JSON.stringify({ delivery_enabled: false, flat_fee: 3, accepting_orders: false, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }),
       }) as never,
     )).status).toBe(500)
 
@@ -724,7 +724,7 @@ describe('api operations routes', () => {
       from: vi.fn(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1', accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null }, error: null }),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-1', accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }, error: null }),
         update: vi.fn(() => ({
           eq: vi.fn().mockReturnThis(),
           select: vi.fn().mockReturnThis(),
@@ -735,7 +735,7 @@ describe('api operations routes', () => {
     expect((await deliverySettingsRoute.PATCH(
       new Request('https://chefops.test/api/delivery-settings', {
         method: 'PATCH',
-        body: JSON.stringify({ delivery_enabled: false, flat_fee: 3, accepting_orders: false, schedule_enabled: false, opens_at: null, closes_at: null }),
+        body: JSON.stringify({ delivery_enabled: false, flat_fee: 3, accepting_orders: false, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }),
       }) as never,
     )).status).toBe(500)
   })

@@ -100,6 +100,13 @@ describe('api auth and mercado pago routes', () => {
           password: '123',
           tenant_name: 'X',
           tenant_slug: 'Slug Invalido',
+          cnpj: '123',
+          zip_code: '123',
+          street: '',
+          number: '',
+          neighborhood: '',
+          city: '',
+          state: 'S',
         }),
       }) as never
     )
@@ -126,6 +133,13 @@ describe('api auth and mercado pago routes', () => {
           password: '123456',
           tenant_name: 'Casa',
           tenant_slug: 'casa',
+          cnpj: '12.345.678/0001-90',
+          zip_code: '01001-000',
+          street: 'Rua A',
+          number: '123',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'sp',
         }),
       }) as never
     )
@@ -157,6 +171,13 @@ describe('api auth and mercado pago routes', () => {
           password: '123456',
           tenant_name: 'Casa',
           tenant_slug: 'casa',
+          cnpj: '12.345.678/0001-90',
+          zip_code: '01001-000',
+          street: 'Rua A',
+          number: '123',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'sp',
         }),
       }) as never
     )
@@ -197,12 +218,20 @@ describe('api auth and mercado pago routes', () => {
           password: '123456',
           tenant_name: 'Casa',
           tenant_slug: 'casa',
+          cnpj: '12.345.678/0001-90',
+          zip_code: '01001-000',
+          street: 'Rua A',
+          number: '123',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'sp',
         }),
       }) as never
     )
     expect(rollback.status).toBe(500)
     expect(cleanupEq).toHaveBeenCalledWith('id', 'tenant-1')
 
+    const createUserSuccessMock = vi.fn().mockResolvedValue({ error: null })
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
         insert: vi.fn(() => ({
@@ -215,7 +244,7 @@ describe('api auth and mercado pago routes', () => {
       })),
       auth: {
         admin: {
-          createUser: vi.fn().mockResolvedValue({ error: null }),
+          createUser: createUserSuccessMock,
         },
       },
     } as never)
@@ -229,11 +258,37 @@ describe('api auth and mercado pago routes', () => {
           password: '123456',
           tenant_name: 'Casa',
           tenant_slug: 'casa',
+          cnpj: '12.345.678/0001-90',
+          zip_code: '01001-000',
+          street: 'Rua A',
+          number: '123',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'sp',
         }),
       }) as never
     )
     expect(success.status).toBe(201)
     expect((await success.json()).data.tenant_slug).toBe('casa')
+    expect(createUserSuccessMock).toHaveBeenCalledWith({
+      email: 'maria@test.com',
+      password: '123456',
+      email_confirm: true,
+      user_metadata: {
+        full_name: 'Maria',
+        tenant_id: 'tenant-2',
+        role: 'owner',
+        establishment: {
+          cnpj: '12345678000190',
+          zip_code: '01001000',
+          street: 'Rua A',
+          number: '123',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+      },
+    })
   })
 
   it('mercado pago account GET e DELETE tratam auth, erro e sucesso', async () => {

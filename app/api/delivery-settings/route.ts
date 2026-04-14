@@ -10,6 +10,15 @@ const updateSchema = z.object({
   schedule_enabled: z.boolean(),
   opens_at: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
   closes_at: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
+  pricing_mode: z.enum(['flat', 'distance']),
+  max_radius_km: z.number().min(0).max(100).nullable(),
+  fee_per_km: z.number().min(0).max(999).nullable(),
+  origin_zip_code: z.string().nullable(),
+  origin_street: z.string().nullable(),
+  origin_number: z.string().nullable(),
+  origin_neighborhood: z.string().nullable(),
+  origin_city: z.string().nullable(),
+  origin_state: z.string().length(2).nullable(),
 })
 
 async function ensureDeliverySettings(tenantId: string) {
@@ -35,6 +44,15 @@ async function ensureDeliverySettings(tenantId: string) {
       schedule_enabled: false,
       opens_at: null,
       closes_at: null,
+      pricing_mode: 'flat',
+      max_radius_km: null,
+      fee_per_km: null,
+      origin_zip_code: null,
+      origin_street: null,
+      origin_number: null,
+      origin_neighborhood: null,
+      origin_city: null,
+      origin_state: null,
     })
     .select()
     .single()

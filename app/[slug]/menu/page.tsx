@@ -30,7 +30,7 @@ export default async function MenuPage({
 
   const { data: tenant } = await publicSupabase
     .from('tenants')
-    .select('id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at)')
+    .select('id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at, pricing_mode, max_radius_km, fee_per_km, origin_zip_code, origin_street, origin_number, origin_neighborhood, origin_city, origin_state)')
     .eq('slug', slug)
     .eq('status', 'active')
     .single()

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { RegisterPageContent } from '@/features/auth/components/RegisterPageContent'
-import { buildTenantSlug } from '@/features/auth/register-page'
+import { buildTenantSlug, normalizeDigits, normalizeState } from '@/features/auth/register-page'
 
 const registerSchema = z.object({
   tenant_name: z.string().min(2, 'Nome do estabelecimento muito curto'),
@@ -14,6 +14,13 @@ const registerSchema = z.object({
     .string()
     .min(2, 'Slug muito curto')
     .regex(/^[a-z0-9-]+$/, 'Use apenas letras minúsculas, números e hífens'),
+  cnpj: z.string().transform(normalizeDigits).refine((value) => value.length === 14, 'CNPJ inválido'),
+  zip_code: z.string().transform(normalizeDigits).refine((value) => value.length === 8, 'CEP inválido'),
+  street: z.string().min(2, 'Rua obrigatória'),
+  number: z.string().min(1, 'Número obrigatório'),
+  neighborhood: z.string().optional(),
+  city: z.string().min(2, 'Cidade obrigatória'),
+  state: z.string().transform(normalizeState).refine((value) => value.length === 2, 'Estado obrigatório'),
   full_name: z.string().min(2, 'Nome muito curto'),
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
@@ -30,13 +37,19 @@ export default function RegisterPage() {
     defaultValues: {
       tenant_name: '',
       tenant_slug: '',
+      cnpj: '',
+      zip_code: '',
+      street: '',
+      number: '',
+      neighborhood: '',
+      city: '',
+      state: '',
       full_name: '',
       email: '',
       password: '',
     },
   })
 
-  // Gera slug automaticamente a partir do nome do estabelecimento
   function handleTenantNameChange(value: string) {
     form.setValue('tenant_slug', buildTenantSlug(value), { shouldValidate: true })
   }
