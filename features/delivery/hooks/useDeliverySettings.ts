@@ -6,6 +6,10 @@ export type DeliverySettings = {
   tenant_id: string
   delivery_enabled: boolean
   flat_fee: number
+  accepting_orders: boolean
+  schedule_enabled: boolean
+  opens_at: string | null
+  closes_at: string | null
 }
 
 export function useDeliverySettings() {

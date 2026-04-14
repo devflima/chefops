@@ -32,7 +32,47 @@ describe('api menu and customers routes', () => {
     vi.clearAllMocks()
   })
 
-  it('customers GET/POST cobrem validacao, nao encontrado e criacao com endereco', async () => {
+  it('customers GET/POST cobrem listagem autenticada, validacao, nao encontrado e criacao com endereco', async () => {
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-1' },
+      supabase: {
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({
+            data: [
+              {
+                id: 'cust-list-1',
+                name: 'Maria',
+                phone: '11999999999',
+                cpf: null,
+                created_at: '2026-04-01T00:00:00.000Z',
+                addresses: [{ id: 'addr-1', city: 'São Paulo' }],
+              },
+            ],
+            error: null,
+          }),
+        })),
+      },
+    } as never)
+    const listResponse = await customersRoute.GET(
+      new Request('https://chefops.test/api/customers') as never,
+    )
+    expect(listResponse.status).toBe(200)
+    await expect(listResponse.json()).resolves.toEqual({
+      data: [
+        {
+          id: 'cust-list-1',
+          name: 'Maria',
+          phone: '11999999999',
+          cpf: null,
+          created_at: '2026-04-01T00:00:00.000Z',
+          addresses: [{ id: 'addr-1', city: 'São Paulo' }],
+        },
+      ],
+    })
+
     expect((await customersRoute.GET(
       new Request('https://chefops.test/api/customers?phone=1199') as never,
     )).status).toBe(400)

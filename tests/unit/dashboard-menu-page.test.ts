@@ -11,8 +11,10 @@ import {
   getMenuDialogTitle,
   getMenuEditState,
   getMenuFilterChangeState,
+  getMenuExtraCategoryLabel,
   getMenuSubmitErrorMessage,
   getInitialMenuItemFormValues,
+  groupMenuExtrasByCategory,
   getMenuSubmitSuccessState,
   getMenuTotalPages,
   getNormalizedIngredients,
@@ -245,6 +247,37 @@ describe('dashboard menu page helpers', () => {
 
     expect(toggleMenuExtraSelection(['extra-1'], 'extra-2', true)).toEqual(['extra-1', 'extra-2'])
     expect(toggleMenuExtraSelection(['extra-1', 'extra-2'], 'extra-1', false)).toEqual(['extra-2'])
+    expect(getMenuExtraCategoryLabel('border')).toBe('Borda')
+    expect(getMenuExtraCategoryLabel('flavor')).toBe('Sabor extra')
+    expect(getMenuExtraCategoryLabel('other')).toBe('Outros')
+    expect(getMenuExtraCategoryLabel('massas')).toBe('massas')
+    expect(
+      groupMenuExtrasByCategory([
+        { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
+        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border' },
+        { id: 'extra-3', name: 'Calabresa', price: 6, category: 'flavor' },
+        { id: 'extra-4', name: 'Molho da casa', price: 2, category: 'other' },
+      ])
+    ).toEqual([
+      {
+        category: 'border',
+        label: 'Borda',
+        extras: [
+          { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
+          { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border' },
+        ],
+      },
+      {
+        category: 'flavor',
+        label: 'Sabor extra',
+        extras: [{ id: 'extra-3', name: 'Calabresa', price: 6, category: 'flavor' }],
+      },
+      {
+        category: 'other',
+        label: 'Outros',
+        extras: [{ id: 'extra-4', name: 'Molho da casa', price: 2, category: 'other' }],
+      },
+    ])
 
     expect(buildMenuAvailabilityState({ name: 'Pizza', available: true } as never)).toEqual({
       action: 'desativar',

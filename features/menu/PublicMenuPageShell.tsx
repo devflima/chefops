@@ -26,9 +26,12 @@ type Props = {
   items: PublicMenuItem[]
   filteredGroups: ReturnType<typeof import('@/features/menu/public-menu').filterGroupsByCategory>
   selectedBorders: Record<string, MenuExtra | null>
+  selectedExtras?: Record<string, MenuExtra[]>
   onAdd: (item: PublicMenuItem, halfFlavor?: PublicMenuItem) => void
   onBorderToggle: (item: PublicMenuItem, border: MenuExtra | null) => void
+  onExtraToggle?: (item: PublicMenuItem, extra: MenuExtra) => void
   onHalfFlavor: (item: PublicMenuItem) => void
+  menuDisabled?: boolean
   halfFlavorModal: { item: PublicMenuItem } | null
   halfFlavorOptions: PublicMenuItem[]
   onCloseHalfFlavor: () => void
@@ -51,9 +54,12 @@ export function PublicMenuPageShell({
   items,
   filteredGroups,
   selectedBorders,
+  selectedExtras,
   onAdd,
   onBorderToggle,
+  onExtraToggle,
   onHalfFlavor,
+  menuDisabled = false,
   halfFlavorModal,
   halfFlavorOptions,
   onCloseHalfFlavor,
@@ -88,9 +94,12 @@ export function PublicMenuPageShell({
           items={items}
           filteredGroups={filteredGroups}
           selectedBorders={selectedBorders}
+          selectedExtras={selectedExtras}
           onAdd={onAdd}
           onBorderToggle={onBorderToggle}
+          onExtraToggle={onExtraToggle}
           onHalfFlavor={onHalfFlavor}
+          menuDisabled={menuDisabled}
         />
       </main>
 

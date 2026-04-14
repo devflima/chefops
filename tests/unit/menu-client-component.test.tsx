@@ -313,6 +313,424 @@ describe('MenuClient component', () => {
     expect(toastSuccessMock).toHaveBeenCalledTimes(2)
   })
 
+  it('expõe aviso quando o estabelecimento está fechado para novos pedidos', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      checkoutNotice: string | null
+      menuDisabled: boolean
+      onAdd: (item: ReturnType<typeof createMenuItem>) => void
+      onBorderToggle: (
+        item: ReturnType<typeof createMenuItem>,
+        border: { id: string; name: string; price: number; category: string } | null,
+      ) => void
+      onExtraToggle: (
+        item: ReturnType<typeof createMenuItem>,
+        extra: { id: string; name: string; price: number; category: string },
+      ) => void
+    }
+
+    expect(props.checkoutNotice).toBe('O estabelecimento está fechado para novos pedidos no momento.')
+    expect(props.menuDisabled).toBe(true)
+
+    props.onAdd(createMenuItem())
+    props.onBorderToggle(createMenuItem(), { id: 'border-2', name: 'Cheddar', price: 6, category: 'border' })
+    props.onExtraToggle(createMenuItem(), { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' })
+
+    expect(stateSetters[0]).not.toHaveBeenCalled()
+    expect(stateSetters[4]).not.toHaveBeenCalled()
+    expect(stateSetters[29]).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+
+  it('nao dispara verificacao de telefone nem busca de cep quando o estabelecimento esta fechado', async () => {
+    stateValues[5] = '11999999999'
+    stateValues[25] = '123456'
+
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onPhoneLookup: () => Promise<void>
+          onVerifyPhoneCode: () => Promise<void>
+        }
+        addressStepProps: {
+          onCepLookup: (value: string) => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.infoStepProps.onPhoneLookup()
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
+    await props.drawerProps.addressStepProps.onCepLookup('12345-678')
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('nao avanca do carrinho quando o estabelecimento esta fechado para novos pedidos', async () => {
+    stateValues[0] = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza Margherita',
+        quantity: 1,
+        unit_price: 32,
+        total_price: 32,
+        extras: [],
+      },
+    ]
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        cartStepProps: {
+          onContinue: () => void
+          disabled?: boolean
+        }
+      }
+    }
+
+    expect(props.drawerProps.cartStepProps.disabled).toBe(true)
+
+    props.drawerProps.cartStepProps.onContinue()
+
+    expect(stateSetters[2]).not.toHaveBeenCalledWith('info')
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('mantem remocao e limpeza do carrinho disponiveis quando o estabelecimento esta fechado', async () => {
+    stateValues[0] = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza Margherita',
+        quantity: 1,
+        unit_price: 32,
+        total_price: 32,
+        extras: [],
+      },
+    ]
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        cartStepProps: {
+          onRemove: (index: number) => void
+          onClear: () => void
+        }
+      }
+    }
+
+    props.drawerProps.cartStepProps.onRemove(0)
+    props.drawerProps.cartStepProps.onClear()
+
+    expect(stateSetters[0]).toHaveBeenCalledTimes(2)
+    expect(toastErrorMock).not.toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('mantem decremento do carrinho disponivel quando o estabelecimento esta fechado', async () => {
+    stateValues[0] = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza Margherita',
+        quantity: 2,
+        unit_price: 32,
+        total_price: 64,
+        extras: [],
+      },
+    ]
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        cartStepProps: {
+          onDecrement: (index: number) => void
+        }
+      }
+    }
+
+    props.drawerProps.cartStepProps.onDecrement(0)
+
+    expect(stateSetters[0]).toHaveBeenCalledTimes(1)
+    expect(toastErrorMock).not.toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('nao incrementa itens do carrinho quando o estabelecimento esta fechado', async () => {
+    stateValues[0] = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza Margherita',
+        quantity: 1,
+        unit_price: 32,
+        total_price: 32,
+        extras: [],
+      },
+    ]
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        cartStepProps: {
+          onIncrement: (index: number) => void
+        }
+      }
+    }
+
+    props.drawerProps.cartStepProps.onIncrement(0)
+
+    expect(stateSetters[0]).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('nao abre meia a meia quando o estabelecimento esta fechado para novos pedidos', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      onHalfFlavor: (item: ReturnType<typeof createMenuItem>) => void
+    }
+
+    props.onHalfFlavor(createMenuItem())
+
+    expect(stateSetters[3]).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('expõe aviso específico quando o estabelecimento está fora do horário de funcionamento', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: {
+            delivery_enabled: true,
+            flat_fee: 8,
+            accepting_orders: true,
+            schedule_enabled: true,
+            opens_at: '03:00',
+            closes_at: '03:01',
+          },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as { checkoutNotice: string | null }
+
+    expect(props.checkoutNotice).toBe('O estabelecimento está fora do horário de funcionamento no momento.')
+  })
+
+  it('inclui adicionais não-borda no item enviado para o carrinho', async () => {
+    stateValues[29] = {
+      'item-1': [
+        { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' },
+        { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' },
+      ],
+    }
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem({
+          extras: [
+            { extra: { id: 'border-1', name: 'Catupiry', price: 5, category: 'border' } },
+            { extra: { id: 'extra-2', name: 'Cheddar', price: 4, category: 'other' } },
+            { extra: { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' } },
+          ],
+        })],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      onAdd: (item: ReturnType<typeof createMenuItem>) => void
+    }
+
+    props.onAdd(createMenuItem())
+
+    expect(stateSetters[0]).toHaveBeenCalledWith(expect.any(Function))
+    const addUpdater = stateSetters[0].mock.calls.at(-1)?.[0] as (prev: unknown[]) => unknown[]
+    const nextCart = addUpdater([]) as Array<{ extras?: Array<{ name: string; price: number }> }>
+
+    expect(nextCart[0]?.extras).toEqual([
+      { name: 'Cheddar', price: 4 },
+      { name: 'Calabresa extra', price: 6 },
+    ])
+    expect(stateSetters[29]).toHaveBeenCalledWith(expect.any(Function))
+  })
+
+  it('mantém apenas um adicional de sabor por item no fluxo público', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8 },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      onExtraToggle: (item: ReturnType<typeof createMenuItem>, extra: { id: string; name: string; price: number; category: string }) => void
+    }
+
+    props.onExtraToggle(createMenuItem(), { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' })
+    props.onExtraToggle(createMenuItem(), { id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' })
+
+    const firstUpdater = stateSetters[29].mock.calls[0]?.[0] as (prev: Record<string, unknown>) => Record<string, unknown>
+    const secondUpdater = stateSetters[29].mock.calls[1]?.[0] as (prev: Record<string, unknown>) => Record<string, unknown>
+
+    const afterFirst = firstUpdater({}) as Record<string, Array<{ id: string; category: string }>>
+    const afterSecond = secondUpdater(afterFirst) as Record<string, Array<{ id: string; category: string }>>
+
+    expect(afterFirst['item-1']).toEqual([{ id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' }])
+    expect(afterSecond['item-1']).toEqual([{ id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' }])
+  })
+
   it('não pré-seleciona pagamento no fluxo público sem mesa', async () => {
     const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
 
@@ -389,6 +807,56 @@ describe('MenuClient component', () => {
       'Confira os campos obrigatórios: Nome obrigatório, Telefone inválido, Selecione uma forma de pagamento'
     )
     expect(createOrderMutateAsyncMock).not.toHaveBeenCalled()
+  })
+
+  it('nao avanca da etapa de informacoes quando o estabelecimento esta fechado', async () => {
+    stateValues[0] = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza Margherita',
+        price: 32,
+        quantity: 1,
+        extras: [],
+      },
+    ]
+    stateValues[5] = '(11) 99999-9999'
+    stateValues[6] = 'Maria'
+    stateValues[14] = 'delivery'
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onContinue: () => Promise<void>
+          disabled?: boolean
+        }
+      }
+    }
+
+    expect(props.drawerProps.infoStepProps.disabled).toBe(true)
+
+    await props.drawerProps.infoStepProps.onContinue()
+
+    expect(stateSetters[2]).not.toHaveBeenCalledWith('address')
+    expect(createOrderMutateAsyncMock).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
   })
 
   it('executa lookup, CEP, submit do pedido e cancelamento', async () => {
@@ -2460,6 +2928,230 @@ describe('MenuClient component', () => {
     expect(stateSetters[21]).toHaveBeenCalledWith('Nao foi possivel consultar o status do pagamento agora.')
     expect(stateSetters[23]).toHaveBeenCalledWith(true)
     expect(stateSetters[23]).toHaveBeenCalledWith(false)
+  })
+
+
+
+
+  it('nao permite mudar de etapa pelo callback generico quando o estabelecimento esta fechado', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        onStepChange: (step: 'cart' | 'info' | 'address' | 'done') => void
+      }
+    }
+
+    props.drawerProps.onStepChange('address')
+
+    expect(stateSetters[2]).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('nao permite voltar entre etapas quando o estabelecimento esta fechado', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onBack: () => void
+        }
+        addressStepProps: {
+          onBack: () => void
+        }
+      }
+    }
+
+    props.drawerProps.infoStepProps.onBack()
+    props.drawerProps.addressStepProps.onBack()
+
+    expect(stateSetters[2]).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('nao altera dados de informacoes e endereco quando o estabelecimento esta fechado', async () => {
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        infoStepProps: {
+          onPhoneChange: (value: string) => void
+          onVerificationCodeChange: (value: string) => void
+          onCustomerNameChange: (value: string) => void
+          onCustomerCpfChange: (value: string) => void
+          onPaymentMethodChange: (value: string) => void
+          onNotesChange: (value: string) => void
+        }
+        addressStepProps: {
+          onAddressChange: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void
+        }
+      }
+    }
+
+    props.drawerProps.infoStepProps.onPhoneChange('11999999999')
+    props.drawerProps.infoStepProps.onVerificationCodeChange('123456')
+    props.drawerProps.infoStepProps.onCustomerNameChange('Maria')
+    props.drawerProps.infoStepProps.onCustomerCpfChange('12345678909')
+    props.drawerProps.infoStepProps.onPaymentMethodChange('delivery')
+    props.drawerProps.infoStepProps.onNotesChange('Sem cebola')
+    props.drawerProps.addressStepProps.onAddressChange((prev) => ({ ...prev, street: 'Rua A' }))
+
+    expect(stateSetters[5]).not.toHaveBeenCalled()
+    expect(stateSetters[6]).not.toHaveBeenCalled()
+    expect(stateSetters[25]).not.toHaveBeenCalled()
+    expect(stateSetters[7]).not.toHaveBeenCalled()
+    expect(stateSetters[12]).not.toHaveBeenCalled()
+    expect(stateSetters[14]).not.toHaveBeenCalled()
+    expect(stateSetters[15]).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+
+  it('nao valida endereco quando o estabelecimento esta fechado durante o submit', async () => {
+    stateValues[14] = 'delivery'
+
+    const alertMock = vi.fn()
+    vi.stubGlobal('alert', alertMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        addressStepProps: {
+          onSubmit: () => Promise<void>
+        }
+      }
+    }
+
+    await props.drawerProps.addressStepProps.onSubmit()
+
+    expect(stateSetters[18]).not.toHaveBeenCalled()
+    expect(toastErrorMock).not.toHaveBeenCalledWith(expect.stringContaining('Confira os campos obrigatórios'))
+    expect(alertMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
+  })
+
+  it('nao envia pedido quando o estabelecimento esta fechado durante o submit do endereco', async () => {
+    stateValues[0] = [
+      {
+        menu_item_id: 'item-1',
+        name: 'Pizza Margherita',
+        quantity: 1,
+        unit_price: 32,
+        total_price: 32,
+        extras: [],
+      },
+    ]
+    stateValues[5] = '(11) 99999-9999'
+    stateValues[6] = 'Maria'
+    stateValues[7] = '123.456.789-09'
+    stateValues[12] = {
+      zip_code: '12345-678',
+      street: 'Rua A',
+      number: '10',
+      city: 'São Paulo',
+    }
+    stateValues[14] = 'delivery'
+
+    const alertMock = vi.fn()
+    vi.stubGlobal('alert', alertMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, accepting_orders: false },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        addressStepProps: {
+          onSubmit: () => Promise<void>
+          disabled?: boolean
+        }
+      }
+    }
+
+    expect(props.drawerProps.addressStepProps.disabled).toBe(true)
+
+    await props.drawerProps.addressStepProps.onSubmit()
+
+    expect(createOrderMutateAsyncMock).not.toHaveBeenCalled()
+    expect(alertMock).toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
   })
 
   it('remove o pedido salvo quando o status nao deve mais persistir', async () => {

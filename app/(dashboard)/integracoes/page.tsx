@@ -8,7 +8,11 @@ import {
 } from '@/features/payments/hooks/useMercadoPagoAccount'
 import { IntegrationsPageContent } from '@/features/payments/IntegrationsPageContent'
 import {
+  buildDeliveryHoursPayload,
+  buildDeliveryOperationPayload,
+  buildDeliverySchedulePayload,
   getDeliveryFeeValue,
+  getDeliveryHourValue,
   getMercadoPagoAlertMessage,
   whatsappOptionDefinitions,
 } from '@/features/payments/integrations-page'
@@ -33,6 +37,8 @@ export default function IntegracoesPage() {
   const deliverySettings = useDeliverySettings()
   const updateDeliverySettings = useUpdateDeliverySettings()
   const [deliveryFeeInput, setDeliveryFeeInput] = useState<string | null>(null)
+  const [openingHourInput, setOpeningHourInput] = useState<string | null>(null)
+  const [closingHourInput, setClosingHourInput] = useState<string | null>(null)
 
   useEffect(() => {
     const message = getMercadoPagoAlertMessage(params.get('mercado_pago'))
@@ -44,6 +50,8 @@ export default function IntegracoesPage() {
 
   const connected = !!account.data
   const deliveryFeeValue = getDeliveryFeeValue(deliveryFeeInput, deliverySettings.data?.flat_fee)
+  const openingHourValue = getDeliveryHourValue(openingHourInput, deliverySettings.data?.opens_at)
+  const closingHourValue = getDeliveryHourValue(closingHourInput, deliverySettings.data?.closes_at)
   const whatsappOptions =
     hasWhatsappNotifications && notificationSettings.data ? whatsappOptionDefinitions : []
 
@@ -59,13 +67,39 @@ export default function IntegracoesPage() {
         deliverySettingsData={deliverySettings.data ?? null}
         deliverySettingsPending={updateDeliverySettings.isPending}
         deliveryFeeValue={deliveryFeeValue}
+        openingHourValue={openingHourValue}
+        closingHourValue={closingHourValue}
         onDeliveryToggle={async (payload) => {
           await updateDeliverySettings.mutateAsync(payload)
+        }}
+        onDeliveryOperationChange={async (acceptingOrders) => {
+          if (!deliverySettings.data) return
+          await updateDeliverySettings.mutateAsync(
+            buildDeliveryOperationPayload(deliverySettings.data, acceptingOrders)
+          )
+        }}
+        onDeliveryScheduleChange={async (enabled) => {
+          if (!deliverySettings.data) return
+          await updateDeliverySettings.mutateAsync(
+            buildDeliverySchedulePayload(deliverySettings.data, enabled)
+          )
+        }}
+        onDeliveryHoursChange={(field, value) => {
+          if (field === 'opens_at') {
+            setOpeningHourInput(value)
+            return
+          }
+          setClosingHourInput(value)
         }}
         onDeliveryFeeInputChange={setDeliveryFeeInput}
         onDeliveryFeeSave={async (payload) => {
           await updateDeliverySettings.mutateAsync(payload)
           setDeliveryFeeInput(null)
+        }}
+        onDeliveryHoursSave={async (payload) => {
+          await updateDeliverySettings.mutateAsync(payload)
+          setOpeningHourInput(null)
+          setClosingHourInput(null)
         }}
         hasWhatsappNotifications={hasWhatsappNotifications}
         notificationSettingsLoading={

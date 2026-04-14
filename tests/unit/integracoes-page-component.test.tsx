@@ -105,6 +105,10 @@ describe('IntegracoesPage component', () => {
         tenant_id: 'tenant-1',
         delivery_enabled: true,
         flat_fee: 8,
+        accepting_orders: true,
+        schedule_enabled: true,
+        opens_at: '09:00',
+        closes_at: '18:00',
       },
       isLoading: false,
     })
@@ -136,6 +140,10 @@ describe('IntegracoesPage component', () => {
       whatsappOptions: Array<{ key: string; label: string }>
       onDisconnect: () => void
       onDeliveryToggle: (payload: Record<string, unknown>) => Promise<void>
+      onDeliveryOperationChange: (acceptingOrders: boolean) => Promise<void>
+      onDeliveryScheduleChange: (enabled: boolean) => Promise<void>
+      onDeliveryHoursChange: (field: 'opens_at' | 'closes_at', value: string) => void
+      onDeliveryHoursSave: (payload: Record<string, unknown>) => Promise<void>
       onDeliveryFeeInputChange: (value: string) => void
       onDeliveryFeeSave: (payload: Record<string, unknown>) => Promise<void>
       onToggleWhatsappOption: (payload: Record<string, unknown>) => Promise<void>
@@ -161,11 +169,32 @@ describe('IntegracoesPage component', () => {
       tenant_id: 'tenant-1',
       delivery_enabled: false,
       flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
+    })
+    await props.onDeliveryOperationChange(false)
+    await props.onDeliveryScheduleChange(true)
+    props.onDeliveryHoursChange('opens_at', '10:00')
+    props.onDeliveryHoursChange('closes_at', '22:00')
+    await props.onDeliveryHoursSave({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '10:00',
+      closes_at: '22:00',
     })
     await props.onDeliveryFeeSave({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 14.5,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
     })
     await props.onToggleWhatsappOption({
       whatsapp_order_received: false,
@@ -182,11 +211,46 @@ describe('IntegracoesPage component', () => {
       tenant_id: 'tenant-1',
       delivery_enabled: false,
       flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
+    })
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 8,
+      accepting_orders: false,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
+    })
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
+    })
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '10:00',
+      closes_at: '22:00',
     })
     expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 14.5,
+      accepting_orders: true,
+      schedule_enabled: true,
+      opens_at: '09:00',
+      closes_at: '18:00',
     })
     expect(updateNotificationMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -31,6 +31,7 @@ const useUpdateDeliveryDriverMock = vi.fn()
 const useDeleteDeliveryDriverMock = vi.fn()
 const useOrdersMock = vi.fn()
 const useUsersListMock = vi.fn()
+const useCustomersMock = vi.fn()
 const useCreateUserMock = vi.fn()
 const useUpdateUserRoleMock = vi.fn()
 const useDeleteUserMock = vi.fn()
@@ -202,6 +203,10 @@ vi.mock('@/features/users/hooks/useUsers', () => ({
   useCreateUser: () => useCreateUserMock(),
   useUpdateUserRole: () => useUpdateUserRoleMock(),
   useDeleteUser: () => useDeleteUserMock(),
+}))
+
+vi.mock('@/features/customers/hooks/useCustomers', () => ({
+  useCustomers: () => useCustomersMock(),
 }))
 
 vi.mock('@/features/auth/hooks/useUser', () => ({
@@ -475,6 +480,19 @@ describe('page smoke', () => {
     useCreateUserMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() })
     useUpdateUserRoleMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() })
     useDeleteUserMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() })
+    useCustomersMock.mockReturnValue({
+      data: [
+        {
+          id: 'customer-1',
+          name: 'Maria Silva',
+          phone: '11999999999',
+          cpf: null,
+          created_at: '2026-03-21T00:00:00.000Z',
+          addresses: [{ id: 'addr-1', street: 'Rua A', number: '10', city: 'São Paulo', state: 'SP' }],
+        },
+      ],
+      isLoading: false,
+    })
     useUserMock.mockReturnValue({
       user: {
         profile: {
@@ -829,6 +847,7 @@ describe('page smoke', () => {
     )
     expect(sidebarMarkup).toContain('ChefOps House')
     expect(sidebarMarkup).toContain('Integrações')
+    expect(sidebarMarkup).toContain('Clientes')
 
     useUserMock.mockReturnValueOnce({ user: null, loading: true })
     expect(renderToStaticMarkup(React.createElement(DashboardAccessGuard, null, 'guard-child'))).toContain('Carregando permissões')
@@ -934,6 +953,7 @@ describe('page smoke', () => {
   it('renderiza paginas de dashboard cliente', async () => {
     const { default: CategoriasPage } = await import('@/app/(dashboard)/categorias/page')
     const { default: CardapioPage } = await import('@/app/(dashboard)/cardapio/page')
+    const { default: ClientesPage } = await import('@/app/(dashboard)/clientes/page')
     const { default: ComandasPage } = await import('@/app/(dashboard)/comandas/page')
     const { default: ExtrasPage } = await import('@/app/(dashboard)/extras/page')
     const { default: EstoquePage } = await import('@/app/(dashboard)/estoque/page')
@@ -950,6 +970,7 @@ describe('page smoke', () => {
 
     expect(renderToStaticMarkup(React.createElement(CategoriasPage))).toContain('Categorias')
     expect(renderToStaticMarkup(React.createElement(CardapioPage))).toContain('Cardápio')
+    expect(renderToStaticMarkup(React.createElement(ClientesPage))).toContain('Clientes do estabelecimento')
     expect(renderToStaticMarkup(React.createElement(ComandasPage))).toContain('Comandas')
     expect(renderToStaticMarkup(React.createElement(ExtrasPage))).toContain('Adicionais')
     expect(renderToStaticMarkup(React.createElement(EstoquePage))).toContain('Estoque')

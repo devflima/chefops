@@ -1,3 +1,5 @@
+import { isTenantAcceptingOrders } from '@/lib/delivery-operations'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -129,8 +131,23 @@ export async function POST(request: NextRequest) {
       .select('plan')
       .eq('id', tenant_id)
       .single()
+    const billingState = await ensureTenantBillingAccessState(tenant_id)
+    const effectivePlan = billingState.downgraded ? 'free' : tenantData?.plan
 
-    if (tenantData?.plan === 'free') {
+    const { data: deliverySettings } = await admin
+      .from('tenant_delivery_settings')
+      .select('delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at')
+      .eq('tenant_id', tenant_id)
+      .maybeSingle()
+
+    if (deliverySettings && !isTenantAcceptingOrders(deliverySettings)) {
+      return NextResponse.json(
+        { error: 'O estabelecimento está fechado para novos pedidos no momento.' },
+        { status: 409 }
+      )
+    }
+
+    if (effectivePlan === 'free') {
       const startOfMonth = new Date()
       startOfMonth.setDate(1)
       startOfMonth.setHours(0, 0, 0, 0)

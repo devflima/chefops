@@ -19,6 +19,10 @@ export type DeliverySettingsShape = {
   tenant_id?: string
   delivery_enabled: boolean
   flat_fee: number
+  accepting_orders: boolean
+  schedule_enabled: boolean
+  opens_at: string | null
+  closes_at: string | null
 }
 
 export function getMercadoPagoAlertMessage(status: string | null) {
@@ -41,6 +45,10 @@ export function getDeliveryFeeValue(input: string | null, flatFee?: number | nul
   return input ?? String(flatFee ?? 0)
 }
 
+export function getDeliveryHourValue(input: string | null, value?: string | null) {
+  return input ?? value ?? ''
+}
+
 export function buildDeliveryTogglePayload(settings: DeliverySettingsShape) {
   return {
     ...settings,
@@ -52,6 +60,38 @@ export function buildDeliveryFeePayload(settings: DeliverySettingsShape, feeValu
   return {
     ...settings,
     flat_fee: Number(feeValue || 0),
+  }
+}
+
+export function buildDeliveryOperationPayload(
+  settings: DeliverySettingsShape,
+  acceptingOrders: boolean
+) {
+  return {
+    ...settings,
+    accepting_orders: acceptingOrders,
+  }
+}
+
+export function buildDeliverySchedulePayload(
+  settings: DeliverySettingsShape,
+  enabled: boolean
+) {
+  return {
+    ...settings,
+    schedule_enabled: enabled,
+  }
+}
+
+export function buildDeliveryHoursPayload(
+  settings: DeliverySettingsShape,
+  opensAt: string,
+  closesAt: string
+) {
+  return {
+    ...settings,
+    opens_at: opensAt || null,
+    closes_at: closesAt || null,
   }
 }
 

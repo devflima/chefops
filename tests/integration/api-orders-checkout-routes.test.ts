@@ -34,6 +34,10 @@ vi.mock('@/lib/checkout-session', () => ({
   createOrderFromCheckoutSession: vi.fn(),
 }))
 
+vi.mock('@/lib/saas-billing', () => ({
+  ensureTenantBillingAccessState: vi.fn(),
+}))
+
 const { requireTenantRoles } = await import('@/lib/auth-guards')
 const { createAdminClient } = await import('@/lib/supabase/admin')
 const { refundOrderIfNeeded } = await import('@/lib/order-refunds')
@@ -42,6 +46,7 @@ const { deductOrderStockIfNeeded } = await import('@/lib/stock-deduction')
 const { createCheckoutPreference, getMercadoPagoWebhookUrl } = await import('@/lib/mercadopago')
 const { getTenantMercadoPagoAccessToken, getTenantMercadoPagoAccount } = await import('@/lib/tenant-mercadopago')
 const { createOrderFromCheckoutSession } = await import('@/lib/checkout-session')
+const { ensureTenantBillingAccessState } = await import('@/lib/saas-billing')
 
 const ordersRoute = await import('@/app/api/orders/route')
 const orderByIdRoute = await import('@/app/api/orders/[id]/route')
@@ -56,6 +61,7 @@ function forbiddenResponse(status = 403) {
 describe('api orders and checkout routes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValue({ downgraded: false } as never)
   })
 
   it('orders GET/POST cobrem auth, filtros, validacao, mismatch, limite e sucesso', async () => {
@@ -193,13 +199,14 @@ describe('api orders and checkout routes', () => {
       ok: true,
       profile: { tenant_id: '550e8400-e29b-41d4-a716-446655440000' },
     } as never)
+    vi.mocked(ensureTenantBillingAccessState).mockResolvedValueOnce({ downgraded: true } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn((table: string) => {
         if (table === 'tenants') {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: { plan: 'free' } }),
+            single: vi.fn().mockResolvedValue({ data: { plan: 'basic' } }),
           }
         }
 

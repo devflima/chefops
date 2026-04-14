@@ -2,6 +2,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   buildDeliveryFeePayload,
+  buildDeliveryHoursPayload,
+  buildDeliverySchedulePayload,
   buildDeliveryTogglePayload,
   buildNotificationTogglePayload,
   type DeliverySettingsShape,
@@ -31,9 +33,15 @@ type Props = {
   deliverySettingsData: DeliverySettingsShape | null
   deliverySettingsPending: boolean
   deliveryFeeValue: string
+  openingHourValue: string
+  closingHourValue: string
   onDeliveryToggle: (payload: DeliverySettingsShape) => void | Promise<void>
+  onDeliveryOperationChange: (acceptingOrders: boolean) => void | Promise<void>
+  onDeliveryScheduleChange: (enabled: boolean) => void | Promise<void>
+  onDeliveryHoursChange: (field: 'opens_at' | 'closes_at', value: string) => void
   onDeliveryFeeInputChange: (value: string) => void
   onDeliveryFeeSave: (payload: DeliverySettingsShape) => void | Promise<void>
+  onDeliveryHoursSave: (payload: DeliverySettingsShape) => void | Promise<void>
   hasWhatsappNotifications: boolean
   notificationSettingsLoading: boolean
   notificationSettingsData: NotificationSettingsShape | null
@@ -52,9 +60,15 @@ export function IntegrationsPageContent({
   deliverySettingsData,
   deliverySettingsPending,
   deliveryFeeValue,
+  openingHourValue,
+  closingHourValue,
   onDeliveryToggle,
+  onDeliveryOperationChange,
+  onDeliveryScheduleChange,
+  onDeliveryHoursChange,
   onDeliveryFeeInputChange,
   onDeliveryFeeSave,
+  onDeliveryHoursSave,
   hasWhatsappNotifications,
   notificationSettingsLoading,
   notificationSettingsData,
@@ -181,6 +195,94 @@ export function IntegrationsPageContent({
                   }`}
                 />
               </button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+              <div>
+                <p className="font-medium text-slate-900">Operação de pedidos</p>
+                <p className="text-sm text-slate-500">
+                  {deliverySettingsData.accepting_orders
+                    ? 'Estabelecimento aberto'
+                    : 'Estabelecimento fechado'}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={deliverySettingsPending}
+                onClick={() => onDeliveryOperationChange(!deliverySettingsData.accepting_orders)}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                  deliverySettingsData.accepting_orders ? 'bg-emerald-600' : 'bg-rose-300'
+                } ${deliverySettingsPending ? 'opacity-60' : ''}`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                    deliverySettingsData.accepting_orders ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-slate-900">Horário de funcionamento</p>
+                  <p className="text-sm text-slate-500">
+                    Bloqueia novos pedidos fora da faixa configurada.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={deliverySettingsPending}
+                  onClick={() => onDeliveryScheduleChange(!deliverySettingsData.schedule_enabled)}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                    deliverySettingsData.schedule_enabled ? 'bg-slate-900' : 'bg-slate-200'
+                  } ${deliverySettingsPending ? 'opacity-60' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                      deliverySettingsData.schedule_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {deliverySettingsData.schedule_enabled && (
+                <div className="flex items-end gap-3">
+                  <label className="text-sm text-slate-600">
+                    <span className="mb-1 block">Abertura</span>
+                    <input
+                      type="time"
+                      value={openingHourValue}
+                      onChange={(event) => onDeliveryHoursChange('opens_at', event.target.value)}
+                      className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-slate-600">
+                    <span className="mb-1 block">Fechamento</span>
+                    <input
+                      type="time"
+                      value={closingHourValue}
+                      onChange={(event) => onDeliveryHoursChange('closes_at', event.target.value)}
+                      className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <Button
+                    variant="outline"
+                    disabled={deliverySettingsPending}
+                    onClick={() =>
+                      onDeliveryHoursSave(
+                        buildDeliveryHoursPayload(
+                          deliverySettingsData,
+                          openingHourValue,
+                          closingHourValue
+                        )
+                      )
+                    }
+                  >
+                    {deliverySettingsPending ? 'Salvando...' : 'Salvar horário'}
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="rounded-xl border border-slate-200 p-4">

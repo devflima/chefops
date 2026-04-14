@@ -147,6 +147,40 @@ export function toggleMenuExtraSelection(selectedExtras: string[], extraId: stri
   return checked ? [...selectedExtras, extraId] : selectedExtras.filter((id) => id !== extraId)
 }
 
+export type MenuExtraOption = {
+  id: string
+  name: string
+  price: number
+  category: string
+}
+
+const MENU_EXTRA_CATEGORY_ORDER = ['border', 'flavor', 'other'] as const
+
+export function getMenuExtraCategoryLabel(category: string) {
+  if (category === 'border') return 'Borda'
+  if (category === 'flavor') return 'Sabor extra'
+  if (category === 'other') return 'Outros'
+
+  return category
+}
+
+export function groupMenuExtrasByCategory(allExtras: MenuExtraOption[]) {
+  const grouped = new Map<string, MenuExtraOption[]>()
+
+  for (const extra of allExtras) {
+    grouped.set(extra.category, [...(grouped.get(extra.category) ?? []), extra])
+  }
+
+  const knownCategories = MENU_EXTRA_CATEGORY_ORDER.filter((category) => grouped.has(category))
+  const unknownCategories = [...grouped.keys()].filter((category) => !MENU_EXTRA_CATEGORY_ORDER.includes(category as (typeof MENU_EXTRA_CATEGORY_ORDER)[number]))
+
+  return [...knownCategories, ...unknownCategories].map((category) => ({
+    category,
+    label: getMenuExtraCategoryLabel(category),
+    extras: grouped.get(category) ?? [],
+  }))
+}
+
 export function buildMenuAvailabilityState(item: Pick<MenuItem, 'available' | 'name'>) {
   const action = item.available ? 'desativar' : 'reativar'
   return {

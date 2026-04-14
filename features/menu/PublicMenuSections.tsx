@@ -11,16 +11,22 @@ export function PublicMenuSections({
   items,
   filteredGroups,
   selectedBorders,
+  selectedExtras = {},
   onAdd,
   onBorderToggle,
+  onExtraToggle = () => {},
   onHalfFlavor,
+  menuDisabled = false,
 }: {
   items: PublicMenuItem[]
   filteredGroups: MenuGroup[]
   selectedBorders: Record<string, MenuExtra | null>
+  selectedExtras?: Record<string, MenuExtra[]>
   onAdd: (item: PublicMenuItem) => void
   onBorderToggle: (item: PublicMenuItem, border: MenuExtra | null) => void
+  onExtraToggle?: (item: PublicMenuItem, extra: MenuExtra) => void
   onHalfFlavor: (item: PublicMenuItem) => void
+  menuDisabled?: boolean
 }) {
   if (items.length === 0) {
     return <MenuEmptyState />
@@ -39,9 +45,12 @@ export function PublicMenuSections({
                 key={item.id}
                 item={item}
                 selectedBorder={selectedBorders[item.id]}
+                selectedExtras={selectedExtras[item.id] ?? []}
                 onAdd={() => onAdd(item)}
                 onBorderToggle={(border) => onBorderToggle(item, border)}
+                onExtraToggle={(extra) => onExtraToggle(item, extra)}
                 onHalfFlavor={() => onHalfFlavor(item)}
+                disabled={menuDisabled}
               />
             ))}
           </div>

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import MenuClient from './MenuClient'
+import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import {
   normalizePublicMenuItems,
   normalizeTenantDeliverySettings,
@@ -29,12 +30,15 @@ export default async function MenuPage({
 
   const { data: tenant } = await publicSupabase
     .from('tenants')
-    .select('id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee)')
+    .select('id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at)')
     .eq('slug', slug)
     .eq('status', 'active')
     .single()
 
   if (!tenant) notFound()
+
+  const billingState = await ensureTenantBillingAccessState(tenant.id)
+  const effectivePlan = billingState.downgraded ? 'free' : tenant.plan
 
   const { data: rawItems } = await publicSupabase
     .from('menu_items')
@@ -75,7 +79,7 @@ export default async function MenuPage({
         id: tenant.id,
         name: tenant.name,
         slug: tenant.slug,
-        plan: tenant.plan,
+        plan: effectivePlan,
         delivery_settings: normalizeTenantDeliverySettings(tenant.tenant_delivery_settings),
       }}
       items={items}

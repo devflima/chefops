@@ -92,6 +92,7 @@ describe('Sidebar component', () => {
     expect(markup).toContain('ChefOps House')
     expect(markup).toContain('Standard')
     expect(markup).toContain('Integrações')
+    expect(markup).toContain('Clientes')
     expect(markup).toContain('Usuários')
 
     const buttons = flattenElements(tree).filter((element) => element.type === 'button')
@@ -156,6 +157,7 @@ describe('Sidebar component', () => {
 
     const markup = renderToStaticMarkup(tree)
     expect(markup).toContain('Pedidos')
+    expect(markup).toContain('Clientes')
     expect(markup).toContain('Cardápio')
     expect(markup).not.toContain('Mesas')
     expect(markup).not.toContain('Comandas')

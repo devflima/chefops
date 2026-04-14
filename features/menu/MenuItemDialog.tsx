@@ -7,7 +7,13 @@ import { Plus, Trash2 } from 'lucide-react'
 
 import type { UseFormReturn } from 'react-hook-form'
 
-import { getMenuDialogTitle, toggleMenuExtraSelection, type MenuItemIngredient } from '@/features/menu/dashboard-menu-page'
+import {
+  getMenuDialogTitle,
+  groupMenuExtrasByCategory,
+  toggleMenuExtraSelection,
+  type MenuExtraOption,
+  type MenuItemIngredient,
+} from '@/features/menu/dashboard-menu-page'
 import type { MenuItem } from '@/features/orders/types'
 
 type MenuItemFormValues = {
@@ -16,13 +22,6 @@ type MenuItemFormValues = {
   price: number
   category_id?: string
   display_order: number
-}
-
-type ExtraOption = {
-  id: string
-  name: string
-  price: number
-  category: string
 }
 
 type ProductOption = {
@@ -45,7 +44,7 @@ type Props = {
   onAddIngredient: () => void
   onUpdateIngredient: (index: number, patch: Partial<MenuItemIngredient>) => void
   onRemoveIngredient: (index: number) => void
-  allExtras?: ExtraOption[]
+  allExtras?: MenuExtraOption[]
   selectedExtras: string[]
   onSelectedExtrasChange: (updater: (prev: string[]) => string[]) => void
   onSubmit: (values: MenuItemFormValues) => void | Promise<void>
@@ -177,7 +176,10 @@ export function MenuItemDialog({
                       </p>
                     ) : (
                       ingredients.map((ingredient, index) => (
-                        <div key={`${ingredient.product_id}-${index}`} className="grid grid-cols-[1fr_120px_auto] gap-3">
+                        <div
+                          key={`${ingredient.product_id}-${index}`}
+                          className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_120px_auto] md:items-end"
+                        >
                           <Select
                             value={ingredient.product_id}
                             onValueChange={(value) => onUpdateIngredient(index, { product_id: value })}
@@ -203,7 +205,7 @@ export function MenuItemDialog({
                               onUpdateIngredient(index, { quantity: Number(event.target.value) || 0 })
                             }
                           />
-                          <Button type="button" variant="ghost" onClick={() => onRemoveIngredient(index)}>
+                          <Button type="button" variant="ghost" onClick={() => onRemoveIngredient(index)} className="w-full md:w-auto">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -226,24 +228,33 @@ export function MenuItemDialog({
                 <label className="text-sm font-medium text-slate-700 block mb-2">
                   Adicionais disponíveis
                 </label>
-                <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-3">
-                  {allExtras.map((extra) => (
-                    <label key={extra.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedExtras.includes(extra.id)}
-                        onChange={(event) => {
-                          onSelectedExtrasChange((prev) =>
-                            toggleMenuExtraSelection(prev, extra.id, event.target.checked)
-                          )
-                        }}
-                        className="rounded"
-                      />
-                      <span className="text-sm text-slate-700">{extra.name}</span>
-                      <span className="text-xs text-slate-400 ml-auto">
-                        {extra.price > 0 ? `+R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
-                      </span>
-                    </label>
+                <div className="max-h-56 space-y-4 overflow-y-auto rounded-lg border border-slate-200 p-3">
+                  {groupMenuExtrasByCategory(allExtras).map((group) => (
+                    <div key={group.category} className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {group.label}
+                      </p>
+                      <div className="space-y-2">
+                        {group.extras.map((extra) => (
+                          <label key={extra.id} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedExtras.includes(extra.id)}
+                              onChange={(event) => {
+                                onSelectedExtrasChange((prev) =>
+                                  toggleMenuExtraSelection(prev, extra.id, event.target.checked)
+                                )
+                              }}
+                              className="rounded"
+                            />
+                            <span className="text-sm text-slate-700">{extra.name}</span>
+                            <span className="text-xs text-slate-400 ml-auto">
+                              {extra.price > 0 ? `+R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

@@ -20,6 +20,7 @@ const navItems = [
   { href: '/cardapio',    label: 'Cardápio',    icon: UtensilsCrossed, roles: ['owner', 'manager'], feature: 'menu' as PlanFeature },
   { href: '/extras',      label: 'Adicionais',  icon: Settings,        roles: ['owner', 'manager'], feature: 'menu' as PlanFeature },
   { href: '/pedidos',     label: 'Pedidos',     icon: ClipboardList,   roles: ['owner', 'manager', 'cashier', 'kitchen'], feature: 'orders' as PlanFeature },
+  { href: '/clientes',    label: 'Clientes',    icon: Users,           roles: ['owner', 'manager', 'cashier'], feature: 'orders' as PlanFeature },
   { href: '/entregadores',label: 'Entregadores',icon: Bike,            roles: ['owner', 'manager', 'cashier'], feature: 'orders' as PlanFeature },
   { href: '/comandas',    label: 'Comandas',    icon: ReceiptText,     roles: ['owner', 'manager', 'cashier'], feature: 'tables' as PlanFeature },
   { href: '/mesas',       label: 'Mesas',       icon: LayoutGrid,      roles: ['owner', 'manager', 'cashier'], feature: 'tables' as PlanFeature },
