@@ -190,6 +190,19 @@ describe('MenuClient component', () => {
         }
       }
 
+      if (url === '/api/public/delivery-quote') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({
+            data: {
+              delivery_fee: 12,
+              distance_km: 3.5,
+              pricing_mode: 'distance',
+            },
+          }),
+        }
+      }
+
       if (url === '/api/public/orders/order-1/cancel') {
         return {
           ok: true,
@@ -729,6 +742,123 @@ describe('MenuClient component', () => {
 
     expect(afterFirst['item-1']).toEqual([{ id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' }])
     expect(afterSecond['item-1']).toEqual([{ id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' }])
+  })
+
+  it('cota automaticamente o frete ao entrar no passo de endereço com endereço preenchido', async () => {
+    stateValues[2] = 'address'
+    stateValues[12] = {
+      zip_code: '12345678',
+      street: 'Rua A',
+      number: '10',
+      city: 'São Paulo',
+      state: 'SP',
+    }
+    stateValues[14] = 'delivery'
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/delivery-quote') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({
+            data: { delivery_fee: 14, distance_km: 4.8, pricing_mode: 'distance' },
+          }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, pricing_mode: 'distance' },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/public/delivery-quote', expect.any(Object))
+    expect(stateSetters[30]).toHaveBeenCalledWith(14)
+    expect(stateSetters[31]).toHaveBeenCalledWith(4.8)
+    expect(stateSetters[32]).toHaveBeenCalledWith('Taxa calculada com base na distância até o endereço informado.')
+  })
+
+  it('avisa e bloqueia a finalização quando o endereço está fora do raio de entrega', async () => {
+    stateValues[2] = 'address'
+    stateValues[12] = {
+      zip_code: '12345678',
+      street: 'Rua A',
+      number: '10',
+      city: 'São Paulo',
+      state: 'SP',
+    }
+    stateValues[14] = 'delivery'
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/delivery-quote') {
+        return {
+          ok: false,
+          json: vi.fn().mockResolvedValue({ error: 'Endereço fora do raio de entrega de 5 km.' }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
+
+    renderToStaticMarkup(
+      React.createElement(MenuClient, {
+        tenant: {
+          id: 'tenant-1',
+          name: 'Pizzaria ChefOps',
+          slug: 'chefops',
+          plan: 'basic',
+          delivery_settings: { delivery_enabled: true, flat_fee: 8, pricing_mode: 'distance' },
+        },
+        items: [createMenuItem()],
+        tableInfo: null,
+        checkoutSessionId: null,
+        checkoutResult: null,
+      }),
+    )
+
+    const props = capturedShellProps as {
+      drawerProps: {
+        addressStepProps: {
+          hasDeliveryQuoteError?: boolean
+          onSubmit: () => Promise<void>
+        }
+      }
+    }
+
+    await Promise.resolve()
+    await Promise.resolve()
+
+    await props.drawerProps.addressStepProps.onSubmit()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/public/delivery-quote', expect.any(Object))
+    expect(globalThis.alert).toHaveBeenCalledWith('Endereço fora do raio de entrega de 5 km.')
   })
 
   it('não pré-seleciona pagamento no fluxo público sem mesa', async () => {
@@ -3376,6 +3506,7 @@ describe('MenuClient component', () => {
 
     await Promise.resolve()
     await Promise.resolve()
+    await Promise.resolve()
 
     expect(fetchMock).toHaveBeenCalledWith('/api/public/orders/order-delivered/status')
     expect(stateSetters[22]).toHaveBeenCalledWith(
@@ -3445,6 +3576,7 @@ describe('MenuClient component', () => {
       }),
     )
 
+    await Promise.resolve()
     await Promise.resolve()
     await Promise.resolve()
 

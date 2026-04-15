@@ -1,5 +1,6 @@
 import { isTenantAcceptingOrders } from '@/lib/delivery-operations'
 import { resolveDeliveryQuote } from '@/lib/delivery-pricing'
+import { defaultDeliverySettings, normalizeDeliverySettings } from '@/lib/delivery-settings'
 import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
@@ -30,7 +31,7 @@ const createPublicOrderSchema = z.object({
   table_number: z.string().optional(),
   table_id: z.string().uuid().optional(),
   tab_id: z.string().uuid().optional(),
-  payment_method: z.enum(['online', 'table', 'delivery']),
+  payment_method: z.enum(['online', 'table', 'counter', 'delivery']),
   notes: z.string().optional(),
   delivery_fee: z.number().min(0).optional(),
   delivery_distance_km: z.number().min(0).optional(),
@@ -143,7 +144,9 @@ export async function POST(request: NextRequest) {
       .eq('tenant_id', tenant_id)
       .maybeSingle()
 
-    if (deliverySettings && !isTenantAcceptingOrders(deliverySettings)) {
+    const normalizedDeliverySettings = normalizeDeliverySettings(deliverySettings)
+
+    if (normalizedDeliverySettings && !isTenantAcceptingOrders(normalizedDeliverySettings)) {
       return NextResponse.json(
         { error: 'O estabelecimento está fechado para novos pedidos no momento.' },
         { status: 409 }
@@ -177,7 +180,7 @@ export async function POST(request: NextRequest) {
     let deliveryFee = 0
 
     if (['online', 'delivery'].includes(parsed.data.payment_method) && delivery_address) {
-      const quote = await resolveDeliveryQuote(deliverySettings ?? { delivery_enabled: false, flat_fee: 0 }, delivery_address)
+      const quote = await resolveDeliveryQuote(normalizedDeliverySettings ?? defaultDeliverySettings, delivery_address)
       if (!quote.ok) {
         return NextResponse.json({ error: quote.error }, { status: 422 })
       }

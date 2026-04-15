@@ -1085,6 +1085,78 @@ describe('menu components', () => {
     expect(markup).toContain('Ir para pagamento')
   })
 
+  it('renderiza subtotal frete e total no passo de endereco', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(MenuAddressStep, {
+        address: {
+          zip_code: '12345678',
+          street: 'Rua A',
+          number: '10',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+        onAddressChange: vi.fn(),
+        onCepLookup: vi.fn(),
+        loadingCep: false,
+        errors: {},
+        paymentMethod: 'delivery',
+        cartTotal: 42,
+        deliveryFee: 8,
+        orderTotal: 50,
+        quotedDeliveryFee: 8,
+        quotedDistanceKm: 4.2,
+        deliveryQuoteMessage: 'Taxa calculada com base na distância até o endereço informado.',
+        isProcessing: false,
+        onSubmit: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Subtotal')
+    expect(markup).toContain('R$ 42.00')
+    expect(markup).toContain('Frete')
+    expect(markup).toContain('R$ 8.00')
+    expect(markup).toContain('Total')
+    expect(markup).toContain('R$ 50.00')
+  })
+
+  it('desabilita o envio quando o endereço está fora do raio de entrega', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const elements = flattenElements(
+      React.createElement(MenuAddressStep, {
+        address: {
+          zip_code: '12345678',
+          street: 'Rua A',
+          number: '10',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+        onAddressChange: vi.fn(),
+        onCepLookup: vi.fn(),
+        loadingCep: false,
+        errors: {},
+        paymentMethod: 'delivery',
+        cartTotal: 42,
+        deliveryFee: 0,
+        orderTotal: 42,
+        hasDeliveryQuoteError: true,
+        deliveryQuoteMessage: 'Endereço fora do raio de entrega de 5 km.',
+        isProcessing: false,
+        onSubmit: vi.fn(),
+        onBack: vi.fn(),
+      })
+    )
+
+    const buttons = elements.filter((element) => element.type === 'button' && typeof element.props.onClick === 'function')
+    const submitButton = buttons.find((element) => getTextContent(element) === 'Fazer pedido')
+
+    expect(submitButton?.props.disabled).toBe(true)
+    expect(getTextContent(elements)).toContain('Endereço fora do raio de entrega de 5 km.')
+  })
+
   it('renderiza passo de endereco com envio desabilitado quando o estabelecimento esta fechado', async () => {
     const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
 
@@ -2419,7 +2491,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Clássica')
     expect(getTextContent(elements)).toContain('Borda')
     expect(getTextContent(elements)).toContain('Catupiry')
-    expect(getTextContent(elements)).toContain('Pedir meia a meia')
+    expect(getTextContent(elements)).toContain('Pedir meio a meio')
 
     const buttons = elements.filter((element) => element.type === 'button')
 
@@ -2506,7 +2578,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Suco de Laranja')
     expect(getTextContent(elements)).toContain('R$ 8.50')
     expect(getTextContent(elements)).not.toContain('Borda')
-    expect(getTextContent(elements)).not.toContain('Pedir meia a meia')
+    expect(getTextContent(elements)).not.toContain('Pedir meio a meio')
 
     const buttons = elements.filter((element) => element.type === 'button')
 

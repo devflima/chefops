@@ -17,6 +17,10 @@ export function MenuAddressStep({
   quotedDeliveryFee = null,
   quotedDistanceKm = null,
   deliveryQuoteMessage = null,
+  cartTotal = 0,
+  deliveryFee = 0,
+  orderTotal = 0,
+  hasDeliveryQuoteError = false,
 }: {
   address: Partial<CustomerAddress>
   onAddressChange: (updater: (prev: Partial<CustomerAddress>) => Partial<CustomerAddress>) => void
@@ -31,6 +35,10 @@ export function MenuAddressStep({
   quotedDeliveryFee?: number | null
   quotedDistanceKm?: number | null
   deliveryQuoteMessage?: string | null
+  cartTotal?: number
+  deliveryFee?: number
+  orderTotal?: number
+  hasDeliveryQuoteError?: boolean
 }) {
   return (
     <div className="flex-1 flex flex-col">
@@ -120,9 +128,25 @@ export function MenuAddressStep({
           </div>
         </div>
       </div>
-      <div className="p-4 border-t border-slate-200 space-y-2">
+      <div className="p-4 border-t border-slate-200 space-y-3">
+        <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-2">
+          <div className="flex items-center justify-between text-sm text-slate-600">
+            <span>Subtotal</span>
+            <span>R$ {cartTotal.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm text-slate-600">
+            <span>Frete</span>
+            <span>{quotedDeliveryFee !== null ? `R$ ${deliveryFee.toFixed(2)}` : 'A calcular'}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm font-semibold text-slate-900 pt-2 border-t border-slate-200">
+            <span>Total</span>
+            <span>{quotedDeliveryFee !== null ? `R$ ${orderTotal.toFixed(2)}` : 'A calcular'}</span>
+          </div>
+        </div>
         {deliveryQuoteMessage && !disabled && (
-          <p className="text-xs text-slate-600">{deliveryQuoteMessage}</p>
+          <p className={hasDeliveryQuoteError ? 'text-xs text-red-600' : 'text-xs text-slate-600'}>
+            {deliveryQuoteMessage}
+          </p>
         )}
         {quotedDistanceKm !== null && !disabled && (
           <p className="text-xs text-slate-500">Distância estimada: {quotedDistanceKm.toFixed(1)} km</p>
@@ -133,7 +157,7 @@ export function MenuAddressStep({
         {disabled && (
           <p className="text-xs text-amber-700">Estabelecimento fechado para novos pedidos</p>
         )}
-        <Button className="w-full" onClick={onSubmit} disabled={disabled || isProcessing}>
+        <Button className="w-full" onClick={onSubmit} disabled={disabled || isProcessing || hasDeliveryQuoteError}>
           {getAddressSubmitLabel(paymentMethod, isProcessing)}
         </Button>
         <Button variant="outline" className="w-full" onClick={onBack} disabled={disabled}>

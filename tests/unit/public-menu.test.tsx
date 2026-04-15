@@ -249,13 +249,34 @@ describe('public menu helpers', () => {
       schedule_enabled: true,
       opens_at: '18:00',
       closes_at: '23:00',
-    }])).toEqual({
+    }])).toMatchObject({
       delivery_enabled: true,
       flat_fee: 8,
       accepting_orders: true,
       schedule_enabled: true,
       opens_at: '18:00',
       closes_at: '23:00',
+      pricing_mode: 'flat',
+    })
+    expect(normalizeTenantDeliverySettings([{
+      delivery_enabled: true,
+      flat_fee: 8,
+    }])).toEqual({
+      delivery_enabled: true,
+      flat_fee: 8,
+      accepting_orders: true,
+      schedule_enabled: false,
+      opens_at: null,
+      closes_at: null,
+      pricing_mode: 'flat',
+      max_radius_km: null,
+      fee_per_km: null,
+      origin_zip_code: null,
+      origin_street: null,
+      origin_number: null,
+      origin_neighborhood: null,
+      origin_city: null,
+      origin_state: null,
     })
     expect(normalizeTenantDeliverySettings(null)).toBeNull()
 
@@ -418,9 +439,12 @@ describe('public menu helpers', () => {
     expect(normalizeTenantDeliverySettings({
       delivery_enabled: false,
       flat_fee: 0,
-    })).toEqual({
+    })).toMatchObject({
       delivery_enabled: false,
       flat_fee: 0,
+      accepting_orders: true,
+      schedule_enabled: false,
+      pricing_mode: 'flat',
     })
     expect(normalizeTenantDeliverySettings(undefined as never)).toBeNull()
 
@@ -1071,6 +1095,9 @@ describe('public menu helpers', () => {
       payment_status: 'refunded',
     })).toBe('Pedido cancelado e reembolso solicitado com sucesso.')
     expect(getOnlineCheckoutErrorMessage(new Error('mp error'))).toBe('mp error')
+    expect(
+      getOnlineCheckoutErrorMessage(new Error('Unsupported state or unable to authenticate data'))
+    ).toBe('Pagamento online indisponível no ambiente atual. Revise as credenciais e o modo de operação do Mercado Pago.')
     expect(getOnlineCheckoutErrorMessage(null)).toBe('Erro ao iniciar pagamento online.')
     expect(getPublicOrderPlacementErrorMessage(new Error('order error'))).toBe('order error')
     expect(getPublicOrderPlacementErrorMessage(null)).toBe('Erro ao fazer pedido.')
@@ -1400,6 +1427,8 @@ describe('public menu helpers', () => {
 describe('public menu smoke', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://supabase.test'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key'
     vi.mocked(ensureTenantBillingAccessState).mockResolvedValue({ downgraded: false } as never)
     notFoundMock.mockImplementation(() => {
       throw new Error('not-found')
@@ -1516,6 +1545,39 @@ describe('public menu smoke', () => {
     expect(markup).toContain('Pizza')
     expect(markup).toContain('Mesa 10')
   }, 15000)
+
+  it('renderiza aviso claro quando faltam as envs do supabase no menu publico', async () => {
+    const previousUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const previousAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    try {
+      const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+      const element = await MenuPage({
+        params: Promise.resolve({ slug: 'chefops-house' }),
+        searchParams: Promise.resolve({}),
+      })
+
+      const markup = renderToStaticMarkup(element)
+      expect(markup).toContain('Cardápio indisponível no ambiente atual')
+      expect(markup).toContain('NEXT_PUBLIC_SUPABASE_URL')
+      expect(notFoundMock).not.toHaveBeenCalled()
+    } finally {
+      if (previousUrl === undefined) {
+        delete process.env.NEXT_PUBLIC_SUPABASE_URL
+      } else {
+        process.env.NEXT_PUBLIC_SUPABASE_URL = previousUrl
+      }
+
+      if (previousAnonKey === undefined) {
+        delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      } else {
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = previousAnonKey
+      }
+    }
+  })
 
   it('rebaixa o plano público efetivo para free quando o billing já expirou', async () => {
     vi.resetModules()
@@ -1693,6 +1755,64 @@ describe('public menu smoke', () => {
     const markup = renderToStaticMarkup(element)
     expect(markup).toContain('ChefOps House')
     expect(markup).not.toContain('Mesa ')
+  })
+
+
+  it('faz fallback de schema ao carregar tenant publico antes de desistir do menu', async () => {
+    let tenantCalls = 0
+
+    supabaseFromMock.mockImplementation((table: string) => {
+      if (table === 'tenants') {
+        tenantCalls += 1
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue(
+            tenantCalls === 1
+              ? { data: null, error: { message: 'column tenant_delivery_settings.pricing_mode does not exist' } }
+              : {
+                  data: {
+                    id: 'tenant-1',
+                    name: 'ChefOps House',
+                    slug: 'chefops-house',
+                    plan: 'pro',
+                    tenant_delivery_settings: [{ delivery_enabled: true, flat_fee: 8 }],
+                  },
+                  error: null,
+                }
+          ),
+        }
+      }
+
+      if (table === 'menu_items') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn()
+            .mockReturnThis()
+            .mockImplementationOnce(function () { return this })
+            .mockResolvedValueOnce({ data: [] }),
+        }
+      }
+
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+
+    const { default: MenuPage } = await import('@/app/[slug]/menu/page')
+
+    const element = await MenuPage({
+      params: Promise.resolve({ slug: 'chefops-house' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    const markup = renderToStaticMarkup(element)
+    expect(markup).toContain('ChefOps House')
+    expect(tenantCalls).toBe(2)
+    expect(notFoundMock).not.toHaveBeenCalled()
   })
 
   it('aciona notFound quando o tenant publico nao existe', async () => {

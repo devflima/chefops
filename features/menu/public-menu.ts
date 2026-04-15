@@ -1,5 +1,6 @@
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { isWithinOperatingHours } from '@/lib/delivery-operations'
+import { normalizeDeliverySettings } from '@/lib/delivery-settings'
 
 export type MenuExtra = {
   id: string
@@ -605,7 +606,17 @@ export function buildPublicOrderCancelPayload(reason: string) {
 }
 
 export function getOnlineCheckoutErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Erro ao iniciar pagamento online.'
+  if (!(error instanceof Error)) {
+    return 'Erro ao iniciar pagamento online.'
+  }
+
+  const message = error.message.toLowerCase()
+
+  if (message.includes('unsupported state') || message.includes('unable to authenticate data')) {
+    return 'Pagamento online indisponível no ambiente atual. Revise as credenciais e o modo de operação do Mercado Pago.'
+  }
+
+  return error.message
 }
 
 export function getPublicOrderPlacementErrorMessage(error: unknown) {
@@ -1154,6 +1165,5 @@ export function normalizeTenantDeliverySettings(
       }[]
     | null
 ) {
-
-  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null)
+  return normalizeDeliverySettings(value)
 }

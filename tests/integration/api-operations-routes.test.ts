@@ -68,6 +68,38 @@ describe('api operations routes', () => {
     } as never)
     expect((await deliverySettingsRoute.GET()).status).toBe(200)
 
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-legacy' },
+    } as never)
+    const legacyUpdateQuery = {
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { tenant_id: 'tenant-legacy', delivery_enabled: true, flat_fee: 12, accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null },
+        error: null,
+      }),
+    }
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-legacy', delivery_enabled: true, flat_fee: 12 }, error: null }),
+        update: vi.fn(() => legacyUpdateQuery),
+      })),
+    } as never)
+    const normalizedLegacyResponse = await deliverySettingsRoute.GET()
+    expect(normalizedLegacyResponse.status).toBe(200)
+    await expect(normalizedLegacyResponse.json()).resolves.toMatchObject({
+      data: {
+        tenant_id: 'tenant-legacy',
+        accepting_orders: true,
+        schedule_enabled: false,
+        pricing_mode: 'flat',
+      },
+    })
+
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: false,
       response: forbiddenResponse(),
@@ -115,6 +147,34 @@ describe('api operations routes', () => {
       new Request('https://chefops.test/api/delivery-settings', {
         method: 'PATCH',
         body: JSON.stringify({ delivery_enabled: true, flat_fee: 9.5, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00', pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null }),
+      }) as never,
+    )).status).toBe(200)
+
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-legacy-2' },
+    } as never)
+    const legacyCoreUpdateQuery = {
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn()
+        .mockResolvedValueOnce({ data: null, error: { message: 'Could not find the accepting_orders column in the schema cache' } })
+        .mockResolvedValueOnce({ data: null, error: { message: 'Could not find the pricing_mode column in the schema cache' } })
+        .mockResolvedValueOnce({ data: { tenant_id: 'tenant-legacy-2', delivery_enabled: true, flat_fee: 7 }, error: null }),
+    }
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { tenant_id: 'tenant-legacy-2', delivery_enabled: false, flat_fee: 3 }, error: null }),
+        update: vi.fn(() => legacyCoreUpdateQuery),
+      })),
+    } as never)
+    expect((await deliverySettingsRoute.PATCH(
+      new Request('https://chefops.test/api/delivery-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ delivery_enabled: true, flat_fee: 7, accepting_orders: false, schedule_enabled: true, opens_at: '09:00', closes_at: '18:00', pricing_mode: 'distance', max_radius_km: 5, fee_per_km: 2, origin_zip_code: '01001000', origin_street: 'Rua A', origin_number: '10', origin_neighborhood: 'Centro', origin_city: 'São Paulo', origin_state: 'SP' }),
       }) as never,
     )).status).toBe(200)
   })

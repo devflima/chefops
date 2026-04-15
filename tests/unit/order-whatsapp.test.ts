@@ -5,6 +5,7 @@ import {
   normalizeBrazilPhone,
   normalizeWhatsappChannelAddress,
 } from '@/lib/order-whatsapp'
+import { getCustomerPhoneVerificationProviderErrorMessage } from '@/lib/customer-phone-verification'
 
 describe('order whatsapp helpers', () => {
   it('normalizeBrazilPhone normaliza formatos locais e internacionais', () => {
@@ -24,6 +25,22 @@ describe('order whatsapp helpers', () => {
     expect(normalizeWhatsappChannelAddress('5511912345678')).toBe('whatsapp:+5511912345678')
     expect(normalizeWhatsappChannelAddress('abc')).toBe('abc')
     expect(normalizeWhatsappChannelAddress('   ')).toBe('')
+  })
+
+  it('traduz erros comuns do sandbox da Twilio para mensagens acionáveis', () => {
+    expect(
+      getCustomerPhoneVerificationProviderErrorMessage(
+        'The destination number is not a valid WhatsApp-enabled Twilio Sandbox participant.'
+      )
+    ).toContain('sandbox do WhatsApp da Twilio')
+
+    expect(
+      getCustomerPhoneVerificationProviderErrorMessage('Channel could not find the from address')
+    ).toContain('canal WhatsApp da Twilio')
+
+    expect(
+      getCustomerPhoneVerificationProviderErrorMessage('Permission denied for trial account')
+    ).toContain('não tem permissão')
   })
 
   it('buildOrderWhatsappMessage inclui motivo e reembolso no cancelamento', () => {

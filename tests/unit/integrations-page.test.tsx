@@ -6,6 +6,7 @@ import {
   buildDeliveryFeePayload,
   buildDeliveryHoursPayload,
   buildDeliveryOperationPayload,
+  buildDeliveryPricingModePayload,
   buildDeliverySchedulePayload,
   buildDeliveryTogglePayload,
   buildNotificationTogglePayload,
@@ -78,6 +79,7 @@ describe('integrations page helpers', () => {
     expect(getDeliveryFeeValue(null, 8)).toBe('8')
     expect(getDeliveryFeeValue('12.5', 8)).toBe('12.5')
 
+
     expect(
       buildDeliveryTogglePayload({
         tenant_id: 'tenant-1',
@@ -88,7 +90,46 @@ describe('integrations page helpers', () => {
       tenant_id: 'tenant-1',
       delivery_enabled: false,
       flat_fee: 9,
+      accepting_orders: true,
+      schedule_enabled: false,
+      opens_at: null,
+      closes_at: null,
+      pricing_mode: 'flat',
+      max_radius_km: null,
+      fee_per_km: null,
+      origin_zip_code: null,
+      origin_street: null,
+      origin_number: null,
+      origin_neighborhood: null,
+      origin_city: null,
+      origin_state: null,
     })
+
+    expect(
+      buildDeliveryPricingModePayload({
+        tenant_id: 'tenant-1',
+        delivery_enabled: true,
+        flat_fee: 9,
+      }, 'distance')
+    ).toEqual({
+      tenant_id: 'tenant-1',
+      delivery_enabled: true,
+      flat_fee: 9,
+      accepting_orders: true,
+      schedule_enabled: false,
+      opens_at: null,
+      closes_at: null,
+      pricing_mode: 'distance',
+      max_radius_km: null,
+      fee_per_km: null,
+      origin_zip_code: null,
+      origin_street: null,
+      origin_number: null,
+      origin_neighborhood: null,
+      origin_city: null,
+      origin_state: null,
+    })
+
 
     expect(
       buildDeliveryFeePayload(
@@ -103,7 +144,7 @@ describe('integrations page helpers', () => {
         },
         '15.75'
       )
-    ).toEqual({
+    ).toMatchObject({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 15.75,
@@ -126,7 +167,7 @@ describe('integrations page helpers', () => {
         },
         ''
       )
-    ).toEqual({
+    ).toMatchObject({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 0,
@@ -149,7 +190,7 @@ describe('integrations page helpers', () => {
         },
         false
       )
-    ).toEqual({
+    ).toMatchObject({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 9,
@@ -172,7 +213,7 @@ describe('integrations page helpers', () => {
         },
         true
       )
-    ).toEqual({
+    ).toMatchObject({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 9,
@@ -196,7 +237,7 @@ describe('integrations page helpers', () => {
         '10:00',
         '22:00'
       )
-    ).toEqual({
+    ).toMatchObject({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 9,
@@ -359,7 +400,7 @@ describe('IntegrationsPageContent', () => {
 
     expect(onDisconnect).toHaveBeenCalledTimes(1)
     expect(onDeliveryFeeInputChange).toHaveBeenCalledWith('17.90')
-    expect(onDeliveryToggle).toHaveBeenCalledWith({
+    expect(onDeliveryToggle).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 'tenant-1',
       delivery_enabled: false,
       flat_fee: 8,
@@ -367,10 +408,10 @@ describe('IntegrationsPageContent', () => {
       schedule_enabled: true,
       opens_at: '09:00',
       closes_at: '18:00',
-    })
+    }))
     expect(onDeliveryOperationChange).toHaveBeenCalledWith(false)
     expect(onDeliveryScheduleChange).toHaveBeenCalledWith(false)
-    expect(onDeliveryFeeSave).toHaveBeenCalledWith({
+    expect(onDeliveryFeeSave).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 12.5,
@@ -378,7 +419,7 @@ describe('IntegrationsPageContent', () => {
       schedule_enabled: true,
       opens_at: '09:00',
       closes_at: '18:00',
-    })
+    }))
     expect(onToggleWhatsappOption).toHaveBeenCalledWith(
       expect.objectContaining({
         whatsapp_order_received: false,

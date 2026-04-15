@@ -1,4 +1,5 @@
 import { resolveDeliveryQuote } from '@/lib/delivery-pricing'
+import { defaultDeliverySettings, normalizeDeliverySettings } from '@/lib/delivery-settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createCheckoutPreference, getMercadoPagoWebhookUrl } from '@/lib/mercadopago'
 import { getTenantMercadoPagoAccessToken, getTenantMercadoPagoAccount } from '@/lib/tenant-mercadopago'
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
 
       if (deliverySettingsError) throw deliverySettingsError
 
-      const quote = await resolveDeliveryQuote(deliverySettings ?? { delivery_enabled: false, flat_fee: 0 }, payload.delivery_address)
+      const quote = await resolveDeliveryQuote(normalizeDeliverySettings(deliverySettings) ?? defaultDeliverySettings, payload.delivery_address)
       if (!quote.ok) {
         return NextResponse.json({ error: quote.error }, { status: 422 })
       }
