@@ -10,16 +10,22 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
+type PublicTenantQuery = {
+  select: (columns: string) => PublicTenantQuery
+  eq: (column: string, value: string) => PublicTenantQuery
+  single: () => Promise<{ data: unknown; error: { message?: string } | null }>
+}
+
 type PublicTenantClient = {
-  from: (table: string) => {
-    select: (columns: string) => {
-      eq: (column: string, value: string) => {
-        eq: (column: string, value: string) => {
-          single: () => Promise<{ data: unknown; error: { message?: string } | null }>
-        }
-      }
-    }
-  }
+  from: (table: string) => PublicTenantQuery
+}
+
+type PublicTenant = {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  tenant_delivery_settings?: Parameters<typeof normalizeTenantDeliverySettings>[0]
 }
 
 const TENANT_FULL_SELECT =
@@ -44,7 +50,7 @@ async function fetchPublicTenant(
       .single()
 
     if (data) {
-      return { tenant: data, tenantError: null }
+      return { tenant: data as PublicTenant, tenantError: null }
     }
 
     if (!error) {
@@ -93,7 +99,7 @@ export default async function MenuPage({
     checkout_result: checkoutResult,
   } = await searchParams
 
-  const { tenant, tenantError } = await fetchPublicTenant(publicSupabase, slug)
+  const { tenant, tenantError } = await fetchPublicTenant(publicSupabase as unknown as PublicTenantClient, slug)
 
   if (tenantError) {
     console.error('[menu:page]', tenantError)

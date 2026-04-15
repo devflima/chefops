@@ -9,6 +9,7 @@ import {
 import { IntegrationsPageContent } from '@/features/payments/IntegrationsPageContent'
 import {
   buildDeliveryOperationPayload,
+  buildDeliveryPricingModePayload,
   buildDeliverySchedulePayload,
   getDeliveryFeePerKmValue,
   getDeliveryFeeValue,
