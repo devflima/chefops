@@ -8,7 +8,6 @@ import {
 } from '@/features/payments/hooks/useMercadoPagoAccount'
 import { IntegrationsPageContent } from '@/features/payments/IntegrationsPageContent'
 import {
-  buildDeliveryHoursPayload,
   buildDeliveryOperationPayload,
   buildDeliveryPricingModePayload,
   buildDeliverySchedulePayload,

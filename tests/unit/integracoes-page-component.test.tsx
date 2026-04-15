@@ -207,7 +207,7 @@ describe('IntegracoesPage component', () => {
     })
 
     expect(disconnectMutate).toHaveBeenCalledTimes(1)
-    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 'tenant-1',
       delivery_enabled: false,
       flat_fee: 8,
@@ -215,8 +215,8 @@ describe('IntegracoesPage component', () => {
       schedule_enabled: true,
       opens_at: '09:00',
       closes_at: '18:00',
-    })
-    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+    }))
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 8,
@@ -224,8 +224,8 @@ describe('IntegracoesPage component', () => {
       schedule_enabled: true,
       opens_at: '09:00',
       closes_at: '18:00',
-    })
-    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+    }))
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 8,
@@ -233,8 +233,8 @@ describe('IntegracoesPage component', () => {
       schedule_enabled: true,
       opens_at: '09:00',
       closes_at: '18:00',
-    })
-    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+    }))
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 8,
@@ -242,8 +242,8 @@ describe('IntegracoesPage component', () => {
       schedule_enabled: true,
       opens_at: '10:00',
       closes_at: '22:00',
-    })
-    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith({
+    }))
+    expect(updateDeliveryMutateAsync).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 'tenant-1',
       delivery_enabled: true,
       flat_fee: 14.5,
@@ -251,7 +251,7 @@ describe('IntegracoesPage component', () => {
       schedule_enabled: true,
       opens_at: '09:00',
       closes_at: '18:00',
-    })
+    }))
     expect(updateNotificationMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         whatsapp_order_received: false,

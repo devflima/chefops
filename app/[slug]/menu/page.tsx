@@ -6,8 +6,62 @@ import {
   normalizePublicMenuItems,
   normalizeTenantDeliverySettings,
 } from '@/features/menu/public-menu'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
+
+type PublicTenantQuery = {
+  select: (columns: string) => PublicTenantQuery
+  eq: (column: string, value: string) => PublicTenantQuery
+  single: () => Promise<{ data: unknown; error: { message?: string } | null }>
+}
+
+type PublicTenantClient = {
+  from: (table: string) => PublicTenantQuery
+}
+
+type PublicTenant = {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  tenant_delivery_settings?: Parameters<typeof normalizeTenantDeliverySettings>[0]
+}
+
+const TENANT_FULL_SELECT =
+  'id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at, pricing_mode, max_radius_km, fee_per_km, origin_zip_code, origin_street, origin_number, origin_neighborhood, origin_city, origin_state)'
+const TENANT_LEGACY_SELECT =
+  'id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at)'
+const TENANT_CORE_SELECT = 'id, name, slug, status, plan'
+
+async function fetchPublicTenant(
+  publicSupabase: PublicTenantClient,
+  slug: string,
+) {
+  const selectVariants = [TENANT_FULL_SELECT, TENANT_LEGACY_SELECT, TENANT_CORE_SELECT]
+  let lastError: { message?: string } | null = null
+
+  for (const select of selectVariants) {
+    const { data, error } = await publicSupabase
+      .from('tenants')
+      .select(select)
+      .eq('slug', slug)
+      .eq('status', 'active')
+      .single()
+
+    if (data) {
+      return { tenant: data as PublicTenant, tenantError: null }
+    }
+
+    if (!error) {
+      return { tenant: null, tenantError: null }
+    }
+
+    lastError = error
+  }
+
+  return { tenant: null, tenantError: lastError }
+}
 
 export default async function MenuPage({
   params,
@@ -18,22 +72,48 @@ export default async function MenuPage({
 }) {
   const { slug } = await params
 
-  const publicSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'test-anon-key'
-  )
+  const hasAnonCredentials =
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  const hasServiceRole =
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+  if (!hasAnonCredentials && !hasServiceRole) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-2xl items-center justify-center px-6 py-16">
+        <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-slate-900 shadow-sm">
+          <h1 className="text-lg font-semibold">Cardápio indisponível no ambiente atual</h1>
+          <p className="mt-2 text-sm text-slate-700">
+            Configure NEXT_PUBLIC_SUPABASE_URL com NEXT_PUBLIC_SUPABASE_ANON_KEY ou SUPABASE_SERVICE_ROLE_KEY para carregar o cardápio público.
+          </p>
+        </div>
+      </main>
+    )
+  }
+
+  const publicSupabase = hasServiceRole
+    ? createAdminClient()
+    : createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const {
     table: tableToken,
     checkout_session: checkoutSessionId,
     checkout_result: checkoutResult,
   } = await searchParams
 
-  const { data: tenant } = await publicSupabase
-    .from('tenants')
-    .select('id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at, pricing_mode, max_radius_km, fee_per_km, origin_zip_code, origin_street, origin_number, origin_neighborhood, origin_city, origin_state)')
-    .eq('slug', slug)
-    .eq('status', 'active')
-    .single()
+  const { tenant, tenantError } = await fetchPublicTenant(publicSupabase as unknown as PublicTenantClient, slug)
+
+  if (tenantError) {
+    console.error('[menu:page]', tenantError)
+    return (
+      <main className="mx-auto flex min-h-screen max-w-2xl items-center justify-center px-6 py-16">
+        <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-slate-900 shadow-sm">
+          <h1 className="text-lg font-semibold">Cardápio temporariamente indisponível</h1>
+          <p className="mt-2 text-sm text-slate-700">
+            Não conseguimos carregar os dados públicos do estabelecimento neste ambiente.
+          </p>
+        </div>
+      </main>
+    )
+  }
 
   if (!tenant) notFound()
 
@@ -55,7 +135,6 @@ export default async function MenuPage({
     .order('display_order', { ascending: true })
     .order('name', { ascending: true })
 
-  // Normaliza category e extras — Supabase retorna arrays em joins
   const items = normalizePublicMenuItems((rawItems ?? []) as never)
 
   let tableInfo: { id: string; number: string } | null = null
@@ -80,7 +159,7 @@ export default async function MenuPage({
         name: tenant.name,
         slug: tenant.slug,
         plan: effectivePlan,
-        delivery_settings: normalizeTenantDeliverySettings(tenant.tenant_delivery_settings),
+        delivery_settings: normalizeTenantDeliverySettings(tenant.tenant_delivery_settings ?? null),
       }}
       items={items}
       tableInfo={tableInfo}

@@ -38,6 +38,8 @@ describe('api auth and mercado pago routes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.NEXT_PUBLIC_APP_URL = 'https://chefops.test'
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://supabase.test'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key'
   })
 
   it('login POST valida body, trata credenciais invalidas e sucesso', async () => {
@@ -79,6 +81,19 @@ describe('api auth and mercado pago routes', () => {
       email: 'chefops@test.com',
       password: '123456',
     })
+
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const missingConfig = await loginRoute.POST(
+      new Request('https://chefops.test/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'chefops@test.com', password: '123456' }),
+      }) as never
+    )
+    expect(missingConfig.status).toBe(503)
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://supabase.test'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key'
 
     vi.mocked(createClient).mockRejectedValueOnce(new Error('client failed') as never)
     const failed = await loginRoute.POST(

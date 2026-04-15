@@ -132,7 +132,7 @@ export function MenuItemCard({
             disabled={disabled}
             className={`text-xs underline underline-offset-2 ${disabled ? 'text-slate-400 cursor-not-allowed' : 'text-slate-500 hover:text-slate-900'}`}
           >
-            + Pedir meia a meia
+            + Pedir meio a meio
           </button>
         </div>
       )}

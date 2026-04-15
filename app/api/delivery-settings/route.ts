@@ -1,4 +1,5 @@
 import { requireTenantRoles } from '@/lib/auth-guards'
+import { defaultDeliverySettings, normalizeDeliverySettings } from '@/lib/delivery-settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -21,6 +22,81 @@ const updateSchema = z.object({
   origin_state: z.string().length(2).nullable(),
 })
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+    return (error as { message: string }).message
+  }
+  return String(error ?? '')
+}
+
+function isMissingColumnError(error: unknown) {
+  const message = getErrorMessage(error).toLowerCase()
+  return (
+    (message.includes('column') && message.includes('does not exist')) ||
+    message.includes('schema cache') ||
+    message.includes('could not find the')
+  )
+}
+
+function getLegacyOperationalPayload(payload: z.infer<typeof updateSchema>) {
+  return {
+    delivery_enabled: payload.delivery_enabled,
+    flat_fee: payload.flat_fee,
+    accepting_orders: payload.accepting_orders,
+    schedule_enabled: payload.schedule_enabled,
+    opens_at: payload.opens_at,
+    closes_at: payload.closes_at,
+  }
+}
+
+function getLegacyCorePayload(payload: z.infer<typeof updateSchema>) {
+  return {
+    delivery_enabled: payload.delivery_enabled,
+    flat_fee: payload.flat_fee,
+  }
+}
+
+async function createDeliverySettings(admin: ReturnType<typeof createAdminClient>, tenantId: string) {
+  const attempts = [
+    { tenant_id: tenantId, ...defaultDeliverySettings },
+    {
+      tenant_id: tenantId,
+      delivery_enabled: defaultDeliverySettings.delivery_enabled,
+      flat_fee: defaultDeliverySettings.flat_fee,
+      accepting_orders: defaultDeliverySettings.accepting_orders,
+      schedule_enabled: defaultDeliverySettings.schedule_enabled,
+      opens_at: defaultDeliverySettings.opens_at,
+      closes_at: defaultDeliverySettings.closes_at,
+    },
+    {
+      tenant_id: tenantId,
+      delivery_enabled: defaultDeliverySettings.delivery_enabled,
+      flat_fee: defaultDeliverySettings.flat_fee,
+    },
+  ]
+  let lastError: unknown = null
+
+  for (const values of attempts) {
+    const { data, error } = await admin
+      .from('tenant_delivery_settings')
+      .insert(values)
+      .select()
+      .single()
+
+    if (!error && data) {
+      return normalizeDeliverySettings({ ...defaultDeliverySettings, ...data, tenant_id: tenantId })
+    }
+
+    lastError = error
+    if (!isMissingColumnError(error)) {
+      throw error
+    }
+  }
+
+  throw lastError ?? new Error('Não foi possível criar a configuração de entrega.')
+}
+
 async function ensureDeliverySettings(tenantId: string) {
   const admin = createAdminClient()
 
@@ -32,36 +108,38 @@ async function ensureDeliverySettings(tenantId: string) {
 
   if (error) throw error
 
-  if (existing) return existing
+  if (existing) return normalizeDeliverySettings(existing)
 
-  const { data: created, error: createError } = await admin
-    .from('tenant_delivery_settings')
-    .insert({
-      tenant_id: tenantId,
-      delivery_enabled: false,
-      flat_fee: 0,
-      accepting_orders: true,
-      schedule_enabled: false,
-      opens_at: null,
-      closes_at: null,
-      pricing_mode: 'flat',
-      max_radius_km: null,
-      fee_per_km: null,
-      origin_zip_code: null,
-      origin_street: null,
-      origin_number: null,
-      origin_neighborhood: null,
-      origin_city: null,
-      origin_state: null,
-    })
-    .select()
-    .single()
+  return createDeliverySettings(admin, tenantId)
+}
 
-  if (createError || !created) {
-    throw createError ?? new Error('Não foi possível criar a configuração de entrega.')
+async function updateDeliverySettings(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  payload: z.infer<typeof updateSchema>,
+) {
+  const attempts = [payload, getLegacyOperationalPayload(payload), getLegacyCorePayload(payload)]
+  let lastError: unknown = null
+
+  for (const values of attempts) {
+    const { data, error } = await admin
+      .from('tenant_delivery_settings')
+      .update(values)
+      .eq('tenant_id', tenantId)
+      .select()
+      .single()
+
+    if (!error && data) {
+      return normalizeDeliverySettings({ ...payload, ...data, tenant_id: tenantId })
+    }
+
+    lastError = error
+    if (!isMissingColumnError(error)) {
+      throw error
+    }
   }
 
-  return created
+  throw lastError ?? new Error('Não foi possível atualizar configuração de entrega.')
 }
 
 export async function GET() {
@@ -96,16 +174,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     await ensureDeliverySettings(auth.profile.tenant_id)
-
     const admin = createAdminClient()
-    const { data, error } = await admin
-      .from('tenant_delivery_settings')
-      .update(parsed.data)
-      .eq('tenant_id', auth.profile.tenant_id)
-      .select()
-      .single()
-
-    if (error) throw error
+    const data = await updateDeliverySettings(admin, auth.profile.tenant_id, parsed.data)
 
     return NextResponse.json({ data })
   } catch (error) {

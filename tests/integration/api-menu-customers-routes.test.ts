@@ -256,6 +256,66 @@ describe('api menu and customers routes', () => {
         addresses: [],
       },
     })
+
+    const customerInsertNullableAddressQuery = {
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { id: 'cust-3' }, error: null }),
+    }
+    const fullCustomerNullableAddressQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          id: 'cust-3',
+          phone: '11977776666',
+          addresses: [{ id: 'addr-3', label: 'Casa' }],
+        },
+      }),
+    }
+    vi.mocked(createAdminClient).mockReturnValueOnce({
+      from: vi.fn((table: string) => {
+        if (table === 'customers') {
+          return {
+            upsert: vi.fn(() => customerInsertNullableAddressQuery),
+            select: fullCustomerNullableAddressQuery.select,
+            eq: fullCustomerNullableAddressQuery.eq,
+            single: fullCustomerNullableAddressQuery.single,
+          }
+        }
+
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      }),
+    } as never)
+
+    const nullableAddressResponse = await customersRoute.POST(
+      new Request('https://chefops.test/api/customers', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'Joana',
+          phone: '(11) 97777-6666',
+          address: {
+            zip_code: '12345678',
+            street: 'Rua B',
+            number: '22',
+            complement: null,
+            neighborhood: null,
+            city: 'Sao Paulo',
+            state: 'SP',
+            label: null,
+          },
+        }),
+      }) as never,
+    )
+    expect(nullableAddressResponse.status).toBe(201)
+    await expect(nullableAddressResponse.json()).resolves.toMatchObject({
+      data: {
+        id: 'cust-3',
+        addresses: [{ id: 'addr-3', label: 'Casa' }],
+      },
+    })
   })
 
   it('menu items GET/POST/PATCH/DELETE cobrem auth, limite de plano, feature gate, 404 e sucesso', async () => {

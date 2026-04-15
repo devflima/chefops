@@ -1,4 +1,5 @@
 import { isTenantAcceptingOrders } from '@/lib/delivery-operations'
+import { normalizeDeliverySettings } from '@/lib/delivery-settings'
 import { resolveDeliveryQuote } from '@/lib/delivery-pricing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
@@ -34,18 +35,20 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
-    if (!deliverySettings) {
+    const normalizedDeliverySettings = normalizeDeliverySettings(deliverySettings)
+
+    if (!normalizedDeliverySettings) {
       return NextResponse.json({ error: 'Configuração de entrega não encontrada.' }, { status: 404 })
     }
 
-    if (!isTenantAcceptingOrders(deliverySettings)) {
+    if (!isTenantAcceptingOrders(normalizedDeliverySettings)) {
       return NextResponse.json(
         { error: 'O estabelecimento está fechado para novos pedidos no momento.' },
         { status: 409 },
       )
     }
 
-    const quote = await resolveDeliveryQuote(deliverySettings, parsed.data.delivery_address)
+    const quote = await resolveDeliveryQuote(normalizedDeliverySettings, parsed.data.delivery_address)
 
     if (!quote.ok) {
       return NextResponse.json({ error: quote.error }, { status: 422 })

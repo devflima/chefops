@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCreatePublicOrder } from '@/features/orders/hooks/useOrders'
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { toast } from 'sonner'
@@ -144,6 +144,7 @@ export default function MenuClient({
   const [quotedDeliveryFee, setQuotedDeliveryFee] = useState<number | null>(null)
   const [quotedDistanceKm, setQuotedDistanceKm] = useState<number | null>(null)
   const [deliveryQuoteMessage, setDeliveryQuoteMessage] = useState<string | null>(null)
+  const lastDeliveryQuoteAlertRef = useRef<string | null>(null)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
   const createOrder = useCreatePublicOrder()
@@ -345,8 +346,12 @@ export default function MenuClient({
     } finally { setLoadingCep(false) }
   }
 
-  async function resolveDeliveryQuote(nextAddress: Partial<CustomerAddress>) {
+  const resolveDeliveryQuote = useCallback(async (nextAddress: Partial<CustomerAddress>) => {
     if (!nextAddress.zip_code || !nextAddress.street || !nextAddress.number || !nextAddress.city || !nextAddress.state) {
+      setQuotedDeliveryFee(null)
+      setQuotedDistanceKm(null)
+      setDeliveryQuoteMessage(null)
+      lastDeliveryQuoteAlertRef.current = null
       return { deliveryFee: 0, distanceKm: null }
     }
 
@@ -354,6 +359,7 @@ export default function MenuClient({
       setQuotedDeliveryFee(0)
       setQuotedDistanceKm(null)
       setDeliveryQuoteMessage(null)
+      lastDeliveryQuoteAlertRef.current = null
       return { deliveryFee: 0, distanceKm: null }
     }
 
@@ -362,6 +368,7 @@ export default function MenuClient({
       setQuotedDeliveryFee(flatFee)
       setQuotedDistanceKm(null)
       setDeliveryQuoteMessage('Taxa fixa de entrega aplicada para este pedido.')
+      lastDeliveryQuoteAlertRef.current = null
       return { deliveryFee: flatFee, distanceKm: null }
     }
 
@@ -386,12 +393,13 @@ export default function MenuClient({
         ? 'Taxa calculada com base na distância até o endereço informado.'
         : 'Taxa fixa de entrega aplicada para este pedido.',
     )
+    lastDeliveryQuoteAlertRef.current = null
 
     return {
       deliveryFee: Number(json.data.delivery_fee ?? 0),
       distanceKm: json.data.distance_km ?? null,
     }
-  }
+  }, [tenant.delivery_settings, tenant.id])
 
   function validateInfo() {
     const errs = validateCustomerInfo(customerName, phone, customerCpf, tableInfo, paymentMethod)
@@ -418,6 +426,42 @@ export default function MenuClient({
       setOrderNumber(stored.order_number)
     }
   }, [activeOrderStorageKey])
+
+  useEffect(() => {
+    const shouldQuoteDelivery =
+      checkoutStep === 'address' &&
+      !tableInfo &&
+      (paymentMethod === 'delivery' || paymentMethod === 'online')
+
+    if (!shouldQuoteDelivery || operationClosedNotice) return
+
+    if (!address.zip_code || !address.street || !address.number || !address.city || !address.state) {
+      setQuotedDeliveryFee(null)
+      setQuotedDistanceKm(null)
+      setDeliveryQuoteMessage(null)
+      lastDeliveryQuoteAlertRef.current = null
+      return
+    }
+
+    resolveDeliveryQuote(address).catch((error) => {
+      const message = error instanceof Error ? error.message : 'Não foi possível calcular a entrega.'
+      setQuotedDeliveryFee(null)
+      setQuotedDistanceKm(null)
+      setDeliveryQuoteMessage(message)
+
+      if (lastDeliveryQuoteAlertRef.current !== message) {
+        toast.error(message)
+        lastDeliveryQuoteAlertRef.current = message
+      }
+    })
+  }, [
+    address,
+    checkoutStep,
+    operationClosedNotice,
+    paymentMethod,
+    resolveDeliveryQuote,
+    tableInfo,
+  ])
 
   useEffect(() => {
     if (!checkoutSessionId) return
@@ -924,6 +968,14 @@ export default function MenuClient({
         addressStepProps: {
           address,
           disabled: Boolean(operationClosedNotice),
+          cartTotal,
+          deliveryFee,
+          orderTotal,
+          hasDeliveryQuoteError:
+            !operationClosedNotice &&
+            tenant.delivery_settings?.pricing_mode === 'distance' &&
+            quotedDeliveryFee === null &&
+            Boolean(deliveryQuoteMessage),
           onAddressChange: (updater) => {
             if (operationClosedNotice) {
               toast.error(operationClosedNotice)
@@ -933,12 +985,16 @@ export default function MenuClient({
             setQuotedDeliveryFee(null)
             setQuotedDistanceKm(null)
             setDeliveryQuoteMessage(null)
+            lastDeliveryQuoteAlertRef.current = null
             setAddress((prev) => updater(prev))
           },
           onCepLookup: handleCepLookup,
           loadingCep,
           errors,
           paymentMethod,
+          quotedDeliveryFee,
+          quotedDistanceKm,
+          deliveryQuoteMessage,
           isProcessing: isCheckoutProcessing,
           onSubmit: handleAddressSubmit,
           onBack: () => {

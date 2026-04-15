@@ -1,5 +1,6 @@
 'use client'
 
+import { normalizeDeliverySettings } from '@/lib/delivery-settings'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export type DeliverySettings = {
@@ -28,7 +29,7 @@ export function useDeliverySettings() {
       const res = await fetch('/api/delivery-settings')
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
-      return json.data as DeliverySettings
+      return normalizeDeliverySettings(json.data) as DeliverySettings
     },
   })
 }
@@ -45,7 +46,7 @@ export function useUpdateDeliverySettings() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
-      return json.data as DeliverySettings
+      return normalizeDeliverySettings(json.data) as DeliverySettings
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['delivery-settings'] })

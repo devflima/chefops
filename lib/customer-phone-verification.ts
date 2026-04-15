@@ -46,6 +46,28 @@ function buildVerificationCodeHash(params: {
     .digest('hex')
 }
 
+export function getCustomerPhoneVerificationProviderErrorMessage(message?: string | null) {
+  const normalized = message?.toLowerCase() ?? ''
+
+  if (
+    normalized.includes('sandbox participant') ||
+    normalized.includes('join') ||
+    normalized.includes('not a valid whatsapp-enabled')
+  ) {
+    return 'Seu número ainda não entrou no sandbox do WhatsApp da Twilio. No WhatsApp, envie o código de entrada do sandbox para o número configurado pela Twilio e tente novamente.'
+  }
+
+  if (normalized.includes('channel') || normalized.includes('whatsapp')) {
+    return 'A configuração do canal WhatsApp da Twilio não está válida para este ambiente.'
+  }
+
+  if (normalized.includes('trial') || normalized.includes('permission')) {
+    return 'A conta Twilio atual não tem permissão para enviar essa mensagem neste ambiente.'
+  }
+
+  return message || 'Não foi possível enviar o código de verificação.'
+}
+
 export async function sendCustomerPhoneVerificationCode(params: {
   tenantId: string
   phone: string
@@ -149,7 +171,7 @@ export async function sendCustomerPhoneVerificationCode(params: {
       })
       .eq('id', record.id)
 
-    throw new Error(json?.message || 'Não foi possível enviar o código de verificação.')
+    throw new Error(getCustomerPhoneVerificationProviderErrorMessage(json?.message))
   }
 
   await admin

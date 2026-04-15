@@ -13,6 +13,26 @@ export type NotificationSettings = {
   whatsapp_order_cancelled: boolean
 }
 
+const defaultNotificationSettings = {
+  whatsapp_order_received: true,
+  whatsapp_order_confirmed: true,
+  whatsapp_order_preparing: true,
+  whatsapp_order_ready: true,
+  whatsapp_order_out_for_delivery: true,
+  whatsapp_order_delivered: false,
+  whatsapp_order_cancelled: true,
+}
+
+function normalizeNotificationSettings(data: Partial<NotificationSettings> | null | undefined) {
+  if (!data) return null
+
+  return {
+    tenant_id: data.tenant_id ?? '',
+    ...defaultNotificationSettings,
+    ...data,
+  }
+}
+
 export function useNotificationSettings(enabled = true) {
   return useQuery({
     queryKey: ['notification-settings'],
@@ -21,7 +41,7 @@ export function useNotificationSettings(enabled = true) {
       const res = await fetch('/api/notification-settings')
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
-      return json.data as NotificationSettings
+      return normalizeNotificationSettings(json.data) as NotificationSettings
     },
   })
 }
@@ -38,7 +58,7 @@ export function useUpdateNotificationSettings() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
-      return json.data as NotificationSettings
+      return normalizeNotificationSettings(json.data) as NotificationSettings
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-settings'] })

@@ -19,6 +19,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      return NextResponse.json(
+        { error: 'Configuração do Supabase ausente no ambiente.' },
+        { status: 503 }
+      )
+    }
+
     const { email, password } = parsed.data
     const supabase = await createClient()
 

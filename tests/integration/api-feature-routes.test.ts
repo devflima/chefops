@@ -461,10 +461,17 @@ describe('api feature routes', () => {
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce(
       createMockSupabaseClient({
-        tenant_notification_settings: (state) => ({
-          data: { id: 'cfg-1', ...state.rows?.[0] },
-          error: null,
-        }),
+        tenant_notification_settings: (state) => {
+          if (state.operation === 'select') {
+            return { data: { tenant_id: 'tenant-1' }, error: null }
+          }
+
+          if (state.operation === 'update') {
+            return { data: { id: 'cfg-1', tenant_id: 'tenant-1', ...state.values }, error: null }
+          }
+
+          return { data: null, error: new Error('unexpected') }
+        },
       }) as never
     )
 
@@ -483,6 +490,83 @@ describe('api feature routes', () => {
       })
     )
     expect(patchResponse.status).toBe(200)
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-2' },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        tenant_notification_settings: (state) => {
+          if (state.operation === 'select') {
+            return { data: null, error: null }
+          }
+
+          if (state.operation === 'insert') {
+            return { data: { id: 'cfg-2', ...(state.rows?.[0] ?? {}) }, error: null }
+          }
+
+          return { data: null, error: new Error('unexpected') }
+        },
+      }) as never
+    )
+
+    const insertPatchResponse = await notificationSettingsRoute.PATCH(
+      new Request('https://chefops.test/api/notification-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          whatsapp_order_received: false,
+          whatsapp_order_confirmed: true,
+          whatsapp_order_preparing: true,
+          whatsapp_order_ready: true,
+          whatsapp_order_out_for_delivery: true,
+          whatsapp_order_delivered: false,
+          whatsapp_order_cancelled: true,
+        }),
+      })
+    )
+    expect(insertPatchResponse.status).toBe(200)
+
+
+    vi.mocked(requireTenantFeature).mockResolvedValueOnce({
+      ok: true,
+      profile: { tenant_id: 'tenant-legacy' },
+    } as never)
+    vi.mocked(createAdminClient).mockReturnValueOnce(
+      createMockSupabaseClient({
+        tenant_notification_settings: (state) => {
+          if (state.operation === 'select') {
+            return { data: { tenant_id: 'tenant-legacy' }, error: null }
+          }
+
+          if (state.operation === 'update') {
+            const hasNewColumn = Boolean(state.values && 'whatsapp_order_out_for_delivery' in state.values)
+            if (hasNewColumn) {
+              return { data: null, error: { message: 'Could not find the whatsapp_order_out_for_delivery column in the schema cache' } }
+            }
+            return { data: { id: 'cfg-legacy', tenant_id: 'tenant-legacy', ...state.values }, error: null }
+          }
+
+          return { data: null, error: new Error('unexpected') }
+        },
+      }) as never
+    )
+
+    const legacyPatchResponse = await notificationSettingsRoute.PATCH(
+      new Request('https://chefops.test/api/notification-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          whatsapp_order_received: false,
+          whatsapp_order_confirmed: true,
+          whatsapp_order_preparing: true,
+          whatsapp_order_ready: true,
+          whatsapp_order_out_for_delivery: false,
+          whatsapp_order_delivered: false,
+          whatsapp_order_cancelled: true,
+        }),
+      })
+    )
+    expect(legacyPatchResponse.status).toBe(200)
 
     vi.mocked(requireTenantFeature).mockResolvedValueOnce({
       ok: true,

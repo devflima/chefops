@@ -1,3 +1,5 @@
+import { defaultDeliverySettings, normalizeDeliverySettings } from '@/lib/delivery-settings'
+
 export const whatsappOptionDefinitions = [
   { key: 'whatsapp_order_received', label: 'Pedido recebido' },
   { key: 'whatsapp_order_confirmed', label: 'Pedido confirmado' },
@@ -70,16 +72,22 @@ export function getDeliveryHourValue(input: string | null, value?: string | null
   return input ?? value ?? ''
 }
 
+function withNormalizedDeliverySettings(settings: DeliverySettingsShape) {
+  return normalizeDeliverySettings(settings) ?? defaultDeliverySettings
+}
+
 export function buildDeliveryTogglePayload(settings: DeliverySettingsShape) {
+  const normalized = withNormalizedDeliverySettings(settings)
   return {
-    ...settings,
-    delivery_enabled: !settings.delivery_enabled,
+    ...normalized,
+    delivery_enabled: !normalized.delivery_enabled,
   }
 }
 
 export function buildDeliveryFeePayload(settings: DeliverySettingsShape, feeValue: string) {
+  const normalized = withNormalizedDeliverySettings(settings)
   return {
-    ...settings,
+    ...normalized,
     flat_fee: Number(feeValue || 0),
   }
 }
@@ -88,8 +96,9 @@ export function buildDeliveryPricingModePayload(
   settings: DeliverySettingsShape,
   pricingMode: 'flat' | 'distance',
 ) {
+  const normalized = withNormalizedDeliverySettings(settings)
   return {
-    ...settings,
+    ...normalized,
     pricing_mode: pricingMode,
   }
 }
@@ -107,8 +116,9 @@ export function buildDeliveryDistancePayload(
     origin_state: string
   },
 ) {
+  const normalized = withNormalizedDeliverySettings(settings)
   return {
-    ...settings,
+    ...normalized,
     max_radius_km: inputs.max_radius_km ? Number(inputs.max_radius_km) : null,
     fee_per_km: inputs.fee_per_km ? Number(inputs.fee_per_km) : null,
     origin_zip_code: inputs.origin_zip_code || null,
@@ -124,8 +134,9 @@ export function buildDeliveryOperationPayload(
   settings: DeliverySettingsShape,
   acceptingOrders: boolean
 ) {
+  const normalized = withNormalizedDeliverySettings(settings)
   return {
-    ...settings,
+    ...normalized,
     accepting_orders: acceptingOrders,
   }
 }
@@ -134,8 +145,9 @@ export function buildDeliverySchedulePayload(
   settings: DeliverySettingsShape,
   enabled: boolean
 ) {
+  const normalized = withNormalizedDeliverySettings(settings)
   return {
-    ...settings,
+    ...normalized,
     schedule_enabled: enabled,
   }
 }
@@ -145,8 +157,9 @@ export function buildDeliveryHoursPayload(
   opensAt: string,
   closesAt: string
 ) {
+  const normalized = withNormalizedDeliverySettings(settings)
   return {
-    ...settings,
+    ...normalized,
     opens_at: opensAt || null,
     closes_at: closesAt || null,
   }

@@ -3,22 +3,24 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+const nullableOptionalString = z.string().nullable().optional()
+
 const customerSchema = z.object({
   tenant_id: z.string().uuid(),
   name: z.string().min(2, 'Nome obrigatório'),
   phone: z.string().min(10, 'Telefone inválido'),
-  cpf: z.string().optional(),
+  cpf: nullableOptionalString,
 })
 
 const addressSchema = z.object({
   zip_code: z.string().min(8, 'CEP inválido'),
   street: z.string().min(1, 'Rua obrigatória'),
   number: z.string().min(1, 'Número obrigatório'),
-  complement: z.string().optional(),
-  neighborhood: z.string().optional(),
+  complement: nullableOptionalString,
+  neighborhood: nullableOptionalString,
   city: z.string().min(1, 'Cidade obrigatória'),
   state: z.string().min(2, 'Estado obrigatório'),
-  label: z.string().default('Casa'),
+  label: nullableOptionalString,
 })
 
 const createCustomerSchema = customerSchema.extend({
@@ -111,6 +113,9 @@ export async function POST(request: NextRequest) {
         .from('customer_addresses')
         .insert({
           ...address,
+          complement: address.complement ?? undefined,
+          neighborhood: address.neighborhood ?? undefined,
+          label: address.label ?? 'Casa',
           customer_id: customer.id,
           tenant_id: customerData.tenant_id,
           is_default: true,
