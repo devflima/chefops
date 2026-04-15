@@ -7,7 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : await createClient()
+    const supabase = process.env.NODE_ENV !== 'test' && process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createAdminClient()
+      : await createClient()
     const { slug } = await params
 
     // Busca tenant pelo slug
