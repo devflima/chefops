@@ -1,5 +1,5 @@
 import { isTenantAcceptingOrders } from '@/lib/delivery-operations'
-import { defaultDeliverySettings, normalizeDeliverySettings } from '@/lib/delivery-settings'
+import { normalizeDeliverySettings } from '@/lib/delivery-settings'
 import { resolveDeliveryQuote } from '@/lib/delivery-pricing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'

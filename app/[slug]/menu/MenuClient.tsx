@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCreatePublicOrder } from '@/features/orders/hooks/useOrders'
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { toast } from 'sonner'
@@ -346,7 +346,7 @@ export default function MenuClient({
     } finally { setLoadingCep(false) }
   }
 
-  async function resolveDeliveryQuote(nextAddress: Partial<CustomerAddress>) {
+  const resolveDeliveryQuote = useCallback(async (nextAddress: Partial<CustomerAddress>) => {
     if (!nextAddress.zip_code || !nextAddress.street || !nextAddress.number || !nextAddress.city || !nextAddress.state) {
       setQuotedDeliveryFee(null)
       setQuotedDistanceKm(null)
@@ -399,7 +399,7 @@ export default function MenuClient({
       deliveryFee: Number(json.data.delivery_fee ?? 0),
       distanceKm: json.data.distance_km ?? null,
     }
-  }
+  }, [tenant.delivery_settings, tenant.id])
 
   function validateInfo() {
     const errs = validateCustomerInfo(customerName, phone, customerCpf, tableInfo, paymentMethod)
@@ -459,11 +459,8 @@ export default function MenuClient({
     checkoutStep,
     operationClosedNotice,
     paymentMethod,
+    resolveDeliveryQuote,
     tableInfo,
-    tenant.delivery_settings?.delivery_enabled,
-    tenant.delivery_settings?.flat_fee,
-    tenant.delivery_settings?.pricing_mode,
-    tenant.id,
   ])
 
   useEffect(() => {

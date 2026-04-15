@@ -4,7 +4,6 @@ import {
   buildDeliveryDistancePayload,
   buildDeliveryFeePayload,
   buildDeliveryHoursPayload,
-  buildDeliveryPricingModePayload,
   buildDeliveryTogglePayload,
   type DeliverySettingsShape,
   type NotificationSettingsShape,

@@ -10,6 +10,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
+type PublicTenantClient = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        eq: (column: string, value: string) => {
+          single: () => Promise<{ data: unknown; error: { message?: string } | null }>
+        }
+      }
+    }
+  }
+}
+
 const TENANT_FULL_SELECT =
   'id, name, slug, status, plan, tenant_delivery_settings(delivery_enabled, flat_fee, accepting_orders, schedule_enabled, opens_at, closes_at, pricing_mode, max_radius_km, fee_per_km, origin_zip_code, origin_street, origin_number, origin_neighborhood, origin_city, origin_state)'
 const TENANT_LEGACY_SELECT =
@@ -17,7 +29,7 @@ const TENANT_LEGACY_SELECT =
 const TENANT_CORE_SELECT = 'id, name, slug, status, plan'
 
 async function fetchPublicTenant(
-  publicSupabase: { from: (table: string) => any },
+  publicSupabase: PublicTenantClient,
   slug: string,
 ) {
   const selectVariants = [TENANT_FULL_SELECT, TENANT_LEGACY_SELECT, TENANT_CORE_SELECT]

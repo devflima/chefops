@@ -117,7 +117,6 @@ export async function POST(request: NextRequest) {
       tenant_id,
       items,
       delivery_address,
-      delivery_distance_km: _deliveryDistanceKm,
       table_id,
       tab_id,
       ...orderData

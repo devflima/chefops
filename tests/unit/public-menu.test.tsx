@@ -38,7 +38,6 @@ import {
   getOrderStepState,
   getOrderSteps,
   getOpenCartState,
-  getOperationClosedNotice,
   getPaymentStatusLabel,
   getPhoneChangeState,
   getPublicOrderHeadline,

@@ -49,8 +49,14 @@ function isMissingColumnError(error: unknown) {
 }
 
 function getLegacyNotificationPayload(payload: z.infer<typeof settingsSchema>) {
-  const { whatsapp_order_out_for_delivery: _ignored, ...legacy } = payload
-  return legacy
+  return {
+    whatsapp_order_received: payload.whatsapp_order_received,
+    whatsapp_order_confirmed: payload.whatsapp_order_confirmed,
+    whatsapp_order_preparing: payload.whatsapp_order_preparing,
+    whatsapp_order_ready: payload.whatsapp_order_ready,
+    whatsapp_order_delivered: payload.whatsapp_order_delivered,
+    whatsapp_order_cancelled: payload.whatsapp_order_cancelled,
+  }
 }
 
 async function persistNotificationSettings(
