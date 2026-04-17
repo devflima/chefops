@@ -223,7 +223,7 @@ describe('CardapioPage component', () => {
       price: 35,
       category_id: 'cat-1',
       display_order: 2,
-      product_id: null,
+      product_id: undefined,
     })
     expect(fetch).toHaveBeenCalledWith('/api/menu-items/item-created/extras', {
       method: 'PUT',
@@ -407,7 +407,7 @@ describe('CardapioPage component', () => {
       price: 20,
       category_id: 'cat-1',
       display_order: 1,
-      product_id: null,
+      product_id: undefined,
     })
     expect(fetchMock).not.toHaveBeenCalledWith('/api/menu-items/undefined/extras', expect.anything())
     expect(formResetMock).toHaveBeenCalled()
