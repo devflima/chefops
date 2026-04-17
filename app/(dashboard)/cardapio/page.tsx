@@ -18,6 +18,7 @@ import {
   buildMenuPageSummary,
   buildUpdateMenuItemPayload,
   filterMenuItems,
+  getPersistedMenuExtraIds,
   getCreateMenuEditorState,
   getMenuEditState,
   getMenuFilterChangeState,
@@ -157,10 +158,17 @@ export default function CardapioPage() {
       }
 
       if (menuItemId) {
+        const extraIds = getPersistedMenuExtraIds(
+          selectedExtras,
+          allExtras ?? [],
+          values.category_id,
+          categories,
+        )
+
         await fetch(`/api/menu-items/${menuItemId}/extras`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ extra_ids: selectedExtras }),
+          body: JSON.stringify({ extra_ids: extraIds }),
         })
 
         if (hasStockAutomation) {

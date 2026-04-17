@@ -1,4 +1,5 @@
 import type { MenuItem } from '@/features/orders/types'
+import { isPizzaCategoryId, type MenuCategoryOption } from '@/features/menu/menu-category-rules'
 
 export type MenuItemIngredient = {
   product_id: string
@@ -193,10 +194,41 @@ const MENU_EXTRA_CATEGORY_ORDER = ['border', 'flavor', 'other'] as const
 
 export function getMenuExtraCategoryLabel(category: string) {
   if (category === 'border') return 'Borda'
-  if (category === 'flavor') return 'Sabor extra'
+  if (category === 'flavor') return 'Extras'
   if (category === 'other') return 'Outros'
 
   return category
+}
+
+export function getSelectableMenuExtras(
+  allExtras: MenuExtraOption[],
+  categoryId?: string,
+  categories?: MenuCategoryOption[]
+) {
+  if (!isPizzaCategoryId(categoryId, categories)) {
+    return allExtras
+  }
+
+  return allExtras.filter((extra) => extra.category !== 'border')
+}
+
+export function getPersistedMenuExtraIds(
+  selectedExtraIds: string[],
+  allExtras: MenuExtraOption[],
+  categoryId?: string,
+  categories?: MenuCategoryOption[]
+) {
+  if (!isPizzaCategoryId(categoryId, categories)) {
+    return selectedExtraIds
+  }
+
+  const borderExtraIds = new Set(
+    allExtras
+      .filter((extra) => extra.category === 'border')
+      .map((extra) => extra.id)
+  )
+
+  return selectedExtraIds.filter((extraId) => !borderExtraIds.has(extraId))
 }
 
 export function groupMenuExtrasByCategory(allExtras: MenuExtraOption[]) {

@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import {
+  applyAutomaticBorderExtras,
   buildPublicOrderCancelPayload,
   buildPublicCheckoutPayload,
   buildPublicOrderPayload,
@@ -315,6 +316,49 @@ describe('public menu helpers', () => {
     ] as never)).toMatchObject([
       {
         category: null,
+        extras: [],
+      },
+    ])
+
+    expect(applyAutomaticBorderExtras(
+      [
+        {
+          id: 'item-1',
+          tenant_id: 'tenant-1',
+          category_id: 'cat-1',
+          name: 'Pizza',
+          description: null,
+          price: 30,
+          available: true,
+          display_order: 1,
+          category: { id: 'cat-1', name: 'Pizzas' },
+          extras: [{ extra: { id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' } }],
+        },
+        {
+          id: 'item-2',
+          tenant_id: 'tenant-1',
+          category_id: 'cat-2',
+          name: 'Lasanha',
+          description: null,
+          price: 28,
+          available: true,
+          display_order: 2,
+          category: { id: 'cat-2', name: 'Massas' },
+          extras: [],
+        },
+      ],
+      [
+        { id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' },
+        { id: 'extra-2', name: 'Cheddar', price: 4, category: 'border' },
+      ],
+    )).toMatchObject([
+      {
+        extras: [
+          { extra: { id: 'extra-1', name: 'Catupiry' } },
+          { extra: { id: 'extra-2', name: 'Cheddar' } },
+        ],
+      },
+      {
         extras: [],
       },
     ])
@@ -1479,6 +1523,16 @@ describe('public menu smoke', () => {
         }
       }
 
+      if (table === 'extras') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({
+            data: [{ id: 'extra-2', name: 'Cheddar', price: 4, category: 'border' }],
+          }),
+        }
+      }
+
       return {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -1637,6 +1691,14 @@ describe('public menu smoke', () => {
         }
       }
 
+      if (table === 'extras') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [] }),
+        }
+      }
+
       return {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -1686,6 +1748,14 @@ describe('public menu smoke', () => {
         }
       }
 
+      if (table === 'extras') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [] }),
+        }
+      }
+
       return {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -1732,6 +1802,14 @@ describe('public menu smoke', () => {
             .mockReturnThis()
             .mockImplementationOnce(function () { return this })
             .mockResolvedValueOnce({ data: [] }),
+        }
+      }
+
+      if (table === 'extras') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [] }),
         }
       }
 
@@ -1791,6 +1869,14 @@ describe('public menu smoke', () => {
             .mockReturnThis()
             .mockImplementationOnce(function () { return this })
             .mockResolvedValueOnce({ data: [] }),
+        }
+      }
+
+      if (table === 'extras') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [] }),
         }
       }
 

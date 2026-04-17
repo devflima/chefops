@@ -561,7 +561,7 @@ describe('catalog page contents', () => {
 
     expect(loadingMarkup).toContain('Carregando...')
     expect(flavorMarkup).toContain('Cheddar')
-    expect(flavorMarkup).toContain('Sabor extra')
+    expect(flavorMarkup).toContain('Extras')
     expect(flavorMarkup).toContain('+ R$ 3.00')
   })
 

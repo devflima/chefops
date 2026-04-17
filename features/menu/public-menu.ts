@@ -1,6 +1,7 @@
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { isWithinOperatingHours } from '@/lib/delivery-operations'
 import { normalizeDeliverySettings } from '@/lib/delivery-settings'
+import { isPizzaCategoryName } from '@/features/menu/menu-category-rules'
 
 export type MenuExtra = {
   id: string
@@ -1024,9 +1025,40 @@ export function getOptionalExtras(item: PublicMenuItem) {
 
 export function getMenuExtraCategoryLabel(category: string) {
   if (category === 'border') return 'Borda'
-  if (category === 'flavor') return 'Sabor extra'
+  if (category === 'flavor') return 'Extras'
   if (category === 'other') return 'Outros'
   return category
+}
+
+export function applyAutomaticBorderExtras(items: PublicMenuItem[], borderExtras: MenuExtra[]) {
+  if (borderExtras.length === 0) {
+    return items
+  }
+
+  return items.map((item) => {
+    if (!isPizzaCategoryName(item.category?.name)) {
+      return item
+    }
+
+    const existingIds = new Set(
+      item.extras
+        .map((entry) => entry.extra?.id)
+        .filter((extraId): extraId is string => typeof extraId === 'string')
+    )
+
+    const automaticBorders = borderExtras
+      .filter((extra) => !existingIds.has(extra.id))
+      .map((extra) => ({ extra }))
+
+    if (automaticBorders.length === 0) {
+      return item
+    }
+
+    return {
+      ...item,
+      extras: [...item.extras, ...automaticBorders],
+    }
+  })
 }
 
 export function groupOptionalExtras(item: PublicMenuItem) {
