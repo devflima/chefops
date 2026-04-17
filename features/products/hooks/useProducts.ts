@@ -60,6 +60,21 @@ export function useUpdateProduct() {
   })
 }
 
+export function useDeleteProduct() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      return json.data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+  })
+}
+
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
