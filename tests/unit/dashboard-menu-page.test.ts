@@ -4,8 +4,9 @@ import {
   addMenuIngredient,
   buildMenuAvailabilityState,
   buildMenuAvailabilityRequest,
-  buildMenuItemPayload,
+  buildCreateMenuItemPayload,
   buildMenuPageSummary,
+  buildUpdateMenuItemPayload,
   filterMenuItems,
   getCreateMenuEditorState,
   getMenuDialogTitle,
@@ -60,27 +61,59 @@ describe('dashboard menu page helpers', () => {
     expect(getInitialMenuItemFormValues()).toEqual({
       name: '',
       description: '',
+      category_id: 'none',
       price: 0,
       display_order: 0,
     })
 
-    expect(buildMenuItemPayload(
+    expect(buildCreateMenuItemPayload(
       { name: 'Pizza', description: 'Grande', price: 30, category_id: 'cat-1', display_order: 1 },
       true,
       'prod-1',
-    )).toMatchObject({ product_id: 'prod-1' })
+    )).toEqual({
+      name: 'Pizza',
+      description: 'Grande',
+      price: 30,
+      category_id: 'cat-1',
+      display_order: 1,
+      product_id: 'prod-1',
+    })
 
-    expect(buildMenuItemPayload(
+    expect(buildCreateMenuItemPayload(
       { name: 'Pizza', description: 'Grande', price: 30, category_id: 'cat-1', display_order: 1 },
       false,
       'prod-1',
-    )).toMatchObject({ product_id: null })
+    )).toEqual({
+      name: 'Pizza',
+      description: 'Grande',
+      price: 30,
+      category_id: 'cat-1',
+      display_order: 1,
+    })
 
-    expect(buildMenuItemPayload(
-      { name: 'Pizza', description: 'Grande', price: 30, category_id: 'cat-1', display_order: 1 },
+    expect(buildCreateMenuItemPayload(
+      { name: 'Pizza', description: 'Grande', price: 30, category_id: 'none', display_order: 1 },
       true,
       'none',
-    )).toMatchObject({ product_id: null })
+    )).toEqual({
+      name: 'Pizza',
+      description: 'Grande',
+      price: 30,
+      display_order: 1,
+    })
+
+    expect(buildUpdateMenuItemPayload(
+      { name: 'Pizza', description: '', price: 30, category_id: 'none', display_order: 1 },
+      true,
+      'none',
+    )).toEqual({
+      name: 'Pizza',
+      description: undefined,
+      price: 30,
+      category_id: null,
+      display_order: 1,
+      product_id: null,
+    })
 
     expect(getNormalizedIngredients([
       { product_id: 'prod-1', quantity: 1 },
@@ -97,6 +130,7 @@ describe('dashboard menu page helpers', () => {
       formValues: {
         name: '',
         description: '',
+        category_id: 'none',
         price: 0,
         display_order: 0,
       },
@@ -167,7 +201,7 @@ describe('dashboard menu page helpers', () => {
         name: 'Suco',
         description: 'Gelado',
         price: 12,
-        category_id: '',
+        category_id: 'none',
         display_order: 1,
       },
       selectedExtras: [],
@@ -202,7 +236,7 @@ describe('dashboard menu page helpers', () => {
         name: 'Agua',
         description: '',
         price: 5,
-        category_id: '',
+        category_id: 'none',
         display_order: 4,
       },
       selectedExtras: [],
@@ -215,6 +249,7 @@ describe('dashboard menu page helpers', () => {
       formValues: {
         name: '',
         description: '',
+        category_id: 'none',
         price: 0,
         display_order: 0,
       },

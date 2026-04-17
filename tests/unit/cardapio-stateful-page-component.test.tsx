@@ -199,15 +199,15 @@ describe('CardapioPage stateful branches', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/extras')
     expect(fetchMock).not.toHaveBeenCalledWith('/api/menu-items/item-1/ingredients')
-    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1', {
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/menu-items/item-1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'Pizza Margherita Especial',
         description: 'Nova versão',
         price: 38,
-        category_id: 'cat-1',
         display_order: 3,
+        category_id: 'cat-1',
         product_id: null,
       }),
     })
@@ -293,7 +293,6 @@ describe('CardapioPage stateful branches', () => {
       price: 40,
       category_id: 'cat-1',
       display_order: 2,
-      product_id: null,
     })
     expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-created/extras', {
       method: 'PUT',
@@ -457,15 +456,15 @@ describe('CardapioPage stateful branches', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/extras')
     expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/ingredients')
     expect(stateSetters[8]).toHaveBeenCalledWith([])
-    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1', {
+    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/menu-items/item-1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'Pizza Margherita',
         description: 'Clássica',
         price: 32,
-        category_id: 'cat-1',
         display_order: 1,
+        category_id: 'cat-1',
         product_id: null,
       }),
     })

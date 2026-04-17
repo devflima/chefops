@@ -14,8 +14,9 @@ import {
   addMenuIngredient,
   buildMenuAvailabilityState,
   buildMenuAvailabilityRequest,
-  buildMenuItemPayload,
+  buildCreateMenuItemPayload,
   buildMenuPageSummary,
+  buildUpdateMenuItemPayload,
   filterMenuItems,
   getCreateMenuEditorState,
   getMenuEditState,
@@ -129,11 +130,14 @@ export default function CardapioPage() {
 
   async function onSubmit(values: MenuItemForm) {
     try {
-      const payload = buildMenuItemPayload(values, hasStockAutomation, linkedProductId)
-
       let menuItemId = editing?.id ?? null
 
       if (editing) {
+        const payload = buildUpdateMenuItemPayload(
+          values,
+          hasStockAutomation,
+          linkedProductId,
+        )
         const res = await fetch(`/api/menu-items/${editing.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -143,6 +147,11 @@ export default function CardapioPage() {
         if (!res.ok) throw new Error(json.error)
         queryClient.invalidateQueries({ queryKey: ['menu-items'] })
       } else {
+        const payload = buildCreateMenuItemPayload(
+          values,
+          hasStockAutomation,
+          linkedProductId,
+        )
         const createdItem = await createMenuItem.mutateAsync(payload)
         menuItemId = createdItem.id
       }

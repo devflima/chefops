@@ -46,7 +46,7 @@ export function buildMenuPageSummary(
 }
 
 export function getInitialMenuItemFormValues() {
-  return { name: '', description: '', price: 0, display_order: 0 }
+  return { name: '', description: '', category_id: 'none', price: 0, display_order: 0 }
 }
 
 export function getMenuDialogTitle(editing: Pick<MenuItem, 'id'> | null) {
@@ -75,7 +75,7 @@ export function getMenuEditState(params: {
       name: params.item.name,
       description: params.item.description ?? '',
       price: params.item.price,
-      category_id: params.item.category_id ?? '',
+      category_id: params.item.category_id ?? 'none',
       display_order: params.item.display_order,
     },
     selectedExtras: (params.selectedExtras ?? []).map((extra) => extra.id),
@@ -103,14 +103,49 @@ export function getMenuTotalPages(totalItems: number, pageSize: number) {
   return Math.max(1, Math.ceil(totalItems / pageSize))
 }
 
-export function buildMenuItemPayload(
+function getMenuItemPayloadBase(
   values: { name: string; description?: string; price: number; category_id?: string; display_order: number },
   hasStockAutomation: boolean,
-  linkedProductId: string
+  linkedProductId: string,
 ) {
+  const categoryId = values.category_id && values.category_id !== 'none' ? values.category_id : undefined
+  const productId = hasStockAutomation && linkedProductId !== 'none' ? linkedProductId : undefined
+
   return {
-    ...values,
-    product_id: hasStockAutomation && linkedProductId !== 'none' ? linkedProductId : null,
+    name: values.name,
+    description: values.description?.trim() || undefined,
+    price: values.price,
+    display_order: values.display_order,
+    categoryId,
+    productId,
+  }
+}
+
+export function buildCreateMenuItemPayload(
+  values: { name: string; description?: string; price: number; category_id?: string; display_order: number },
+  hasStockAutomation: boolean,
+  linkedProductId: string,
+) {
+  const { categoryId, productId, ...base } = getMenuItemPayloadBase(values, hasStockAutomation, linkedProductId)
+
+  return {
+    ...base,
+    category_id: categoryId,
+    product_id: productId,
+  }
+}
+
+export function buildUpdateMenuItemPayload(
+  values: { name: string; description?: string; price: number; category_id?: string; display_order: number },
+  hasStockAutomation: boolean,
+  linkedProductId: string,
+) {
+  const { categoryId, productId, ...base } = getMenuItemPayloadBase(values, hasStockAutomation, linkedProductId)
+
+  return {
+    ...base,
+    category_id: categoryId ?? null,
+    product_id: productId ?? null,
   }
 }
 

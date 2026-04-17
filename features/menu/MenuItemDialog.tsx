@@ -117,11 +117,15 @@ export function MenuItemDialog({
             <FormField control={form.control} name="category_id" render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoria (opcional)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={(value) => field.onChange(value)}
+                  value={field.value ?? 'none'}
+                >
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Selecionar categoria" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="none">Sem categoria</SelectItem>
                     {categories?.map((category) => (
                       <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
                     ))}
