@@ -122,6 +122,13 @@ export default function OnboardingWizard() {
     } catch { /* empty */ }
   }
 
+  async function handleSkipTableSubmit() {
+    if (!onboardingState) return
+    try {
+      await completeStep.mutateAsync(buildTableCompletionPayload(onboardingState))
+    } catch { /* empty */ }
+  }
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6 mb-8">
       {/* Header */}
@@ -252,19 +259,29 @@ export default function OnboardingWizard() {
 
                   {idx === 3 && (
                     <Form {...tableForm}>
-                      <form onSubmit={tableForm.handleSubmit(handleTableSubmit)} className="flex gap-2">
-                        <FormField control={tableForm.control} name="number" render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <Input placeholder="Ex: 01, A1, Varanda" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <Button type="submit" disabled={tableForm.formState.isSubmitting}>
-                          {tableForm.formState.isSubmitting ? 'Criando...' : 'Criar'}
+                      <div className="space-y-3">
+                        <form onSubmit={tableForm.handleSubmit(handleTableSubmit)} className="flex gap-2">
+                          <FormField control={tableForm.control} name="number" render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormControl>
+                                <Input placeholder="Ex: 01, A1, Varanda" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <Button type="submit" disabled={tableForm.formState.isSubmitting}>
+                            {tableForm.formState.isSubmitting ? 'Criando...' : 'Criar'}
+                          </Button>
+                        </form>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleSkipTableSubmit}
+                          disabled={tableForm.formState.isSubmitting}
+                        >
+                          Não se aplica ao meu estabelecimento
                         </Button>
-                      </form>
+                      </div>
                     </Form>
                   )}
                 </div>
