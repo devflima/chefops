@@ -135,7 +135,7 @@ export function MenuAddressStep({
             <span>R$ {cartTotal.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between text-sm text-slate-600">
-            <span>Frete</span>
+            <span>Taxa entrega</span>
             <span>{quotedDeliveryFee !== null ? `R$ ${deliveryFee.toFixed(2)}` : 'A calcular'}</span>
           </div>
           <div className="flex items-center justify-between text-sm font-semibold text-slate-900 pt-2 border-t border-slate-200">
@@ -147,12 +147,6 @@ export function MenuAddressStep({
           <p className={hasDeliveryQuoteError ? 'text-xs text-red-600' : 'text-xs text-slate-600'}>
             {deliveryQuoteMessage}
           </p>
-        )}
-        {quotedDistanceKm !== null && !disabled && (
-          <p className="text-xs text-slate-500">Distância estimada: {quotedDistanceKm.toFixed(1)} km</p>
-        )}
-        {quotedDeliveryFee !== null && !disabled && (
-          <p className="text-xs text-slate-500">Taxa calculada: R$ {quotedDeliveryFee.toFixed(2)}</p>
         )}
         {disabled && (
           <p className="text-xs text-amber-700">Estabelecimento fechado para novos pedidos</p>

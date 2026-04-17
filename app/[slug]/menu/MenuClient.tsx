@@ -98,6 +98,18 @@ type Customer = {
   addresses?: CustomerAddress[]
 }
 
+function hasCompleteDeliveryAddress(address: Partial<CustomerAddress>) {
+  const cleanZipCode = String(address.zip_code ?? '').replace(/\D/g, '')
+
+  return Boolean(
+    cleanZipCode.length === 8 &&
+      address.street &&
+      address.number &&
+      address.city &&
+      address.state,
+  )
+}
+
 export default function MenuClient({
   tenant,
   items,
@@ -347,7 +359,7 @@ export default function MenuClient({
   }
 
   const resolveDeliveryQuote = useCallback(async (nextAddress: Partial<CustomerAddress>) => {
-    if (!nextAddress.zip_code || !nextAddress.street || !nextAddress.number || !nextAddress.city || !nextAddress.state) {
+    if (!hasCompleteDeliveryAddress(nextAddress)) {
       setQuotedDeliveryFee(null)
       setQuotedDistanceKm(null)
       setDeliveryQuoteMessage(null)
@@ -367,7 +379,7 @@ export default function MenuClient({
       const flatFee = Number(tenant.delivery_settings.flat_fee ?? 0)
       setQuotedDeliveryFee(flatFee)
       setQuotedDistanceKm(null)
-      setDeliveryQuoteMessage('Taxa fixa de entrega aplicada para este pedido.')
+      setDeliveryQuoteMessage(null)
       lastDeliveryQuoteAlertRef.current = null
       return { deliveryFee: flatFee, distanceKm: null }
     }
@@ -388,11 +400,7 @@ export default function MenuClient({
 
     setQuotedDeliveryFee(json.data.delivery_fee)
     setQuotedDistanceKm(json.data.distance_km ?? null)
-    setDeliveryQuoteMessage(
-      json.data.pricing_mode === 'distance'
-        ? 'Taxa calculada com base na distância até o endereço informado.'
-        : 'Taxa fixa de entrega aplicada para este pedido.',
-    )
+    setDeliveryQuoteMessage(null)
     lastDeliveryQuoteAlertRef.current = null
 
     return {
@@ -435,7 +443,7 @@ export default function MenuClient({
 
     if (!shouldQuoteDelivery || operationClosedNotice) return
 
-    if (!address.zip_code || !address.street || !address.number || !address.city || !address.state) {
+    if (!hasCompleteDeliveryAddress(address)) {
       setQuotedDeliveryFee(null)
       setQuotedDistanceKm(null)
       setDeliveryQuoteMessage(null)

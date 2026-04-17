@@ -799,7 +799,7 @@ describe('MenuClient component', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/public/delivery-quote', expect.any(Object))
     expect(stateSetters[30]).toHaveBeenCalledWith(14)
     expect(stateSetters[31]).toHaveBeenCalledWith(4.8)
-    expect(stateSetters[32]).toHaveBeenCalledWith('Taxa calculada com base na distância até o endereço informado.')
+    expect(stateSetters[32]).toHaveBeenCalledWith(null)
   })
 
   it('avisa e bloqueia a finalização quando o endereço está fora do raio de entrega', async () => {
@@ -817,7 +817,9 @@ describe('MenuClient component', () => {
       if (url === '/api/public/delivery-quote') {
         return {
           ok: false,
-          json: vi.fn().mockResolvedValue({ error: 'Endereço fora do raio de entrega de 5 km.' }),
+          json: vi
+            .fn()
+            .mockResolvedValue({ error: 'Desculpe, nosso estabelecimento não atende a sua região.' }),
         }
       }
 
@@ -861,7 +863,9 @@ describe('MenuClient component', () => {
     await props.drawerProps.addressStepProps.onSubmit()
 
     expect(fetchMock).toHaveBeenCalledWith('/api/public/delivery-quote', expect.any(Object))
-    expect(globalThis.alert).toHaveBeenCalledWith('Endereço fora do raio de entrega de 5 km.')
+    expect(globalThis.alert).toHaveBeenCalledWith(
+      'Desculpe, nosso estabelecimento não atende a sua região.',
+    )
   })
 
   it('não pré-seleciona pagamento no fluxo público sem mesa', async () => {

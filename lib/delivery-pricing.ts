@@ -59,7 +59,8 @@ export function isDistancePricingEnabled(settings: DeliveryPricingSettings) {
 export function calculateDistanceDeliveryFee(distanceKm: number, settings: DeliveryPricingSettings) {
   const baseFee = Number(settings.flat_fee ?? 0)
   const feePerKm = Number(settings.fee_per_km ?? 0)
-  return roundCurrency(baseFee + distanceKm * feePerKm)
+  const calculatedFee = distanceKm * feePerKm
+  return roundCurrency(Math.max(baseFee, calculatedFee))
 }
 
 export function hasValidDistancePricingConfiguration(settings: DeliveryPricingSettings) {
@@ -155,7 +156,7 @@ export async function resolveDeliveryQuote(
   const maxRadiusKm = Number(settings.max_radius_km ?? 0)
 
   if (distanceKm > maxRadiusKm) {
-    return { ok: false, error: `Endereço fora do raio de entrega de ${maxRadiusKm} km.` }
+    return { ok: false, error: 'Desculpe, nosso estabelecimento não atende a sua região.' }
   }
 
   return {

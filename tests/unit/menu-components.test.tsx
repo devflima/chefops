@@ -1106,8 +1106,6 @@ describe('menu components', () => {
         deliveryFee: 8,
         orderTotal: 50,
         quotedDeliveryFee: 8,
-        quotedDistanceKm: 4.2,
-        deliveryQuoteMessage: 'Taxa calculada com base na distância até o endereço informado.',
         isProcessing: false,
         onSubmit: vi.fn(),
         onBack: vi.fn(),
@@ -1116,10 +1114,12 @@ describe('menu components', () => {
 
     expect(markup).toContain('Subtotal')
     expect(markup).toContain('R$ 42.00')
-    expect(markup).toContain('Frete')
+    expect(markup).toContain('Taxa entrega')
     expect(markup).toContain('R$ 8.00')
     expect(markup).toContain('Total')
     expect(markup).toContain('R$ 50.00')
+    expect(markup).not.toContain('Distância estimada')
+    expect(markup).not.toContain('Taxa calculada')
   })
 
   it('desabilita o envio quando o endereço está fora do raio de entrega', async () => {
