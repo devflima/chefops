@@ -97,9 +97,10 @@ async function createDeliverySettings(admin: ReturnType<typeof createAdminClient
   throw lastError ?? new Error('Não foi possível criar a configuração de entrega.')
 }
 
-async function ensureDeliverySettings(tenantId: string) {
-  const admin = createAdminClient()
-
+async function ensureDeliverySettings(
+  tenantId: string,
+  admin: ReturnType<typeof createAdminClient> = createAdminClient(),
+) {
   const { data: existing, error } = await admin
     .from('tenant_delivery_settings')
     .select('*')
@@ -111,6 +112,56 @@ async function ensureDeliverySettings(tenantId: string) {
   if (existing) return normalizeDeliverySettings(existing)
 
   return createDeliverySettings(admin, tenantId)
+}
+
+async function getTenantAddressFallback(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+) {
+  try {
+    const { data, error } = await admin
+      .from('tenants')
+      .select('zip_code, street, number, neighborhood, city, state')
+      .eq('id', tenantId)
+      .maybeSingle()
+
+    if (error) {
+      if (isMissingColumnError(error)) return null
+      throw error
+    }
+
+    if (!data) return null
+
+    return {
+      origin_zip_code: data.zip_code ?? null,
+      origin_street: data.street ?? null,
+      origin_number: data.number ?? null,
+      origin_neighborhood: data.neighborhood ?? null,
+      origin_city: data.city ?? null,
+      origin_state: data.state ?? null,
+    }
+  } catch (error) {
+    if (isMissingColumnError(error)) return null
+    throw error
+  }
+}
+
+async function getDeliverySettingsWithTenantFallback(tenantId: string) {
+  const admin = createAdminClient()
+  const settings = await ensureDeliverySettings(tenantId, admin)
+  const tenantAddress = await getTenantAddressFallback(admin, tenantId)
+
+  if (!tenantAddress) return settings
+
+  return normalizeDeliverySettings({
+    ...settings,
+    origin_zip_code: settings.origin_zip_code ?? tenantAddress.origin_zip_code,
+    origin_street: settings.origin_street ?? tenantAddress.origin_street,
+    origin_number: settings.origin_number ?? tenantAddress.origin_number,
+    origin_neighborhood: settings.origin_neighborhood ?? tenantAddress.origin_neighborhood,
+    origin_city: settings.origin_city ?? tenantAddress.origin_city,
+    origin_state: settings.origin_state ?? tenantAddress.origin_state,
+  })
 }
 
 async function updateDeliverySettings(
@@ -147,7 +198,7 @@ export async function GET() {
     const auth = await requireTenantRoles(['owner'])
     if (!auth.ok) return auth.response
 
-    const settings = await ensureDeliverySettings(auth.profile.tenant_id)
+    const settings = await getDeliverySettingsWithTenantFallback(auth.profile.tenant_id)
     return NextResponse.json({ data: settings })
   } catch (error) {
     console.error('[delivery-settings:get]', error)

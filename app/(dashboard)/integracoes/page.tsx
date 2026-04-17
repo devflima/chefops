@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { toast } from 'sonner'
 import {
   useDisconnectMercadoPagoAccount,
   useMercadoPagoAccount,
@@ -48,6 +49,7 @@ export default function IntegracoesPage() {
   const [deliveryOriginNeighborhoodInput, setDeliveryOriginNeighborhoodInput] = useState<string | null>(null)
   const [deliveryOriginCityInput, setDeliveryOriginCityInput] = useState<string | null>(null)
   const [deliveryOriginStateInput, setDeliveryOriginStateInput] = useState<string | null>(null)
+  const [deliveryOriginLookupPending, setDeliveryOriginLookupPending] = useState(false)
   const [openingHourInput, setOpeningHourInput] = useState<string | null>(null)
   const [closingHourInput, setClosingHourInput] = useState<string | null>(null)
 
@@ -73,6 +75,34 @@ export default function IntegracoesPage() {
   const closingHourValue = getDeliveryHourValue(closingHourInput, deliverySettings.data?.closes_at)
   const whatsappOptions = hasWhatsappNotifications && notificationSettings.data ? whatsappOptionDefinitions : []
 
+  async function handleDeliveryOriginCepLookup(cep: string) {
+    const clean = cep.replace(/\D/g, '')
+    if (clean.length !== 8) return
+
+    setDeliveryOriginLookupPending(true)
+
+    try {
+      const res = await fetch(`/api/cep/${clean}`)
+      const json = await res.json()
+
+      if (!res.ok) {
+        throw new Error(json.error || 'Não foi possível buscar o CEP informado.')
+      }
+
+      if (!json.data) return
+
+      setDeliveryOriginZipInput(clean)
+      setDeliveryOriginStreetInput(json.data.street ?? '')
+      setDeliveryOriginNeighborhoodInput(json.data.neighborhood ?? '')
+      setDeliveryOriginCityInput(json.data.city ?? '')
+      setDeliveryOriginStateInput((json.data.state ?? '').toUpperCase())
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível buscar o CEP informado.')
+    } finally {
+      setDeliveryOriginLookupPending(false)
+    }
+  }
+
   return (
     <FeatureGate feature="payments">
       <IntegrationsPageContent
@@ -93,6 +123,7 @@ export default function IntegracoesPage() {
         deliveryOriginNeighborhoodValue={deliveryOriginNeighborhoodValue}
         deliveryOriginCityValue={deliveryOriginCityValue}
         deliveryOriginStateValue={deliveryOriginStateValue}
+        deliveryOriginLookupPending={deliveryOriginLookupPending}
         openingHourValue={openingHourValue}
         closingHourValue={closingHourValue}
         onDeliveryToggle={async (payload) => {
@@ -132,6 +163,7 @@ export default function IntegracoesPage() {
           if (field === 'origin_city') setDeliveryOriginCityInput(value)
           if (field === 'origin_state') setDeliveryOriginStateInput(value.toUpperCase())
         }}
+        onDeliveryOriginCepLookup={handleDeliveryOriginCepLookup}
         onDeliveryDistanceSave={async (payload) => {
           await updateDeliverySettings.mutateAsync(payload)
           setDeliveryRadiusInput(null)

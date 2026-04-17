@@ -162,14 +162,51 @@ describe('auth pages components', () => {
 
     const props = capturedRegisterContentProps as {
       error: string | null
+      loadingZipCode: boolean
       onSubmit: (values: Record<string, unknown>) => Promise<void>
       onTenantNameChange: (value: string) => void
+      onZipCodeChange: (value: string) => Promise<void>
     }
 
     expect(props.error).toBeNull()
+    expect(props.loadingZipCode).toBe(false)
     props.onTenantNameChange('Pizzaria do João')
 
     expect(setValueMock).toHaveBeenCalledWith('tenant_slug', 'pizzaria-do-joao', {
+      shouldValidate: true,
+    })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          data: {
+            zip_code: '01001000',
+            street: 'Praça da Sé',
+            neighborhood: 'Sé',
+            city: 'São Paulo',
+            state: 'SP',
+          },
+        }),
+      }).mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: { tenant_slug: 'pizzaria-do-joao' } }),
+      })
+    )
+
+    await props.onZipCodeChange('01001-000')
+
+    expect(setValueMock).toHaveBeenCalledWith('street', 'Praça da Sé', {
+      shouldValidate: true,
+    })
+    expect(setValueMock).toHaveBeenCalledWith('neighborhood', 'Sé', {
+      shouldValidate: true,
+    })
+    expect(setValueMock).toHaveBeenCalledWith('city', 'São Paulo', {
+      shouldValidate: true,
+    })
+    expect(setValueMock).toHaveBeenCalledWith('state', 'SP', {
       shouldValidate: true,
     })
 

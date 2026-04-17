@@ -40,6 +40,7 @@ type Props = {
   deliveryOriginNeighborhoodValue?: string
   deliveryOriginCityValue?: string
   deliveryOriginStateValue?: string
+  deliveryOriginLookupPending?: boolean
   openingHourValue: string
   closingHourValue: string
   onDeliveryToggle: (payload: DeliverySettingsShape) => void | Promise<void>
@@ -61,6 +62,7 @@ type Props = {
       | 'origin_state',
     value: string,
   ) => void
+  onDeliveryOriginCepLookup?: (cep: string) => void | Promise<void>
   onDeliveryDistanceSave?: (payload: DeliverySettingsShape) => void | Promise<void>
   onDeliveryHoursSave: (payload: DeliverySettingsShape) => void | Promise<void>
   hasWhatsappNotifications: boolean
@@ -89,6 +91,7 @@ export function IntegrationsPageContent({
   deliveryOriginNeighborhoodValue = '',
   deliveryOriginCityValue = '',
   deliveryOriginStateValue = '',
+  deliveryOriginLookupPending = false,
   openingHourValue,
   closingHourValue,
   onDeliveryToggle,
@@ -99,6 +102,7 @@ export function IntegrationsPageContent({
   onDeliveryFeeSave,
   onDeliveryPricingModeChange,
   onDeliveryDistanceInputChange,
+  onDeliveryOriginCepLookup,
   onDeliveryDistanceSave,
   onDeliveryHoursSave,
   hasWhatsappNotifications,
@@ -385,11 +389,20 @@ export function IntegrationsPageContent({
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="text-sm text-slate-600">
                       <span className="mb-1 block">CEP de origem</span>
-                      <input
-                        value={deliveryOriginZipValue}
-                        onChange={(event) => onDeliveryDistanceInputChange?.('origin_zip_code', event.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      />
+                      <div className="space-y-1">
+                        <input
+                          value={deliveryOriginZipValue}
+                          onChange={(event) => {
+                            const value = event.target.value.replace(/\D/g, '')
+                            onDeliveryDistanceInputChange?.('origin_zip_code', value)
+                            if (value.length === 8) onDeliveryOriginCepLookup?.(value)
+                          }}
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        />
+                        {deliveryOriginLookupPending && (
+                          <span className="text-xs text-slate-400">Buscando CEP...</span>
+                        )}
+                      </div>
                     </label>
                     <label className="text-sm text-slate-600">
                       <span className="mb-1 block">Cidade de origem</span>

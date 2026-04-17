@@ -53,20 +53,52 @@ describe('api operations routes', () => {
       profile: { tenant_id: 'tenant-1' },
     } as never)
     vi.mocked(createAdminClient).mockReturnValueOnce({
-      from: vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        insert: vi.fn(() => ({
+      from: vi.fn((table: string) => {
+        if (table === 'tenant_delivery_settings') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            insert: vi.fn(() => ({
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: { tenant_id: 'tenant-1', delivery_enabled: false, flat_fee: 0, accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null },
+                error: null,
+              }),
+            })),
+          }
+        }
+
+        return {
           select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: { tenant_id: 'tenant-1', delivery_enabled: false, flat_fee: 0, accepting_orders: true, schedule_enabled: false, opens_at: null, closes_at: null, pricing_mode: 'flat', max_radius_km: null, fee_per_km: null, origin_zip_code: null, origin_street: null, origin_number: null, origin_neighborhood: null, origin_city: null, origin_state: null },
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              zip_code: '01001000',
+              street: 'Praça da Sé',
+              number: '100',
+              neighborhood: 'Sé',
+              city: 'São Paulo',
+              state: 'SP',
+            },
             error: null,
           }),
-        })),
-      })),
+        }
+      }),
     } as never)
-    expect((await deliverySettingsRoute.GET()).status).toBe(200)
+    const hydratedSettingsResponse = await deliverySettingsRoute.GET()
+    expect(hydratedSettingsResponse.status).toBe(200)
+    await expect(hydratedSettingsResponse.json()).resolves.toMatchObject({
+      data: {
+        tenant_id: 'tenant-1',
+        origin_zip_code: '01001000',
+        origin_street: 'Praça da Sé',
+        origin_number: '100',
+        origin_neighborhood: 'Sé',
+        origin_city: 'São Paulo',
+        origin_state: 'SP',
+      },
+    })
 
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({

@@ -31,6 +31,7 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [loadingZipCode, setLoadingZipCode] = useState(false)
 
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -52,6 +53,27 @@ export default function RegisterPage() {
 
   function handleTenantNameChange(value: string) {
     form.setValue('tenant_slug', buildTenantSlug(value), { shouldValidate: true })
+  }
+
+  async function handleZipCodeChange(value: string) {
+    const clean = normalizeDigits(value)
+    if (clean.length !== 8) return
+
+    setLoadingZipCode(true)
+
+    try {
+      const res = await fetch(`/api/cep/${clean}`)
+      const json = await res.json()
+
+      if (!res.ok || !json.data) return
+
+      form.setValue('street', json.data.street ?? '', { shouldValidate: true })
+      form.setValue('neighborhood', json.data.neighborhood ?? '', { shouldValidate: true })
+      form.setValue('city', json.data.city ?? '', { shouldValidate: true })
+      form.setValue('state', json.data.state ?? '', { shouldValidate: true })
+    } finally {
+      setLoadingZipCode(false)
+    }
   }
 
   async function onSubmit(values: RegisterForm) {
@@ -76,8 +98,10 @@ export default function RegisterPage() {
     <RegisterPageContent
       form={form}
       error={error}
+      loadingZipCode={loadingZipCode}
       onSubmit={onSubmit}
       onTenantNameChange={handleTenantNameChange}
+      onZipCodeChange={handleZipCodeChange}
     />
   )
 }
