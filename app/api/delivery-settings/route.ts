@@ -148,7 +148,10 @@ async function getTenantAddressFallback(
 
 async function getDeliverySettingsWithTenantFallback(tenantId: string) {
   const admin = createAdminClient()
-  const settings = await ensureDeliverySettings(tenantId, admin)
+  const settings = (await ensureDeliverySettings(tenantId, admin)) ?? {
+    ...defaultDeliverySettings,
+    tenant_id: tenantId,
+  }
   const tenantAddress = await getTenantAddressFallback(admin, tenantId)
 
   if (!tenantAddress) return settings
