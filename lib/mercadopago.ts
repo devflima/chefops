@@ -28,6 +28,10 @@ export function getMercadoPagoAccessToken() {
   return getRequiredEnv('MERCADO_PAGO_ACCESS_TOKEN')
 }
 
+export function isMercadoPagoTestAccessToken(accessToken = getMercadoPagoAccessToken()) {
+  return accessToken.startsWith('TEST-')
+}
+
 export function getMercadoPagoWebhookUrl() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
 
@@ -163,19 +167,22 @@ export async function refundPaymentById(params: {
 
 export async function createSaasSubscriptionLink(params: {
   reason: string
-  payerEmail: string
+  payerEmail?: string
   externalReference: string
   amount: number
   accessToken?: string
   backUrl: string
 }) {
+  const accessToken = params.accessToken ?? getMercadoPagoAccessToken()
+  const includePayerEmail = !!params.payerEmail && !isMercadoPagoTestAccessToken(accessToken)
+
   return mercadoPagoRequest<SubscriptionPreapproval>('/preapproval', {
     method: 'POST',
     idempotencyKey: crypto.randomUUID(),
-    accessToken: params.accessToken,
+    accessToken,
     body: JSON.stringify({
       reason: params.reason,
-      payer_email: params.payerEmail,
+      ...(includePayerEmail ? { payer_email: params.payerEmail } : {}),
       external_reference: params.externalReference,
       auto_recurring: {
         frequency: 1,

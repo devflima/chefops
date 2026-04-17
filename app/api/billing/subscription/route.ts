@@ -10,7 +10,7 @@ import {
   type BillingPlan,
   upsertSaasBillingSubscription,
 } from '@/lib/saas-billing'
-import { createSaasSubscriptionLink, updatePreapprovalById } from '@/lib/mercadopago'
+import { MercadoPagoApiError, createSaasSubscriptionLink, updatePreapprovalById } from '@/lib/mercadopago'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -176,6 +176,20 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[billing-subscription:post]', error)
+
+    if (
+      error instanceof MercadoPagoApiError &&
+      error.message.includes('Both payer and collector must be real or test users')
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'A assinatura não pôde ser iniciada porque o ambiente do Mercado Pago está misturando usuários de teste e produção. Revise as credenciais atuais ou conclua a assinatura com um usuário compatível com esse modo.',
+        },
+        { status: 422 }
+      )
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erro ao iniciar assinatura.' },
       { status: 500 }
