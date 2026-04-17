@@ -1061,27 +1061,13 @@ export function applyAutomaticBorderExtras(items: PublicMenuItem[], borderExtras
   })
 }
 
-export function groupOptionalExtras(item: PublicMenuItem) {
-  const grouped = new Map<string, MenuExtra[]>()
-
-  for (const extra of getOptionalExtras(item)) {
-    grouped.set(extra.category, [...(grouped.get(extra.category) ?? []), extra])
-  }
-
-  return [...grouped.keys()].map((category) => ({
-    category,
-    label: getMenuExtraCategoryLabel(category),
-    extras: grouped.get(category) ?? [],
-  }))
+export function getAdditionalItems(item: PublicMenuItem) {
+  return [...getOptionalExtras(item)].sort((first, second) => first.name.localeCompare(second.name))
 }
 
 export function togglePublicMenuExtraSelection(selectedExtras: MenuExtra[], extra: MenuExtra) {
   if (selectedExtras.some((entry) => entry.id === extra.id)) {
     return selectedExtras.filter((entry) => entry.id !== extra.id)
-  }
-
-  if (extra.category === 'flavor') {
-    return [...selectedExtras.filter((entry) => entry.category !== 'flavor'), extra]
   }
 
   return [...selectedExtras, extra]

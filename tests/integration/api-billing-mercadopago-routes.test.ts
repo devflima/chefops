@@ -17,6 +17,12 @@ vi.mock('@/lib/saas-billing', () => ({
 }))
 
 vi.mock('@/lib/mercadopago', () => ({
+  MercadoPagoApiError: class MercadoPagoApiError extends Error {
+    constructor(message: string, public status: number, public details?: unknown) {
+      super(message)
+      this.name = 'MercadoPagoApiError'
+    }
+  },
   createSaasSubscriptionLink: vi.fn(),
   updatePreapprovalById: vi.fn(),
 }))
@@ -339,6 +345,13 @@ describe('api billing and mercado pago routes', () => {
     )
     expect(success.status).toBe(200)
     expect((await success.json()).data.checkout_url).toBe('https://mp.test/checkout')
+    expect(vi.mocked(mercadoPago.createSaasSubscriptionLink)).toHaveBeenLastCalledWith({
+      reason: 'Plano Pro',
+      payerEmail: 'owner@test.com',
+      externalReference: 'tenant-1:pro',
+      amount: 149,
+      backUrl: 'https://chefops.test/planos?billing=return',
+    })
 
     vi.mocked(requireTenantRoles).mockResolvedValueOnce({
       ok: true,
@@ -421,6 +434,29 @@ describe('api billing and mercado pago routes', () => {
     )
     expect(postUnknownError.status).toBe(500)
     expect((await postUnknownError.json()).error).toBe('Erro ao iniciar assinatura.')
+
+    vi.mocked(requireTenantRoles).mockResolvedValueOnce({
+      ok: true,
+      user: { email: 'owner@test.com' },
+      profile: { tenant_id: 'tenant-1' },
+    } as never)
+    vi.mocked(saasBilling.buildSaasExternalReference).mockReturnValueOnce('tenant-1:basic')
+    vi.mocked(saasBilling.buildSaasSubscriptionReason).mockReturnValueOnce('Plano Basic')
+    vi.mocked(saasBilling.getBillingPlanAmount).mockReturnValueOnce(99 as never)
+    vi.mocked(mercadoPago.createSaasSubscriptionLink).mockRejectedValueOnce(
+      new mercadoPago.MercadoPagoApiError(
+        'Both payer and collector must be real or test users',
+        400,
+      ) as never
+    )
+    const mismatchResponse = await billingSubscriptionRoute.POST(
+      new Request('https://chefops.test/api/billing/subscription', {
+        method: 'POST',
+        body: JSON.stringify({ plan: 'basic' }),
+      }) as never
+    )
+    expect(mismatchResponse.status).toBe(422)
+    expect((await mismatchResponse.json()).error).toContain('misturando usuários de teste e produção')
   })
 
   it('oauth callback do mercado pago cobre estado inválido, mismatch, sucesso e erro', async () => {

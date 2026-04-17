@@ -10,6 +10,7 @@ import {
   getMercadoPagoWebhookUrl,
   getOrderIdFromExternalReference,
   getPreapprovalById,
+  isMercadoPagoTestAccessToken,
   mapMercadoPagoStatusToOrderPaymentStatus,
   refundPaymentById,
   updatePreapprovalById,
@@ -30,6 +31,11 @@ describe('mercadopago helpers', () => {
 
     expect(() => getMercadoPagoAccessToken()).toThrow(/MERCADO_PAGO_ACCESS_TOKEN/)
     expect(() => getMercadoPagoWebhookUrl()).toThrow(/NEXT_PUBLIC_APP_URL/)
+  })
+
+  it('identifica access token de teste do Mercado Pago', () => {
+    expect(isMercadoPagoTestAccessToken('TEST-123')).toBe(true)
+    expect(isMercadoPagoTestAccessToken('APP_USR-123')).toBe(false)
   })
 
   it('createCheckoutPreference envia payload padrao para o Mercado Pago', async () => {
@@ -177,6 +183,11 @@ describe('mercadopago helpers', () => {
       })
     ).resolves.toMatchObject({ id: 'pre-1', status: 'pending' })
 
+    const firstRequest = vi.mocked(globalThis.fetch).mock.calls[0]?.[1]
+    expect(JSON.parse(String(firstRequest?.body))).toMatchObject({
+      payer_email: 'owner@test.com',
+    })
+
     await expect(getPreapprovalById('pre-1', 'tenant-token')).resolves.toMatchObject({
       id: 'pre-1',
       status: 'authorized',
@@ -239,6 +250,27 @@ describe('mercadopago helpers', () => {
       message: 'Mercado Pago request failed.',
       status: 500,
     })
+  })
+
+  it('omite payer_email ao criar assinatura SaaS com access token de teste', async () => {
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-123'
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 'pre-test', status: 'pending' }), { status: 200 })
+    )
+
+    await expect(
+      createSaasSubscriptionLink({
+        reason: 'ChefOps Premium',
+        payerEmail: 'owner@test.com',
+        externalReference: 'saas:tenant:1:plan:pro',
+        amount: 189,
+        backUrl: 'https://chefops.test/planos',
+      })
+    ).resolves.toMatchObject({ id: 'pre-test', status: 'pending' })
+
+    const request = fetchMock.mock.calls[0]?.[1]
+    expect(JSON.parse(String(request?.body))).not.toHaveProperty('payer_email')
   })
 
   it('verifyMercadoPagoWebhookSignature valida manifesto assinado', () => {

@@ -2438,10 +2438,8 @@ describe('menu components', () => {
       })
     )
 
-    expect(getTextContent(elements)).toContain('Extras')
-    expect(getTextContent(elements)).toContain('Escolha 1 opção')
-    expect(getTextContent(elements)).toContain('Outros')
-    expect(getTextContent(elements)).toContain('Escolha quantos quiser')
+    expect(getTextContent(elements)).toContain('Adicionais')
+    expect(getTextContent(elements)).toContain('Escolha um ou mais itens adicionais')
     expect(getTextContent(elements)).toContain('Cheddar')
     expect(getTextContent(elements)).toContain('Calabresa extra')
     expect(getTextContent(elements)).toContain('Selecionados: Borda Catupiry, Cheddar')

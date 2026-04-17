@@ -404,6 +404,7 @@ describe('public menu helpers', () => {
       { id: 'extra-4', name: 'Bacon', price: 5, category: 'other' },
     ])
     expect(togglePublicMenuExtraSelection([{ id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' }], { id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' })).toEqual([
+      { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' },
       { id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' },
     ])
 
