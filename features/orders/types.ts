@@ -43,7 +43,7 @@ export type CartItem = {
   price: number
   quantity: number
   notes?: string
-  extras?: { name: string; price: number }[]
+  extras?: { id?: string; name: string; price: number }[]
   half_flavor?: {
     menu_item_id: string
     name: string

@@ -416,6 +416,7 @@ describe('menu components', () => {
         onIncrement: vi.fn(),
         onDecrement: vi.fn(),
         onRemove: vi.fn(),
+        onRemoveExtra: vi.fn(),
         onContinue: vi.fn(),
         onClear: vi.fn(),
       })
@@ -448,6 +449,7 @@ describe('menu components', () => {
         onIncrement: vi.fn(),
         onDecrement: vi.fn(),
         onRemove: vi.fn(),
+        onRemoveExtra: vi.fn(),
         onContinue: vi.fn(),
         onClear: vi.fn(),
       })
@@ -478,6 +480,7 @@ describe('menu components', () => {
         onIncrement: vi.fn(),
         onDecrement: vi.fn(),
         onRemove: vi.fn(),
+        onRemoveExtra: vi.fn(),
         onContinue: vi.fn(),
         onClear: vi.fn(),
       })
@@ -492,6 +495,7 @@ describe('menu components', () => {
     const onIncrement = vi.fn()
     const onDecrement = vi.fn()
     const onRemove = vi.fn()
+    const onRemoveExtra = vi.fn()
     const onContinue = vi.fn()
     const onClear = vi.fn()
 
@@ -503,7 +507,7 @@ describe('menu components', () => {
             name: 'Pizza Pepperoni',
             price: 35,
             quantity: 1,
-            extras: [],
+            extras: [{ id: 'extra-1', name: 'Cheddar', price: 4 }],
           },
         ],
         cartTotal: 35,
@@ -512,6 +516,7 @@ describe('menu components', () => {
         onIncrement,
         onDecrement,
         onRemove,
+        onRemoveExtra,
         onContinue,
         onClear,
       })
@@ -521,7 +526,7 @@ describe('menu components', () => {
       (element) => element.type === 'button' && typeof element.props.onClick === 'function'
     )
 
-    expect(actionButtons).toHaveLength(5)
+    expect(actionButtons).toHaveLength(6)
     expect(getTextContent(elements)).not.toContain('Taxa de entrega')
 
     actionButtons[0].props.onClick()
@@ -529,12 +534,14 @@ describe('menu components', () => {
     actionButtons[2].props.onClick()
     actionButtons[3].props.onClick()
     actionButtons[4].props.onClick()
+    actionButtons[5].props.onClick()
 
     expect(onDecrement).toHaveBeenCalledWith(0)
     expect(onIncrement).toHaveBeenCalledWith(0)
-    expect(onRemove).toHaveBeenCalledWith(0)
+    expect(onRemoveExtra).toHaveBeenCalledWith(0, 0)
     expect(onContinue).toHaveBeenCalledOnce()
     expect(onClear).toHaveBeenCalledOnce()
+    expect(onRemove).toHaveBeenCalledWith(0)
   })
 
   it('renderiza dialogo de abertura de comanda e aciona cancelamento', async () => {

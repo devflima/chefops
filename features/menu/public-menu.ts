@@ -125,7 +125,7 @@ export function createCartItem(
     quantity: 1,
     extras: [selectedBorder, ...selectedExtras]
       .filter(Boolean)
-      .map((extra) => ({ name: extra!.name, price: extra!.price })),
+      .map((extra) => ({ id: extra!.id, name: extra!.name, price: extra!.price })),
     half_flavor: halfFlavor ? { menu_item_id: halfFlavor.id, name: halfFlavor.name } : undefined,
   } satisfies CartItem
 }
@@ -147,6 +147,17 @@ export function decrementCartItem(cart: CartItem[], index: number) {
 
 export function removeCartItem(cart: CartItem[], index: number) {
   return cart.filter((_, idx) => idx !== index)
+}
+
+export function removeCartItemExtra(cart: CartItem[], itemIndex: number, extraIndex: number) {
+  return cart.map((item, idx) => {
+    if (idx !== itemIndex) return item
+
+    return {
+      ...item,
+      extras: (item.extras ?? []).filter((_, idx) => idx !== extraIndex),
+    }
+  })
 }
 
 export function getCheckoutNoticeFromResult(checkoutResult: string | null) {

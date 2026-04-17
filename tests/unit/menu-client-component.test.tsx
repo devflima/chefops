@@ -499,15 +499,17 @@ describe('MenuClient component', () => {
       drawerProps: {
         cartStepProps: {
           onRemove: (index: number) => void
+          onRemoveExtra: (index: number, extraIndex: number) => void
           onClear: () => void
         }
       }
     }
 
     props.drawerProps.cartStepProps.onRemove(0)
+    props.drawerProps.cartStepProps.onRemoveExtra(0, 0)
     props.drawerProps.cartStepProps.onClear()
 
-    expect(stateSetters[0]).toHaveBeenCalledTimes(2)
+    expect(stateSetters[0]).toHaveBeenCalledTimes(3)
     expect(toastErrorMock).not.toHaveBeenCalledWith('O estabelecimento está fechado para novos pedidos no momento.')
   })
 
@@ -699,11 +701,11 @@ describe('MenuClient component', () => {
 
     expect(stateSetters[0]).toHaveBeenCalledWith(expect.any(Function))
     const addUpdater = stateSetters[0].mock.calls.at(-1)?.[0] as (prev: unknown[]) => unknown[]
-    const nextCart = addUpdater([]) as Array<{ extras?: Array<{ name: string; price: number }> }>
+    const nextCart = addUpdater([]) as Array<{ extras?: Array<{ id?: string; name: string; price: number }> }>
 
     expect(nextCart[0]?.extras).toEqual([
-      { name: 'Cheddar', price: 4 },
-      { name: 'Calabresa extra', price: 6 },
+      { id: 'extra-2', name: 'Cheddar', price: 4 },
+      { id: 'extra-3', name: 'Calabresa extra', price: 6 },
     ])
     expect(stateSetters[29]).toHaveBeenCalledWith(expect.any(Function))
   })

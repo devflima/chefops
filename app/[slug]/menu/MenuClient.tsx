@@ -46,6 +46,7 @@ import {
   type PublicMenuItem as MenuItem,
   type PublicOrderStatus,
   removeCartItem,
+  removeCartItemExtra,
   resolvePublicCheckoutUrl,
   serializeStoredActiveOrder,
   getAddressFlowTarget,
@@ -213,6 +214,10 @@ export default function MenuClient({
 
   function removeFromCart(index: number) {
     setCart((prev) => removeCartItem(prev, index))
+  }
+
+  function removeExtraFromCart(index: number, extraIndex: number) {
+    setCart((prev) => removeCartItemExtra(prev, index, extraIndex))
   }
 
   function clearCart() {
@@ -874,6 +879,7 @@ export default function MenuClient({
           onIncrement: incrementCart,
           onDecrement: decrementCart,
           onRemove: removeFromCart,
+          onRemoveExtra: removeExtraFromCart,
           onContinue: () => {
             if (operationClosedNotice) {
               toast.error(operationClosedNotice)
