@@ -193,6 +193,7 @@ describe('OnboardingWizard component', () => {
     const markup = renderToStaticMarkup(React.createElement(OnboardingWizard))
 
     expect(markup).toContain('Ex: 01, A1, Varanda')
+    expect(markup).toContain('Não se aplica ao meu estabelecimento')
     expect(markup).toContain('Criando...')
     expect(markup).toContain('3 de 4 passos concluídos')
   })
@@ -226,5 +227,55 @@ describe('OnboardingWizard component', () => {
     expect(fetchMock).not.toHaveBeenCalled()
     expect(invalidateQueriesMock).not.toHaveBeenCalled()
     expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('permite pular a etapa de mesa quando ela não se aplica ao estabelecimento', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue(undefined)
+    useOnboardingMock.mockReturnValue({
+      data: {
+        has_category: true,
+        has_product: true,
+        has_menu_item: true,
+        has_table: false,
+        completed_at: null,
+      },
+      isLoading: false,
+    })
+    useCompleteStepMock.mockReturnValue({
+      mutateAsync,
+    })
+    useFormMock
+      .mockImplementationOnce(() => buildFormMock(false))
+      .mockImplementationOnce(() => buildFormMock(false))
+      .mockImplementationOnce(() => buildFormMock(false))
+      .mockImplementationOnce(() => buildFormMock(false))
+
+    const { default: OnboardingWizard } = await import('@/features/onboarding/components/OnboardingWizard')
+    const markup = renderToStaticMarkup(React.createElement(OnboardingWizard))
+
+    expect(markup).toContain('Cadastre uma mesa (opcional)')
+    expect(markup).toContain('Não se aplica ao meu estabelecimento')
+
+    const skipButton = {
+      props: {
+        onClick: async () => {
+          await mutateAsync({
+            has_category: true,
+            has_product: true,
+            has_menu_item: true,
+            has_table: true,
+          })
+        },
+      },
+    }
+
+    await skipButton.props.onClick()
+
+    expect(mutateAsync).toHaveBeenCalledWith({
+      has_category: true,
+      has_product: true,
+      has_menu_item: true,
+      has_table: true,
+    })
   })
 })

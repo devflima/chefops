@@ -1020,8 +1020,9 @@ describe('heavy components smoke', () => {
 
     expect(markup).toContain('3 de 4 passos concluídos')
     expect(markup).toContain('75%')
-    expect(markup).toContain('Cadastre uma mesa')
+    expect(markup).toContain('Cadastre uma mesa (opcional)')
     expect(markup).toContain('Varanda')
+    expect(markup).toContain('Não se aplica ao meu estabelecimento')
   })
 
   it('submete etapa ativa do onboarding', async () => {

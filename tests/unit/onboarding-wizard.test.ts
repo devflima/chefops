@@ -62,5 +62,8 @@ describe('onboarding wizard helpers', () => {
       has_menu_item: false,
       has_table: true,
     })
+    expect(onboardingSteps[3]).toMatchObject({
+      title: 'Cadastre uma mesa (opcional)',
+    })
   })
 })

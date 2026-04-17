@@ -16,8 +16,8 @@ export const onboardingSteps = [
   },
   {
     key: 'has_table' as const,
-    title: 'Cadastre uma mesa',
-    description: 'Mesas permitem abrir comandas e receber pedidos via QR Code.',
+    title: 'Cadastre uma mesa (opcional)',
+    description: 'Use esta etapa apenas se o estabelecimento atender em mesas ou comandas com QR Code.',
   },
 ]
 
