@@ -441,6 +441,7 @@ describe('IntegrationsPageContent', () => {
         deliverySettingsData: null,
         deliverySettingsPending: false,
         deliveryFeeValue: '0',
+        deliveryOriginLookupPending: true,
         openingHourValue: '',
         closingHourValue: '',
         onDeliveryToggle: vi.fn(),
@@ -462,6 +463,75 @@ describe('IntegrationsPageContent', () => {
     expect(markup).toContain('Carregando integração...')
     expect(markup).toContain('Não foi possível carregar as configurações de entrega.')
     expect(markup).toContain('Recurso disponível apenas nos planos Standard e Premium.')
+  })
+
+  it('renderiza indicador de busca de CEP no cálculo por distância', async () => {
+    const { IntegrationsPageContent } = await import('@/features/payments/IntegrationsPageContent')
+
+    const markup = renderToStaticMarkup(
+      React.createElement(IntegrationsPageContent, {
+        connected: true,
+        accountLoading: false,
+        accountData: {
+          mercado_pago_user_id: 'seller-1',
+          live_mode: true,
+          token_expires_at: '2026-01-01T00:00:00.000Z',
+        },
+        disconnectPending: false,
+        onDisconnect: vi.fn(),
+        deliverySettingsLoading: false,
+        deliverySettingsData: {
+          tenant_id: 'tenant-1',
+          delivery_enabled: true,
+          flat_fee: 8,
+          accepting_orders: true,
+          schedule_enabled: false,
+          opens_at: null,
+          closes_at: null,
+          pricing_mode: 'distance',
+          max_radius_km: 5,
+          fee_per_km: 2,
+          origin_zip_code: '01001000',
+          origin_street: 'Praça da Sé',
+          origin_number: '100',
+          origin_neighborhood: 'Sé',
+          origin_city: 'São Paulo',
+          origin_state: 'SP',
+        },
+        deliverySettingsPending: false,
+        deliveryFeeValue: '8',
+        deliveryRadiusValue: '5',
+        deliveryFeePerKmValue: '2',
+        deliveryOriginZipValue: '01001000',
+        deliveryOriginStreetValue: 'Praça da Sé',
+        deliveryOriginNumberValue: '100',
+        deliveryOriginNeighborhoodValue: 'Sé',
+        deliveryOriginCityValue: 'São Paulo',
+        deliveryOriginStateValue: 'SP',
+        deliveryOriginLookupPending: true,
+        openingHourValue: '',
+        closingHourValue: '',
+        onDeliveryToggle: vi.fn(),
+        onDeliveryOperationChange: vi.fn(),
+        onDeliveryScheduleChange: vi.fn(),
+        onDeliveryHoursChange: vi.fn(),
+        onDeliveryFeeInputChange: vi.fn(),
+        onDeliveryFeeSave: vi.fn(),
+        onDeliveryPricingModeChange: vi.fn(),
+        onDeliveryDistanceInputChange: vi.fn(),
+        onDeliveryOriginCepLookup: vi.fn(),
+        onDeliveryDistanceSave: vi.fn(),
+        onDeliveryHoursSave: vi.fn(),
+        hasWhatsappNotifications: false,
+        notificationSettingsLoading: false,
+        notificationSettingsData: null,
+        notificationSettingsPending: false,
+        whatsappOptions: whatsappOptionDefinitions,
+        onToggleWhatsappOption: vi.fn(),
+      })
+    )
+
+    expect(markup).toContain('Buscando CEP...')
   })
 
   it('renderiza fallback de conta desconectada e estados de loading pendente', async () => {

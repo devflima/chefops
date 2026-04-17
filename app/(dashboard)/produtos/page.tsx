@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useProducts, useCategories, useCreateProduct, useUpdateProduct } from '@/features/products/hooks/useProducts'
+import { useProducts, useCategories, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/features/products/hooks/useProducts'
 import { Resolver, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -55,6 +55,7 @@ export default function ProdutosPage() {
   const { data: categories } = useCategories()
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
+  const deleteProduct = useDeleteProduct()
   const { data: plan } = usePlan()
   const canAddMoreProducts = useCanAddMore('products', data?.count ?? 0)
   const productLimitReached = isProductLimitReached(plan, canAddMoreProducts)
@@ -77,16 +78,36 @@ export default function ProdutosPage() {
   }
 
   async function onSubmit(values: ProductForm) {
+    const payload = {
+      ...values,
+      sku: values.sku?.trim() || undefined,
+      category_id: values.category_id?.trim() || undefined,
+    }
+
     try {
       if (editing) {
-        await updateProduct.mutateAsync({ id: editing.id, ...values })
+        await updateProduct.mutateAsync({ id: editing.id, ...payload })
       } else {
-        await createProduct.mutateAsync(values)
+        await createProduct.mutateAsync(payload)
       }
       setOpen(false)
     } catch (e: unknown) {
       form.setError('root', {
         message: e instanceof Error ? e.message : 'Erro ao salvar produto.',
+      })
+    }
+  }
+
+  async function handleDelete(product: Product) {
+    if (!window.confirm(`Excluir o produto "${product.name}"? Ele será desativado e poderá ser reativado depois.`)) {
+      return
+    }
+
+    try {
+      await deleteProduct.mutateAsync(product.id)
+    } catch (e: unknown) {
+      form.setError('root', {
+        message: e instanceof Error ? e.message : 'Erro ao excluir produto.',
       })
     }
   }
@@ -193,9 +214,19 @@ export default function ProdutosPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(product)}>
-                      Editar
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(product)}>
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(product)}
+                        disabled={deleteProduct.isPending}
+                      >
+                        Excluir
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

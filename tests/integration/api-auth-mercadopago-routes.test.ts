@@ -127,15 +127,17 @@ describe('api auth and mercado pago routes', () => {
     )
     expect(invalid.status).toBe(400)
 
+    const duplicateInsertMock = vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '23505' },
+      }),
+    }))
+
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
-        insert: vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { code: '23505' },
-          }),
-        })),
+        insert: duplicateInsertMock,
       })),
     } as never)
 
@@ -159,6 +161,17 @@ describe('api auth and mercado pago routes', () => {
       }) as never
     )
     expect(conflict.status).toBe(409)
+    expect(duplicateInsertMock).toHaveBeenCalledWith({
+      name: 'Casa',
+      slug: 'casa',
+      cnpj: '12345678000190',
+      zip_code: '01001000',
+      street: 'Rua A',
+      number: '123',
+      neighborhood: 'Centro',
+      city: 'São Paulo',
+      state: 'SP',
+    })
 
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
@@ -200,17 +213,19 @@ describe('api auth and mercado pago routes', () => {
 
     const cleanupEq = vi.fn()
     const deleteMock = vi.fn(() => ({ eq: cleanupEq }))
+    const rollbackInsertMock = vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { id: 'tenant-1' },
+        error: null,
+      }),
+    }))
+
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn((table: string) => {
         if (table === 'tenants') {
           return {
-            insert: vi.fn(() => ({
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue({
-                data: { id: 'tenant-1' },
-                error: null,
-              }),
-            })),
+            insert: rollbackInsertMock,
             delete: deleteMock,
           }
         }
@@ -245,17 +260,30 @@ describe('api auth and mercado pago routes', () => {
     )
     expect(rollback.status).toBe(500)
     expect(cleanupEq).toHaveBeenCalledWith('id', 'tenant-1')
+    expect(rollbackInsertMock).toHaveBeenCalledWith({
+      name: 'Casa',
+      slug: 'casa',
+      cnpj: '12345678000190',
+      zip_code: '01001000',
+      street: 'Rua A',
+      number: '123',
+      neighborhood: 'Centro',
+      city: 'São Paulo',
+      state: 'SP',
+    })
 
     const createUserSuccessMock = vi.fn().mockResolvedValue({ error: null })
+    const successInsertMock = vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { id: 'tenant-2' },
+        error: null,
+      }),
+    }))
+
     vi.mocked(createAdminClient).mockReturnValueOnce({
       from: vi.fn(() => ({
-        insert: vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'tenant-2' },
-            error: null,
-          }),
-        })),
+        insert: successInsertMock,
       })),
       auth: {
         admin: {
@@ -285,6 +313,17 @@ describe('api auth and mercado pago routes', () => {
     )
     expect(success.status).toBe(201)
     expect((await success.json()).data.tenant_slug).toBe('casa')
+    expect(successInsertMock).toHaveBeenCalledWith({
+      name: 'Casa',
+      slug: 'casa',
+      cnpj: '12345678000190',
+      zip_code: '01001000',
+      street: 'Rua A',
+      number: '123',
+      neighborhood: 'Centro',
+      city: 'São Paulo',
+      state: 'SP',
+    })
     expect(createUserSuccessMock).toHaveBeenCalledWith({
       email: 'maria@test.com',
       password: '123456',

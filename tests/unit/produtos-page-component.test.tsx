@@ -7,6 +7,7 @@ const useProductsMock = vi.fn()
 const useCategoriesMock = vi.fn()
 const useCreateProductMock = vi.fn()
 const useUpdateProductMock = vi.fn()
+const useDeleteProductMock = vi.fn()
 const usePlanMock = vi.fn()
 const useCanAddMoreMock = vi.fn()
 const formResetMock = vi.fn()
@@ -130,6 +131,7 @@ vi.mock('@/features/products/hooks/useProducts', () => ({
   useCategories: () => useCategoriesMock(),
   useCreateProduct: () => useCreateProductMock(),
   useUpdateProduct: () => useUpdateProductMock(),
+  useDeleteProduct: () => useDeleteProductMock(),
 }))
 
 vi.mock('@/features/plans/hooks/usePlan', () => ({
@@ -212,6 +214,10 @@ describe('ProdutosPage component', () => {
     useUpdateProductMock.mockReturnValue({
       mutateAsync: vi.fn().mockResolvedValue(undefined),
     })
+    useDeleteProductMock.mockReturnValue({
+      isPending: false,
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+    })
     usePlanMock.mockReturnValue({
       data: { max_products: 10 },
     })
@@ -251,10 +257,16 @@ describe('ProdutosPage component', () => {
 
     const novoProdutoButton = getButtonByText('Novo produto')
     const editarButton = getButtonByText('Editar')
+    const excluirButton = getButtonByText('Excluir')
     const paginationProps = capturedPaginationProps as { onPageChange: (page: number) => void }
+
+    vi.stubGlobal('window', {
+      confirm: vi.fn(() => true),
+    })
 
     ;(novoProdutoButton?.onClick as (() => void) | undefined)?.()
     ;(editarButton?.onClick as (() => void) | undefined)?.()
+    await (excluirButton?.onClick as (() => Promise<void>) | undefined)?.()
     paginationProps.onPageChange(3)
 
     expect(formResetMock).toHaveBeenCalledWith({
@@ -279,9 +291,11 @@ describe('ProdutosPage component', () => {
 
     const createProductMutateAsync = useCreateProductMock.mock.results[0]?.value.mutateAsync as ReturnType<typeof vi.fn>
     const updateProductMutateAsync = useUpdateProductMock.mock.results[0]?.value.mutateAsync as ReturnType<typeof vi.fn>
+    const deleteProductMutateAsync = useDeleteProductMock.mock.results[0]?.value.mutateAsync as ReturnType<typeof vi.fn>
 
     expect(createProductMutateAsync).not.toHaveBeenCalled()
     expect(updateProductMutateAsync).not.toHaveBeenCalled()
+    expect(deleteProductMutateAsync).toHaveBeenCalledWith('prod-1')
   })
 
   it('renderiza estados alternativos de loading, vazio e limite de plano', async () => {
@@ -403,6 +417,39 @@ describe('ProdutosPage component', () => {
       min_stock: 2,
     })
     expect(setOpenEditMock).toHaveBeenCalledWith(false)
+
+    useStateMock
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce((initial: unknown) => [initial, vi.fn()])
+      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => [{
+        id: 'prod-2',
+        tenant_id: 'tenant-1',
+        category_id: null,
+        name: 'Molho',
+        sku: '',
+        unit: 'ml',
+        cost_price: 4,
+        min_stock: 0,
+        active: true,
+        category: null,
+      }, vi.fn()])
+
+    const { default: ProdutosPageEditWithoutCategory } = await import('@/app/(dashboard)/produtos/page')
+    renderToStaticMarkup(React.createElement(ProdutosPageEditWithoutCategory))
+    await getDialogFormSubmitHandler()?.()
+
+    const updateWithoutCategoryMutateAsync = useUpdateProductMock.mock.results[2]?.value.mutateAsync as ReturnType<typeof vi.fn>
+    expect(updateWithoutCategoryMutateAsync).toHaveBeenCalledWith({
+      id: 'prod-2',
+      name: 'Farinha',
+      sku: 'FR-1',
+      category_id: 'cat-1',
+      unit: 'kg',
+      cost_price: 12,
+      min_stock: 2,
+    })
 
     useCreateProductMock.mockReturnValueOnce({
       mutateAsync: vi.fn().mockRejectedValue(new Error('Falha ao salvar produto')),

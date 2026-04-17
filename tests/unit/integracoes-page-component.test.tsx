@@ -13,6 +13,7 @@ const searchParamsGetMock = vi.fn()
 let shouldRunEffects = false
 
 let capturedContentProps: Record<string, unknown> | null = null
+const toastErrorMock = vi.fn()
 
 vi.mock('react', async () => {
   const actualReact = await vi.importActual<typeof import('react')>('react')
@@ -62,6 +63,12 @@ vi.mock('@/features/payments/IntegrationsPageContent', () => ({
   IntegrationsPageContent: (props: Record<string, unknown>) => {
     capturedContentProps = props
     return React.createElement('div', null, 'Integrations Page Content Mock')
+  },
+}))
+
+vi.mock('sonner', () => ({
+  toast: {
+    error: toastErrorMock,
   },
 }))
 
@@ -146,6 +153,8 @@ describe('IntegracoesPage component', () => {
       onDeliveryHoursSave: (payload: Record<string, unknown>) => Promise<void>
       onDeliveryFeeInputChange: (value: string) => void
       onDeliveryFeeSave: (payload: Record<string, unknown>) => Promise<void>
+      onDeliveryDistanceInputChange: (field: string, value: string) => void
+      onDeliveryOriginCepLookup: (cep: string) => Promise<void>
       onToggleWhatsappOption: (payload: Record<string, unknown>) => Promise<void>
     }
 
@@ -162,9 +171,26 @@ describe('IntegracoesPage component', () => {
       .mutateAsync as ReturnType<typeof vi.fn>
     const updateNotificationMutateAsync = useUpdateNotificationSettingsMock.mock.results[0]?.value
       .mutateAsync as ReturnType<typeof vi.fn>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          data: {
+            zip_code: '01001000',
+            street: 'Praça da Sé',
+            neighborhood: 'Sé',
+            city: 'São Paulo',
+            state: 'SP',
+          },
+        }),
+      }),
+    )
 
     props.onDisconnect()
     props.onDeliveryFeeInputChange('14.50')
+    props.onDeliveryDistanceInputChange('origin_number', '100')
+    await props.onDeliveryOriginCepLookup('01001-000')
     await props.onDeliveryToggle({
       tenant_id: 'tenant-1',
       delivery_enabled: false,
@@ -257,6 +283,7 @@ describe('IntegracoesPage component', () => {
         whatsapp_order_received: false,
       })
     )
+    expect(fetch).toHaveBeenCalledWith('/api/cep/01001000')
   })
 
   it('cobre fallback sem conta conectada e alerta de erro OAuth', async () => {

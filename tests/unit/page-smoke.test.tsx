@@ -17,6 +17,7 @@ const useCategoriesMock = vi.fn()
 const useProductsMock = vi.fn()
 const useCreateProductMock = vi.fn()
 const useUpdateProductMock = vi.fn()
+const useDeleteProductMock = vi.fn()
 const useStockBalanceMock = vi.fn()
 const useStockMovementsMock = vi.fn()
 const useCreateMovementMock = vi.fn()
@@ -179,6 +180,7 @@ vi.mock('@/features/products/hooks/useProducts', () => ({
   useProducts: () => useProductsMock(),
   useCreateProduct: () => useCreateProductMock(),
   useUpdateProduct: () => useUpdateProductMock(),
+  useDeleteProduct: () => useDeleteProductMock(),
 }))
 
 vi.mock('@/features/notifications/hooks/useNotificationSettings', () => ({
@@ -358,6 +360,7 @@ describe('page smoke', () => {
     })
     useCreateProductMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() })
     useUpdateProductMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() })
+    useDeleteProductMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() })
     useStockBalanceMock.mockReturnValue({
       data: [
         {

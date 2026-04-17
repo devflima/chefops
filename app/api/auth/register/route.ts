@@ -59,7 +59,17 @@ export async function POST(request: NextRequest) {
 
     const { data: tenant, error: tenantError } = await admin
       .from('tenants')
-      .insert({ name: tenant_name, slug: tenant_slug })
+      .insert({
+        name: tenant_name,
+        slug: tenant_slug,
+        cnpj,
+        zip_code,
+        street,
+        number,
+        neighborhood,
+        city,
+        state,
+      })
       .select()
       .single()
 

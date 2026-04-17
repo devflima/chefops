@@ -32,11 +32,20 @@ type RegisterFormValues = {
 type Props = {
   form: UseFormReturn<RegisterFormValues>
   error: string | null
+  loadingZipCode: boolean
   onSubmit: SubmitHandler<RegisterFormValues>
   onTenantNameChange: (value: string) => void
+  onZipCodeChange: (value: string) => void
 }
 
-export function RegisterPageContent({ form, error, onSubmit, onTenantNameChange }: Props) {
+export function RegisterPageContent({
+  form,
+  error,
+  loadingZipCode,
+  onSubmit,
+  onTenantNameChange,
+  onZipCodeChange,
+}: Props) {
   return (
     <Card>
       <CardHeader>
@@ -107,7 +116,17 @@ export function RegisterPageContent({ form, error, onSubmit, onTenantNameChange 
                     <FormItem>
                       <FormLabel>CEP</FormLabel>
                       <FormControl>
-                        <Input placeholder="00000-000" {...field} />
+                        <div className="space-y-1">
+                          <Input
+                            placeholder="00000-000"
+                            {...field}
+                            onChange={(event) => {
+                              field.onChange(event)
+                              onZipCodeChange(event.target.value)
+                            }}
+                          />
+                          {loadingZipCode && <p className="text-xs text-slate-400">Buscando CEP...</p>}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
