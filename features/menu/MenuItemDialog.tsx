@@ -243,7 +243,7 @@ export function MenuItemDialog({
             {allExtras && allExtras.length > 0 && (
               <div>
                 <label className="text-sm font-medium text-slate-700 block mb-2">
-                  Adicionais disponíveis
+                  Itens adicionais
                 </label>
                 {hasAutomaticBorderExtras && (
                   <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -251,33 +251,26 @@ export function MenuItemDialog({
                   </div>
                 )}
                 <div className="max-h-56 space-y-4 overflow-y-auto rounded-lg border border-slate-200 p-3">
-                  {groupMenuExtrasByCategory(visibleExtras).map((group) => (
-                    <div key={group.category} className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {group.label}
-                      </p>
-                      <div className="space-y-2">
-                        {group.extras.map((extra) => (
-                          <label key={extra.id} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedExtras.includes(extra.id)}
-                              onChange={(event) => {
-                                onSelectedExtrasChange((prev) =>
-                                  toggleMenuExtraSelection(prev, extra.id, event.target.checked)
-                                )
-                              }}
-                              className="rounded"
-                            />
-                            <span className="text-sm text-slate-700">{extra.name}</span>
-                            <span className="text-xs text-slate-400 ml-auto">
-                              {extra.price > 0 ? `+R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                  {groupMenuExtrasByCategory(visibleExtras)
+                    .flatMap((group) => group.extras)
+                    .map((extra) => (
+                      <label key={extra.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedExtras.includes(extra.id)}
+                          onChange={(event) => {
+                            onSelectedExtrasChange((prev) =>
+                              toggleMenuExtraSelection(prev, extra.id, event.target.checked)
+                            )
+                          }}
+                          className="rounded"
+                        />
+                        <span className="text-sm text-slate-700">{extra.name}</span>
+                        <span className="text-xs text-slate-400 ml-auto">
+                          {extra.price > 0 ? `+R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
+                        </span>
+                      </label>
+                    ))}
                 </div>
               </div>
             )}

@@ -708,7 +708,7 @@ describe('MenuClient component', () => {
     expect(stateSetters[29]).toHaveBeenCalledWith(expect.any(Function))
   })
 
-  it('mantém apenas um adicional de sabor por item no fluxo público', async () => {
+  it('permite acumular múltiplos itens adicionais por item no fluxo público', async () => {
     const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
 
     renderToStaticMarkup(
@@ -741,7 +741,10 @@ describe('MenuClient component', () => {
     const afterSecond = secondUpdater(afterFirst) as Record<string, Array<{ id: string; category: string }>>
 
     expect(afterFirst['item-1']).toEqual([{ id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' }])
-    expect(afterSecond['item-1']).toEqual([{ id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' }])
+    expect(afterSecond['item-1']).toEqual([
+      { id: 'extra-3', name: 'Calabresa extra', price: 6, category: 'flavor' },
+      { id: 'extra-5', name: 'Frango extra', price: 7, category: 'flavor' },
+    ])
   })
 
   it('cota automaticamente o frete ao entrar no passo de endereço com endereço preenchido', async () => {

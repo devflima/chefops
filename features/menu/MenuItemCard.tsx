@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react'
 import {
+  getAdditionalItems,
   getBorders,
-  groupOptionalExtras,
   type MenuExtra,
   type PublicMenuItem,
 } from '@/features/menu/public-menu'
@@ -26,7 +26,7 @@ export function MenuItemCard({
   disabled?: boolean
 }) {
   const borders = getBorders(item)
-  const groupedOptionalExtras = groupOptionalExtras(item)
+  const additionalItems = getAdditionalItems(item)
   const selectedSummary = [
     ...(selectedBorder ? [`Borda ${selectedBorder.name}`] : []),
     ...selectedExtras.map((extra) => extra.name),
@@ -96,32 +96,30 @@ export function MenuItemCard({
         </div>
       )}
 
-      {groupedOptionalExtras.length > 0 && (
+      {additionalItems.length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
-          {groupedOptionalExtras.map((group) => (
-            <div key={group.category}>
-              <p className="text-xs font-medium text-slate-500 mb-1">{group.label}</p>
-              <p className="text-[11px] text-slate-400 mb-2">
-                {group.category === 'flavor' ? 'Escolha 1 opção' : 'Escolha quantos quiser'}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {group.extras.map((extra) => {
-                  const isSelected = selectedExtras.some((entry) => entry.id === extra.id)
+          <div>
+            <p className="text-xs font-medium text-slate-500 mb-1">Adicionais</p>
+            <p className="text-[11px] text-slate-400 mb-2">
+              Escolha um ou mais itens adicionais
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {additionalItems.map((extra) => {
+                const isSelected = selectedExtras.some((entry) => entry.id === extra.id)
 
-                  return (
-                    <button
-                      key={extra.id}
-                      onClick={() => onExtraToggle(extra)}
-                      disabled={disabled}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${disabled ? 'border-slate-200 text-slate-400 cursor-not-allowed' : isSelected ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      {extra.name} +R$ {Number(extra.price).toFixed(2)}
-                    </button>
-                  )
-                })}
-              </div>
+                return (
+                  <button
+                    key={extra.id}
+                    onClick={() => onExtraToggle(extra)}
+                    disabled={disabled}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${disabled ? 'border-slate-200 text-slate-400 cursor-not-allowed' : isSelected ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    {extra.name} +R$ {Number(extra.price).toFixed(2)}
+                  </button>
+                )
+              })}
             </div>
-          ))}
+          </div>
         </div>
       )}
 
