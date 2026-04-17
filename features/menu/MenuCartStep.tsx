@@ -11,6 +11,7 @@ export function MenuCartStep({
   onIncrement,
   onDecrement,
   onRemove,
+  onRemoveExtra,
   onContinue,
   onClear,
   disabled = false,
@@ -22,6 +23,7 @@ export function MenuCartStep({
   onIncrement: (index: number) => void
   onDecrement: (index: number) => void
   onRemove: (index: number) => void
+  onRemoveExtra: (itemIndex: number, extraIndex: number) => void
   onContinue: () => void
   onClear: () => void
   disabled?: boolean
@@ -57,10 +59,22 @@ export function MenuCartStep({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-800">{item.name}</p>
-              {item.extras?.map((extra) => (
-                <p key={extra.name} className="text-xs text-slate-400">
-                  + {extra.name} R$ {extra.price.toFixed(2)}
-                </p>
+              {item.extras?.map((extra, extraIdx) => (
+                <div
+                  key={`${extra.id ?? extra.name}-${extraIdx}`}
+                  className="flex items-center justify-between gap-2 text-xs text-slate-400"
+                >
+                  <p>
+                    + {extra.name} R$ {extra.price.toFixed(2)}
+                  </p>
+                  <button
+                    onClick={() => onRemoveExtra(idx, extraIdx)}
+                    className="text-slate-300 hover:text-red-500 transition-colors"
+                    aria-label={`Remover adicional ${extra.name}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               ))}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">

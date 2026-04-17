@@ -91,26 +91,30 @@ export async function geocodeAddress(
   address: DeliveryPricingAddress,
   fetchImpl: typeof fetch = fetch,
 ): Promise<Coordinates | null> {
-  const query = buildAddressQuery(address)
-  const response = await fetchImpl(`https://nominatim.openstreetmap.org/search?${query.toString()}`, {
-    headers: {
-      'Accept-Language': 'pt-BR',
-      'User-Agent': 'ChefOps Delivery Quote/1.0',
-    },
-    cache: 'no-store',
-  })
+  try {
+    const query = buildAddressQuery(address)
+    const response = await fetchImpl(`https://nominatim.openstreetmap.org/search?${query.toString()}`, {
+      headers: {
+        'Accept-Language': 'pt-BR',
+        'User-Agent': 'ChefOps Delivery Quote/1.0',
+      },
+      cache: 'no-store',
+    })
 
-  if (!response.ok) return null
+    if (!response.ok) return null
 
-  const data = (await response.json()) as Array<{ lat?: string; lon?: string }>
-  const first = data[0]
-  if (!first?.lat || !first?.lon) return null
+    const data = (await response.json()) as Array<{ lat?: string; lon?: string }>
+    const first = data[0]
+    if (!first?.lat || !first?.lon) return null
 
-  const lat = Number(first.lat)
-  const lon = Number(first.lon)
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+    const lat = Number(first.lat)
+    const lon = Number(first.lon)
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
 
-  return { lat, lon }
+    return { lat, lon }
+  } catch {
+    return null
+  }
 }
 
 export async function resolveDeliveryQuote(

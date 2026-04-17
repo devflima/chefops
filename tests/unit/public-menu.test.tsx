@@ -70,6 +70,7 @@ import {
   normalizeTenantDeliverySettings,
   paymentOptionsByContext,
   removeCartItem,
+  removeCartItemExtra,
   resolvePublicCheckoutUrl,
   serializeStoredActiveOrder,
   shouldRequirePhoneVerification,
@@ -569,9 +570,9 @@ describe('public menu helpers', () => {
       price: 32,
       quantity: 1,
       extras: [
-        { name: 'Catupiry', price: 5 },
-        { name: 'Cheddar', price: 4 },
-        { name: 'Calabresa extra', price: 6 },
+        { id: 'border-1', name: 'Catupiry', price: 5 },
+        { id: 'extra-2', name: 'Cheddar', price: 4 },
+        { id: 'extra-3', name: 'Calabresa extra', price: 6 },
       ],
       half_flavor: { menu_item_id: 'item-2', name: 'Calabresa' },
     })
@@ -588,6 +589,14 @@ describe('public menu helpers', () => {
     ])
     expect(decrementCartItem([cartItem], 0)).toEqual([])
     expect(removeCartItem([cartItem, { ...cartItem, menu_item_id: 'item-3' }], 0)).toHaveLength(1)
+    expect(removeCartItemExtra([cartItem], 0, 1)).toMatchObject([
+      {
+        extras: [
+          { name: 'Catupiry', price: 5 },
+          { name: 'Calabresa extra', price: 6 },
+        ],
+      },
+    ])
 
     expect(serializeStoredActiveOrder('order-1', 42)).toBe('{"id":"order-1","order_number":42}')
     expect(parseStoredActiveOrder('{"id":"order-1","order_number":42}')).toEqual({

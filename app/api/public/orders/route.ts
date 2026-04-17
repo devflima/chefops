@@ -229,6 +229,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (orderError) throw orderError
+    if (!order?.id) {
+      throw new Error('Não foi possível criar o pedido.')
+    }
 
     const orderItems = items.map((item) => ({
       order_id: order.id,
@@ -245,6 +248,9 @@ export async function POST(request: NextRequest) {
       .select()
 
     if (itemsError) throw itemsError
+    if (!insertedItems || insertedItems.length !== items.length) {
+      throw new Error('Não foi possível salvar os itens do pedido.')
+    }
 
     const extras = insertedItems.flatMap((insertedItem, idx) =>
       (items[idx].extras ?? []).map((extra) => ({
@@ -266,7 +272,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[public-orders:post]', error)
     return NextResponse.json(
-      { error: 'Erro ao criar pedido.' },
+      { error: error instanceof Error ? error.message : 'Erro ao criar pedido.' },
       { status: 500 }
     )
   }
