@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import MenuClient from './MenuClient'
 import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import {
+  applyAutomaticBorderExtras,
   normalizePublicMenuItems,
   normalizeTenantDeliverySettings,
 } from '@/features/menu/public-menu'
@@ -135,7 +136,18 @@ export default async function MenuPage({
     .order('display_order', { ascending: true })
     .order('name', { ascending: true })
 
-  const items = normalizePublicMenuItems((rawItems ?? []) as never)
+  const { data: rawBorderExtras } = await publicSupabase
+    .from('extras')
+    .select('id, name, price, category')
+    .eq('tenant_id', tenant.id)
+    .eq('active', true)
+    .eq('category', 'border')
+    .order('name', { ascending: true })
+
+  const items = applyAutomaticBorderExtras(
+    normalizePublicMenuItems((rawItems ?? []) as never),
+    (rawBorderExtras ?? []) as never,
+  )
 
   let tableInfo: { id: string; number: string } | null = null
 

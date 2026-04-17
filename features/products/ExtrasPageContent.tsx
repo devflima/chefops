@@ -17,7 +17,7 @@ type ExtraForm = {
 
 const categoryLabels = {
   border: 'Borda',
-  flavor: 'Sabor',
+  flavor: 'Extras',
   other: 'Outro',
 }
 
@@ -80,7 +80,7 @@ export function ExtrasPageContent({
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Adicionais</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Bordas, sabores e outros adicionais do cardápio
+            Bordas, extras e outros adicionais do cardápio
             {planUsageText}
           </p>
         </div>
@@ -110,7 +110,7 @@ export function ExtrasPageContent({
           >
             <option value="all">Todos os tipos</option>
             <option value="border">Borda</option>
-            <option value="flavor">Sabor extra</option>
+            <option value="flavor">Extras</option>
             <option value="other">Outro</option>
           </select>
         </div>
@@ -121,7 +121,7 @@ export function ExtrasPageContent({
             <Settings className="mx-auto mb-3 h-8 w-8 text-slate-300" />
             <p className="text-sm text-slate-500">Nenhum adicional cadastrado.</p>
             <p className="mt-1 text-xs text-slate-400">
-              Cadastre bordas recheadas, sabores extras e outros adicionais.
+              Cadastre bordas recheadas, extras e outros adicionais.
             </p>
             <Button variant="outline" size="sm" className="mt-4" onClick={openCreate} disabled={extrasLimitReached}>
               Criar primeiro adicional
@@ -206,7 +206,7 @@ export function ExtrasPageContent({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="border">Borda</SelectItem>
-                        <SelectItem value="flavor">Sabor extra</SelectItem>
+                        <SelectItem value="flavor">Extras</SelectItem>
                         <SelectItem value="other">Outro</SelectItem>
                       </SelectContent>
                     </Select>

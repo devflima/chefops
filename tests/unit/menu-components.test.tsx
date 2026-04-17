@@ -2438,7 +2438,7 @@ describe('menu components', () => {
       })
     )
 
-    expect(getTextContent(elements)).toContain('Sabor extra')
+    expect(getTextContent(elements)).toContain('Extras')
     expect(getTextContent(elements)).toContain('Escolha 1 opção')
     expect(getTextContent(elements)).toContain('Outros')
     expect(getTextContent(elements)).toContain('Escolha quantos quiser')

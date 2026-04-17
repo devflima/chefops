@@ -8,6 +8,7 @@ import {
   buildMenuPageSummary,
   buildUpdateMenuItemPayload,
   filterMenuItems,
+  getPersistedMenuExtraIds,
   getCreateMenuEditorState,
   getMenuDialogTitle,
   getMenuEditState,
@@ -15,6 +16,7 @@ import {
   getMenuExtraCategoryLabel,
   getMenuSubmitErrorMessage,
   getInitialMenuItemFormValues,
+  getSelectableMenuExtras,
   groupMenuExtrasByCategory,
   getMenuSubmitSuccessState,
   getMenuTotalPages,
@@ -283,7 +285,7 @@ describe('dashboard menu page helpers', () => {
     expect(toggleMenuExtraSelection(['extra-1'], 'extra-2', true)).toEqual(['extra-1', 'extra-2'])
     expect(toggleMenuExtraSelection(['extra-1', 'extra-2'], 'extra-1', false)).toEqual(['extra-2'])
     expect(getMenuExtraCategoryLabel('border')).toBe('Borda')
-    expect(getMenuExtraCategoryLabel('flavor')).toBe('Sabor extra')
+    expect(getMenuExtraCategoryLabel('flavor')).toBe('Extras')
     expect(getMenuExtraCategoryLabel('other')).toBe('Outros')
     expect(getMenuExtraCategoryLabel('massas')).toBe('massas')
     expect(
@@ -304,7 +306,7 @@ describe('dashboard menu page helpers', () => {
       },
       {
         category: 'flavor',
-        label: 'Sabor extra',
+        label: 'Extras',
         extras: [{ id: 'extra-3', name: 'Calabresa', price: 6, category: 'flavor' }],
       },
       {
@@ -313,6 +315,28 @@ describe('dashboard menu page helpers', () => {
         extras: [{ id: 'extra-4', name: 'Molho da casa', price: 2, category: 'other' }],
       },
     ])
+
+    expect(getSelectableMenuExtras(
+      [
+        { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
+        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border' },
+        { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
+      ],
+      'cat-1',
+      [{ id: 'cat-1', name: 'Pizzas' }],
+    )).toEqual([
+      { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
+    ])
+
+    expect(getPersistedMenuExtraIds(
+      ['extra-1', 'extra-3'],
+      [
+        { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
+        { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
+      ],
+      'cat-1',
+      [{ id: 'cat-1', name: 'Pizzas' }],
+    )).toEqual(['extra-3'])
 
     expect(buildMenuAvailabilityState({ name: 'Pizza', available: true } as never)).toEqual({
       action: 'desativar',

@@ -8,12 +8,14 @@ import { Plus, Trash2 } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import {
+  getSelectableMenuExtras,
   getMenuDialogTitle,
   groupMenuExtrasByCategory,
-  toggleMenuExtraSelection,
   type MenuExtraOption,
   type MenuItemIngredient,
+  toggleMenuExtraSelection,
 } from '@/features/menu/dashboard-menu-page'
+import { isPizzaCategoryId } from '@/features/menu/menu-category-rules'
 import type { MenuItem } from '@/features/orders/types'
 
 type MenuItemFormValues = {
@@ -69,6 +71,17 @@ export function MenuItemDialog({
   onSelectedExtrasChange,
   onSubmit,
 }: Props) {
+  const watchedCategoryId =
+    typeof form.watch === 'function' ? form.watch('category_id') : undefined
+  const selectedCategoryId =
+    (watchedCategoryId && watchedCategoryId !== '' ? watchedCategoryId : undefined) ??
+    (typeof form.getValues === 'function' ? form.getValues('category_id') : undefined) ??
+    editing?.category_id ??
+    (categories?.length === 1 ? categories[0]?.id : undefined)
+  const isPizzaCategory = isPizzaCategoryId(selectedCategoryId, categories)
+  const visibleExtras = allExtras ? getSelectableMenuExtras(allExtras, selectedCategoryId, categories) : []
+  const hasAutomaticBorderExtras = isPizzaCategory && (allExtras?.some((extra) => extra.category === 'border') ?? false)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] w-[min(840px,calc(100%-1.5rem))] max-w-none overflow-y-auto p-6">
@@ -232,8 +245,13 @@ export function MenuItemDialog({
                 <label className="text-sm font-medium text-slate-700 block mb-2">
                   Adicionais disponíveis
                 </label>
+                {hasAutomaticBorderExtras && (
+                  <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    As bordas são aplicadas automaticamente para itens da categoria Pizza.
+                  </div>
+                )}
                 <div className="max-h-56 space-y-4 overflow-y-auto rounded-lg border border-slate-200 p-3">
-                  {groupMenuExtrasByCategory(allExtras).map((group) => (
+                  {groupMenuExtrasByCategory(visibleExtras).map((group) => (
                     <div key={group.category} className="space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {group.label}
