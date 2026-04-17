@@ -21,7 +21,17 @@ describe('delivery pricing helpers', () => {
         flat_fee: 5,
         fee_per_km: 2,
       }),
-    ).toBe(14)
+    ).toBe(9)
+  })
+
+  it('cobra no mínimo a taxa base quando o cálculo por distância fica abaixo dela', () => {
+    expect(
+      calculateDistanceDeliveryFee(0.1, {
+        delivery_enabled: true,
+        flat_fee: 5,
+        fee_per_km: 1,
+      }),
+    ).toBe(5)
   })
 
   it('resolve cotação fixa e por distância', async () => {
@@ -115,6 +125,9 @@ describe('delivery pricing helpers', () => {
       fetchMock as unknown as typeof fetch,
     )
 
-    expect(quoted).toEqual({ ok: false, error: 'Endereço fora do raio de entrega de 5 km.' })
+    expect(quoted).toEqual({
+      ok: false,
+      error: 'Desculpe, nosso estabelecimento não atende a sua região.',
+    })
   })
 })
