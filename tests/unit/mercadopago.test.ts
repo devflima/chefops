@@ -273,6 +273,39 @@ describe('mercadopago helpers', () => {
     expect(JSON.parse(String(request?.body))).not.toHaveProperty('payer_email')
   })
 
+  it('refaz a assinatura SaaS sem payer_email quando o Mercado Pago detecta mismatch de ambiente', async () => {
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-123'
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ message: 'Both payer and collector must be real or test users' }),
+          { status: 400 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 'pre-fallback', status: 'pending' }), { status: 200 })
+      )
+
+    await expect(
+      createSaasSubscriptionLink({
+        reason: 'ChefOps Premium',
+        payerEmail: 'owner@test.com',
+        externalReference: 'saas:tenant:1:plan:pro',
+        amount: 189,
+        backUrl: 'https://chefops.test/planos',
+      })
+    ).resolves.toMatchObject({ id: 'pre-fallback', status: 'pending' })
+
+    const firstRequest = fetchMock.mock.calls[0]?.[1]
+    const secondRequest = fetchMock.mock.calls[1]?.[1]
+
+    expect(JSON.parse(String(firstRequest?.body))).toMatchObject({
+      payer_email: 'owner@test.com',
+    })
+    expect(JSON.parse(String(secondRequest?.body))).not.toHaveProperty('payer_email')
+  })
+
   it('verifyMercadoPagoWebhookSignature valida manifesto assinado', () => {
     process.env.MERCADO_PAGO_WEBHOOK_SECRET = 'webhook-secret'
 
