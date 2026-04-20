@@ -188,6 +188,7 @@ export type MenuExtraOption = {
   name: string
   price: number
   category: string
+  category_id?: string | null
 }
 
 const MENU_EXTRA_CATEGORY_ORDER = ['border', 'flavor', 'other'] as const
@@ -205,11 +206,17 @@ export function getSelectableMenuExtras(
   categoryId?: string,
   categories?: MenuCategoryOption[]
 ) {
-  if (!isPizzaCategoryId(categoryId, categories)) {
-    return allExtras
-  }
+  return allExtras.filter((extra) => {
+    if (extra.category_id) {
+      return false
+    }
 
-  return allExtras.filter((extra) => extra.category !== 'border')
+    if (isPizzaCategoryId(categoryId, categories) && extra.category === 'border') {
+      return false
+    }
+
+    return true
+  })
 }
 
 export function getPersistedMenuExtraIds(
@@ -218,17 +225,13 @@ export function getPersistedMenuExtraIds(
   categoryId?: string,
   categories?: MenuCategoryOption[]
 ) {
-  if (!isPizzaCategoryId(categoryId, categories)) {
-    return selectedExtraIds
-  }
-
-  const borderExtraIds = new Set(
+  const nonPersistedExtraIds = new Set(
     allExtras
-      .filter((extra) => extra.category === 'border')
+      .filter((extra) => extra.category_id || (isPizzaCategoryId(categoryId, categories) && extra.category === 'border'))
       .map((extra) => extra.id)
   )
 
-  return selectedExtraIds.filter((extraId) => !borderExtraIds.has(extraId))
+  return selectedExtraIds.filter((extraId) => !nonPersistedExtraIds.has(extraId))
 }
 
 export function groupMenuExtrasByCategory(allExtras: MenuExtraOption[]) {

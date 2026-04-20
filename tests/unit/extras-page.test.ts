@@ -40,6 +40,7 @@ describe('extras page helpers', () => {
       name: '',
       price: 0,
       category: 'other',
+      category_id: 'none',
     })
 
     expect(getExtraFormValues(null)).toEqual(getDefaultExtraFormValues())
@@ -47,6 +48,7 @@ describe('extras page helpers', () => {
       name: 'Borda de catupiry',
       price: 8,
       category: 'border',
+      category_id: 'none',
     })
   })
 

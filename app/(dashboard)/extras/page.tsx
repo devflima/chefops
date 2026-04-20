@@ -20,10 +20,16 @@ import {
   type ExtraCategoryFilter,
 } from '@/features/products/extras-page'
 
+type CategoryOption = {
+  id: string
+  name: string
+}
+
 const extraSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
   price: z.coerce.number().min(0),
   category: z.enum(['border', 'flavor', 'other']),
+  category_id: z.string(),
 })
 
 type ExtraForm = z.infer<typeof extraSchema>
@@ -44,6 +50,15 @@ export default function ExtrasPage() {
       const res = await fetch('/api/extras')
       const json = await res.json()
       return json.data as Extra[]
+    },
+  })
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const res = await fetch('/api/categories')
+      const json = await res.json()
+      return (json.data ?? []) as CategoryOption[]
     },
   })
 
@@ -70,19 +85,26 @@ export default function ExtrasPage() {
   }
 
   async function onSubmit(values: ExtraForm) {
+    const payload = {
+      ...values,
+      category_id: values.category === 'border' || values.category_id === 'none'
+        ? null
+        : values.category_id,
+    }
+
     try {
       if (editing) {
         const res = await fetch(`/api/extras/${editing.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         })
         if (!res.ok) throw new Error()
       } else {
         const res = await fetch('/api/extras', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         })
         if (!res.ok) throw new Error()
       }
@@ -127,6 +149,7 @@ export default function ExtrasPage() {
       open={open}
       onOpenChange={setOpen}
       editing={editing}
+      categories={categories}
       form={form}
       onSubmit={onSubmit}
     />

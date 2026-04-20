@@ -13,6 +13,12 @@ type ExtraForm = {
   name: string
   price: number
   category: 'border' | 'flavor' | 'other'
+  category_id: string
+}
+
+type CategoryOption = {
+  id: string
+  name: string
 }
 
 const categoryLabels = {
@@ -47,6 +53,7 @@ type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   editing: Extra | null
+  categories: CategoryOption[]
   form: UseFormReturn<ExtraForm>
   onSubmit: (values: ExtraForm) => void | Promise<void>
 }
@@ -71,9 +78,12 @@ export function ExtrasPageContent({
   open,
   onOpenChange,
   editing,
+  categories,
   form,
   onSubmit,
 }: Props) {
+  const selectedType = form.watch('category')
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -131,7 +141,7 @@ export function ExtrasPageContent({
           <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
-                {['Adicional', 'Tipo', 'Preço', ''].map((h) => (
+                {['Adicional', 'Tipo', 'Categoria vinculada', 'Preço', ''].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
                     {h}
                   </th>
@@ -146,6 +156,11 @@ export function ExtrasPageContent({
                     <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${categoryColors[extra.category]}`}>
                       {categoryLabels[extra.category]}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {extra.category === 'border'
+                      ? 'Pizza (automático)'
+                      : categories.find((category) => category.id === extra.category_id)?.name ?? 'Todas as categorias'}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {extra.price > 0 ? `+ R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
@@ -210,6 +225,43 @@ export function ExtrasPageContent({
                         <SelectItem value="other">Outro</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="category_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria vinculada</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={selectedType === 'border' ? 'none' : field.value}
+                      disabled={selectedType === 'border'}
+                    >
+                      <FormControl>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Todas as categorias</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedType === 'border' ? (
+                      <p className="text-xs text-slate-500">
+                        Bordas são aplicadas automaticamente aos itens das categorias de pizza.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-500">
+                        Escolha uma categoria para aplicar este adicional automaticamente ou deixe em todas.
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

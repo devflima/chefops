@@ -6,6 +6,7 @@ const updateSchema = z.object({
   name: z.string().min(1).optional(),
   price: z.coerce.number().min(0).optional(),
   category: z.enum(['border', 'flavor', 'other']).optional(),
+  category_id: z.string().uuid().nullable().optional(),
   active: z.boolean().optional(),
 })
 

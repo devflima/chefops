@@ -8,6 +8,7 @@ export type MenuExtra = {
   name: string
   price: number
   category: string
+  category_id?: string | null
 }
 
 export type MenuCategory = {
@@ -59,8 +60,8 @@ export type PublicCheckoutStep = 'cart' | 'info' | 'address' | 'done'
 
 type RawExtra = {
   extra:
-    | { id: string; name: string; price: number; category: string }
-    | { id: string; name: string; price: number; category: string }[]
+    | { id: string; name: string; price: number; category: string; category_id?: string | null }
+    | { id: string; name: string; price: number; category: string; category_id?: string | null }[]
     | null
 }
 
@@ -1068,6 +1069,35 @@ export function applyAutomaticBorderExtras(items: PublicMenuItem[], borderExtras
     return {
       ...item,
       extras: [...item.extras, ...automaticBorders],
+    }
+  })
+}
+
+export function applyAutomaticCategoryExtras(items: PublicMenuItem[], extras: MenuExtra[]) {
+  if (extras.length === 0) {
+    return items
+  }
+
+  return items.map((item) => {
+    const existingIds = new Set(
+      item.extras
+        .map((entry) => entry.extra?.id)
+        .filter((extraId): extraId is string => typeof extraId === 'string')
+    )
+
+    const automaticExtras = extras
+      .filter((extra) => extra.category !== 'border')
+      .filter((extra) => extra.category_id && extra.category_id === item.category_id)
+      .filter((extra) => !existingIds.has(extra.id))
+      .map((extra) => ({ extra }))
+
+    if (automaticExtras.length === 0) {
+      return item
+    }
+
+    return {
+      ...item,
+      extras: [...item.extras, ...automaticExtras],
     }
   })
 }

@@ -45,6 +45,7 @@ vi.mock('react-hook-form', () => ({
     reset: formResetMock,
     setError: formSetErrorMock,
     handleSubmit: vi.fn((callback: (values: unknown) => unknown) => callback),
+    watch: vi.fn(() => 'other'),
     formState: {
       isSubmitting: false,
       errors: {},
@@ -187,6 +188,7 @@ describe('catalog pages edit branches', () => {
         name: 'Borda Cheddar',
         category: 'border',
         price: 12,
+        category_id: null,
       }),
     })
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['extras'] })
@@ -376,6 +378,7 @@ describe('catalog pages edit branches', () => {
       name: 'Molho especial',
       category: 'other',
       price: 4,
+      category_id: 'none',
     })
 
     await props.onDelete({ id: 'extra-1', name: 'Molho' })
@@ -388,6 +391,7 @@ describe('catalog pages edit branches', () => {
         name: 'Molho especial',
         category: 'other',
         price: 4,
+        category_id: null,
       }),
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
@@ -443,11 +447,13 @@ describe('catalog pages edit branches', () => {
       name: '',
       category: 'other',
       price: 0,
+      category_id: 'none',
     })
     expect(formResetMock).toHaveBeenCalledWith({
       name: 'Catupiry',
       category: 'border',
       price: 8,
+      category_id: 'none',
     })
     expect(stateSetters[1]).toHaveBeenCalledWith(null)
     expect(stateSetters[0]).toHaveBeenCalledWith(true)
@@ -487,6 +493,7 @@ describe('catalog pages edit branches', () => {
       name: 'Molho verde',
       category: 'other',
       price: 5,
+      category_id: 'none',
     })
 
     expect(fetchMock).toHaveBeenCalledWith('/api/extras/extra-20', {
@@ -496,6 +503,7 @@ describe('catalog pages edit branches', () => {
         name: 'Molho verde',
         category: 'other',
         price: 5,
+        category_id: null,
       }),
     })
     expect(formSetErrorMock).toHaveBeenCalledWith('root', {
