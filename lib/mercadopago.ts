@@ -14,6 +14,13 @@ export class MercadoPagoApiError extends Error {
   }
 }
 
+function isMercadoPagoPayerCollectorMismatchError(error: unknown) {
+  return (
+    error instanceof MercadoPagoApiError &&
+    error.message.includes('Both payer and collector must be real or test users')
+  )
+}
+
 function getRequiredEnv(name: string) {
   const value = process.env[name]
 
@@ -176,24 +183,35 @@ export async function createSaasSubscriptionLink(params: {
   const accessToken = params.accessToken ?? getMercadoPagoAccessToken()
   const includePayerEmail = !!params.payerEmail && !isMercadoPagoTestAccessToken(accessToken)
 
-  return mercadoPagoRequest<SubscriptionPreapproval>('/preapproval', {
-    method: 'POST',
-    idempotencyKey: crypto.randomUUID(),
-    accessToken,
-    body: JSON.stringify({
-      reason: params.reason,
-      ...(includePayerEmail ? { payer_email: params.payerEmail } : {}),
-      external_reference: params.externalReference,
-      auto_recurring: {
-        frequency: 1,
-        frequency_type: 'months',
-        transaction_amount: params.amount,
-        currency_id: 'BRL',
-      },
-      back_url: params.backUrl,
-      status: 'pending',
-    }),
-  })
+  const requestSubscription = (shouldIncludePayerEmail: boolean) =>
+    mercadoPagoRequest<SubscriptionPreapproval>('/preapproval', {
+      method: 'POST',
+      idempotencyKey: crypto.randomUUID(),
+      accessToken,
+      body: JSON.stringify({
+        reason: params.reason,
+        ...(shouldIncludePayerEmail ? { payer_email: params.payerEmail } : {}),
+        external_reference: params.externalReference,
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: 'months',
+          transaction_amount: params.amount,
+          currency_id: 'BRL',
+        },
+        back_url: params.backUrl,
+        status: 'pending',
+      }),
+    })
+
+  try {
+    return await requestSubscription(includePayerEmail)
+  } catch (error) {
+    if (includePayerEmail && isMercadoPagoPayerCollectorMismatchError(error)) {
+      return requestSubscription(false)
+    }
+
+    throw error
+  }
 }
 
 export async function getPreapprovalById(preapprovalId: string, accessToken?: string) {
