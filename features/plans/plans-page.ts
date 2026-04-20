@@ -14,30 +14,39 @@ export function isPaidSubscriptionActive(subscription: BillingSubscription) {
   return !!subscription && ['authorized', 'pending'].includes(subscription.status)
 }
 
+export function isPaidSubscriptionConfirmed(subscription: BillingSubscription) {
+  return !!subscription && subscription.status === 'authorized'
+}
+
 export function formatPlanDate(date: string | null) {
   if (!date) return null
   return new Date(date).toLocaleDateString('pt-BR')
 }
 
 export function getSubscriptionSummary(subscription: BillingSubscription) {
-  if (!subscription) return null
+  if (!isPaidSubscriptionConfirmed(subscription)) return null
+  const activeSubscription = subscription as NonNullable<BillingSubscription>
 
-  const base = `Assinatura atual: ${PLAN_LABELS[subscription.plan]} · status ${subscription.status}`
-  const nextPayment = formatPlanDate(subscription.next_payment_date)
+  const base = `Assinatura atual: ${PLAN_LABELS[activeSubscription.plan]} · status ${activeSubscription.status}`
+  const nextPayment = formatPlanDate(activeSubscription.next_payment_date)
 
   return nextPayment ? `${base} · próxima cobrança em ${nextPayment}` : base
 }
 
 export function getCancellationSummary(subscription: BillingSubscription) {
-  if (!subscription?.cancel_at_period_end || !subscription.next_payment_date) return null
+  if (!isPaidSubscriptionConfirmed(subscription)) return null
+  const activeSubscription = subscription as NonNullable<BillingSubscription>
+  if (!activeSubscription.cancel_at_period_end || !activeSubscription.next_payment_date) return null
 
-  return `Renovação cancelada. O acesso continua até ${formatPlanDate(subscription.next_payment_date)}.`
+  return `Renovação cancelada. O acesso continua até ${formatPlanDate(activeSubscription.next_payment_date)}.`
 }
 
 export function getScheduledPlanSummary(subscription: BillingSubscription) {
-  if (!subscription?.scheduled_plan || !subscription.next_payment_date) return null
+  if (!isPaidSubscriptionConfirmed(subscription)) return null
+  const activeSubscription = subscription as NonNullable<BillingSubscription>
+  if (!activeSubscription.scheduled_plan || !activeSubscription.next_payment_date) return null
 
-  return `Mudança programada para ${PLAN_LABELS[subscription.scheduled_plan]} em ${formatPlanDate(subscription.next_payment_date)}.`
+  return `Mudança programada para ${PLAN_LABELS[activeSubscription.scheduled_plan]} em ${formatPlanDate(activeSubscription.next_payment_date)}.`
 }
 
 export function getPlanCardState({

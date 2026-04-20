@@ -128,6 +128,7 @@ describe('plans page helpers and components', () => {
     expect(plansPage.getPlanPriceLabel('free')).toBe('Grátis')
     expect(plansPage.getPlanPriceLabel('basic')).toBe('R$ 89/mês')
     expect(plansPage.isPaidSubscriptionActive(subscription)).toBe(true)
+    expect(plansPage.isPaidSubscriptionConfirmed(subscription)).toBe(true)
     expect(plansPage.formatPlanDate(null)).toBeNull()
     expect(
       plansPage.getSubscriptionSummary({
@@ -135,7 +136,20 @@ describe('plans page helpers and components', () => {
         plan: 'basic',
         next_payment_date: null,
       })
-    ).toBe('Assinatura atual: Standard · status pending')
+    ).toBeNull()
+    expect(
+      plansPage.getCancellationSummary({
+        status: 'pending',
+        plan: 'basic',
+        next_payment_date: '2026-04-21T00:00:00.000Z',
+        cancel_at_period_end: true,
+      })
+    ).toBeNull()
+    expect(plansPage.isPaidSubscriptionConfirmed({
+      status: 'pending',
+      plan: 'basic',
+      next_payment_date: null,
+    })).toBe(false)
   })
 
   it('renderiza resumo, card e painel de ajuda', async () => {
@@ -231,8 +245,8 @@ describe('plans page helpers and components', () => {
     )
 
     expect(summaryMarkup).toContain('Seu plano atual:')
-    expect(summaryMarkup).toContain('Assinatura atual:')
-    expect(summaryMarkup).toContain('Mudança programada para Premium')
+    expect(summaryMarkup).not.toContain('Assinatura atual:')
+    expect(summaryMarkup).not.toContain('Mudança programada para Premium')
     expect(cardMarkup).toContain('Premium')
     expect(cardMarkup).toContain('Assinar agora')
     expect(cardMarkup).toContain('White-label')
@@ -243,7 +257,7 @@ describe('plans page helpers and components', () => {
     expect(summaryWithoutSubscriptionMarkup).toContain('Seu plano atual:')
     expect(summaryWithoutSubscriptionMarkup).not.toContain('Assinatura atual:')
     expect(summaryWithoutCurrentPlanMarkup).toContain('Basic')
-    expect(summaryWithoutNextPaymentMarkup).toContain('Assinatura atual:')
+    expect(summaryWithoutNextPaymentMarkup).not.toContain('Assinatura atual:')
     expect(summaryWithoutNextPaymentMarkup).not.toContain('próxima cobrança em')
     expect(summaryWithCancellationOnlyMarkup).toContain('Renovação cancelada')
     expect(summaryWithCancellationOnlyMarkup).not.toContain('Mudança programada para')

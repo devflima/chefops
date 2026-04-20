@@ -4,7 +4,7 @@ import { PlanCard } from '@/features/plans/components/PlanCard'
 import { PlanSubscriptionSummary } from '@/features/plans/components/PlanSubscriptionSummary'
 import type { Plan } from '@/features/plans/types'
 
-import { dashboardPlans } from '@/features/plans/plans-page'
+import { dashboardPlans, isPaidSubscriptionConfirmed } from '@/features/plans/plans-page'
 
 type CurrentSubscription = {
   status: string
@@ -29,6 +29,8 @@ export function PlanosPageContent({
   onSelectPlan,
   onCancelSubscription,
 }: Props) {
+  const hasConfirmedPaidSubscription = isPaidSubscriptionConfirmed(currentSubscription)
+
   return (
     <div>
       <PlanSubscriptionSummary currentPlan={currentPlan} currentSubscription={currentSubscription} />
@@ -46,8 +48,8 @@ export function PlanosPageContent({
         ))}
       </div>
 
-      {currentSubscription &&
-        ['authorized', 'pending'].includes(currentSubscription.status) &&
+      {hasConfirmedPaidSubscription &&
+        currentSubscription &&
         !currentSubscription.cancel_at_period_end && (
           <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
             <h3 className="font-medium text-amber-900">Cancelar renovação</h3>
