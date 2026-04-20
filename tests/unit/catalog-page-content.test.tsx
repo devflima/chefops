@@ -139,9 +139,11 @@ describe('catalog page contents', () => {
         editing: null,
         form: {
           control: {},
+          watch: () => 'other',
           handleSubmit: () => vi.fn(),
           formState: { isSubmitting: false, errors: {} },
         },
+        categories: [{ id: 'cat-1', name: 'Pizzas' }],
         onSubmit: vi.fn(),
       }
 
@@ -350,32 +352,34 @@ describe('catalog page contents', () => {
     const onOpenChange = vi.fn()
 
     const props = {
-        planUsageText: ' (1/20)',
-        extrasLimitReached: false,
-        extrasLimit: 20,
-        openCreate,
-        nameFilter: '',
-        onNameFilterChange,
-        categoryFilter: 'all',
-        onCategoryFilterChange,
-        isLoading: false,
-        filteredExtras: [{ id: 'extra-1', name: 'Borda', category: 'border', price: 10 }],
-        paginatedExtras: [{ id: 'extra-1', name: 'Borda', category: 'border', price: 10 }],
-        openEdit,
-        onDelete,
-        page: 1,
-        totalPages: 1,
-        onPageChange,
-        open: true,
-        onOpenChange,
-        editing: null,
-        form: {
-          control: {},
-          handleSubmit: () => vi.fn(),
-          formState: { isSubmitting: false, errors: {} },
-        },
-        onSubmit: vi.fn(),
-      }
+      planUsageText: ' (1/20)',
+      extrasLimitReached: false,
+      extrasLimit: 20,
+      openCreate,
+      nameFilter: '',
+      onNameFilterChange,
+      categoryFilter: 'all',
+      onCategoryFilterChange,
+      isLoading: false,
+      filteredExtras: [{ id: 'extra-1', name: 'Borda', category: 'border', price: 10, category_id: null }],
+      paginatedExtras: [{ id: 'extra-1', name: 'Borda', category: 'border', price: 10, category_id: null }],
+      openEdit,
+      onDelete,
+      page: 1,
+      totalPages: 1,
+      onPageChange,
+      open: true,
+      onOpenChange,
+      editing: null,
+      categories: [{ id: 'cat-1', name: 'Pizzas' }],
+      form: {
+        control: {},
+        handleSubmit: () => vi.fn(),
+        formState: { isSubmitting: false, errors: {} },
+        watch: () => 'border',
+      },
+      onSubmit: vi.fn(),
+    }
 
     const markup = renderToStaticMarkup(React.createElement(ExtrasPageContent, props))
 
@@ -431,9 +435,11 @@ describe('catalog page contents', () => {
       form: {
         control: {},
         handleSubmit: (callback: (values: unknown) => void) => () =>
-          callback({ name: 'Cheddar', category: 'flavor', price: 5 }),
+          callback({ name: 'Cheddar', category: 'flavor', price: 5, category_id: 'cat-1' }),
+        watch: () => 'border',
         formState: { isSubmitting: true, errors: { root: { message: 'Erro ao salvar adicional.' } } },
       },
+      categories: [{ id: 'cat-1', name: 'Pizzas' }],
       onSubmit,
     })
 
@@ -470,9 +476,11 @@ describe('catalog page contents', () => {
       form: {
         control: {},
         handleSubmit: (callback: (values: unknown) => void) => () =>
-          callback({ name: 'Cheddar', category: 'flavor', price: 5 }),
+          callback({ name: 'Cheddar', category: 'flavor', price: 5, category_id: 'cat-1' }),
+        watch: () => 'other',
         formState: { isSubmitting: false, errors: {} },
       },
+      categories: [{ id: 'cat-1', name: 'Pizzas' }],
       onSubmit,
     })
 
@@ -493,7 +501,7 @@ describe('catalog page contents', () => {
     expect(openCreate).toHaveBeenCalledTimes(1)
     expect(openEdit).toHaveBeenCalledWith({ id: 'extra-1', name: 'Molho', category: 'other', price: 0 })
     expect(onDelete).toHaveBeenCalledWith({ id: 'extra-1', name: 'Molho', category: 'other', price: 0 })
-    expect(onSubmit).toHaveBeenCalledWith({ name: 'Cheddar', category: 'flavor', price: 5 })
+    expect(onSubmit).toHaveBeenCalledWith({ name: 'Cheddar', category: 'flavor', price: 5, category_id: 'cat-1' })
   })
 
   it('cobre loading e render de adicional de sabor', async () => {
@@ -522,9 +530,11 @@ describe('catalog page contents', () => {
         editing: null,
         form: {
           control: {},
+          watch: () => 'other',
           handleSubmit: () => vi.fn(),
           formState: { isSubmitting: false, errors: {} },
         },
+        categories: [],
         onSubmit: vi.fn(),
       }),
     )
@@ -552,9 +562,11 @@ describe('catalog page contents', () => {
         editing: null,
         form: {
           control: {},
+          watch: () => 'flavor',
           handleSubmit: () => vi.fn(),
           formState: { isSubmitting: false, errors: {} },
         },
+        categories: [{ id: 'cat-2', name: 'Lanches' }],
         onSubmit: vi.fn(),
       }),
     )

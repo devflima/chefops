@@ -3,9 +3,11 @@ import { notFound } from 'next/navigation'
 import MenuClient from './MenuClient'
 import { ensureTenantBillingAccessState } from '@/lib/saas-billing'
 import {
+  applyAutomaticCategoryExtras,
   applyAutomaticBorderExtras,
   normalizePublicMenuItems,
   normalizeTenantDeliverySettings,
+  type MenuExtra,
 } from '@/features/menu/public-menu'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -128,7 +130,7 @@ export default async function MenuPage({
       price, image_url, available, display_order, created_at, updated_at,
       category:categories(id, name),
       extras:menu_item_extras(
-        extra:extras(id, name, price, category)
+        extra:extras(id, name, price, category, category_id)
       )
     `)
     .eq('tenant_id', tenant.id)
@@ -136,17 +138,21 @@ export default async function MenuPage({
     .order('display_order', { ascending: true })
     .order('name', { ascending: true })
 
-  const { data: rawBorderExtras } = await publicSupabase
+  const { data: rawActiveExtras } = await publicSupabase
     .from('extras')
-    .select('id, name, price, category')
+    .select('id, name, price, category, category_id')
     .eq('tenant_id', tenant.id)
     .eq('active', true)
-    .eq('category', 'border')
     .order('name', { ascending: true })
 
-  const items = applyAutomaticBorderExtras(
-    normalizePublicMenuItems((rawItems ?? []) as never),
-    (rawBorderExtras ?? []) as never,
+  const normalizedItems = normalizePublicMenuItems((rawItems ?? []) as never)
+  const activeExtras = (rawActiveExtras ?? []) as MenuExtra[]
+  const items = applyAutomaticCategoryExtras(
+    applyAutomaticBorderExtras(
+      normalizedItems,
+      activeExtras.filter((extra) => extra.category === 'border'),
+    ),
+    activeExtras,
   )
 
   let tableInfo: { id: string; number: string } | null = null

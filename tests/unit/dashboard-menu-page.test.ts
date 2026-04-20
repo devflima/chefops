@@ -319,7 +319,7 @@ describe('dashboard menu page helpers', () => {
     expect(getSelectableMenuExtras(
       [
         { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
-        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border' },
+        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border', category_id: 'cat-1' },
         { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
       ],
       'cat-1',
@@ -332,6 +332,7 @@ describe('dashboard menu page helpers', () => {
       ['extra-1', 'extra-3'],
       [
         { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
+        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border', category_id: 'cat-1' },
         { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
       ],
       'cat-1',

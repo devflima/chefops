@@ -97,6 +97,7 @@ describe('catalog and users page components', () => {
       reset: vi.fn(),
       setError: vi.fn(),
       handleSubmit: vi.fn((callback: (values: unknown) => unknown) => callback),
+      watch: vi.fn(() => 'other'),
       formState: {
         isSubmitting: false,
         errors: {},
@@ -429,10 +430,12 @@ describe('catalog and users page components', () => {
   })
 
   it('executa a queryFn real da página de extras', async () => {
-    let capturedQueryFn: (() => Promise<unknown>) | null = null
+    let extrasQueryFn: (() => Promise<unknown>) | null = null
 
-    useQueryMock.mockImplementation((options: { queryFn: () => Promise<unknown> }) => {
-      capturedQueryFn = options.queryFn
+    useQueryMock.mockImplementation((options: { queryKey: string[]; queryFn: () => Promise<unknown> }) => {
+      if (options.queryKey[0] === 'extras') {
+        extrasQueryFn = options.queryFn
+      }
       return {
         data: [],
         isLoading: false,
@@ -458,8 +461,8 @@ describe('catalog and users page components', () => {
 
     renderToStaticMarkup(React.createElement(ExtrasPage))
 
-    expect(capturedQueryFn).toBeTypeOf('function')
-    await expect(capturedQueryFn?.()).resolves.toEqual([
+    expect(extrasQueryFn).toBeTypeOf('function')
+    await expect(extrasQueryFn?.()).resolves.toEqual([
       {
         id: 'extra-1',
         name: 'Borda',

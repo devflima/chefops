@@ -6,6 +6,7 @@ export type Extra = {
   name: string
   price: number
   category: ExtraCategory
+  category_id?: string | null
   active: boolean
 }
 
@@ -19,6 +20,7 @@ export type ExtraFormValues = {
   name: string
   price: number
   category: ExtraCategory
+  category_id: string
 }
 
 export function getDefaultExtraFormValues(): ExtraFormValues {
@@ -26,6 +28,7 @@ export function getDefaultExtraFormValues(): ExtraFormValues {
     name: '',
     price: 0,
     category: 'other',
+    category_id: 'none',
   }
 }
 
@@ -38,6 +41,7 @@ export function getExtraFormValues(extra: Extra | null): ExtraFormValues {
     name: extra.name,
     price: extra.price,
     category: extra.category,
+    category_id: extra.category_id ?? 'none',
   }
 }
 
