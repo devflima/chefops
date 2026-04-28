@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -57,6 +57,33 @@ vi.mock('@/features/menu/MenuItemDialog', () => ({
     React.createElement('div', null, open ? (editing ? 'Editar item' : 'Novo item do cardápio') : null),
 }))
 
+const createMockTable = (data: any): any => ({
+  id: 'table-1',
+  tenant_id: 'tenant-1',
+  number: '1',
+  capacity: 4,
+  status: 'available',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  ...data,
+})
+
+const createMockOrderItem = (data: any): any => ({
+  id: 'item-1',
+  tenant_id: 'tenant-1',
+  category_id: 'cat-1',
+  name: 'Item',
+  description: null,
+  price: 10,
+  available: true,
+  display_order: 1,
+  category: { id: 'cat-1', name: 'Cat' },
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  extras: [],
+  ...data,
+})
+
 function flattenElements(node: React.ReactNode): any[] {
   if (node == null || typeof node === 'boolean' || typeof node === 'string' || typeof node === 'number') {
     return []
@@ -88,8 +115,8 @@ function getTextContent(node: React.ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node)
   if (Array.isArray(node)) return node.map((child) => getTextContent(child)).join('')
   if (!React.isValidElement(node)) return ''
-  const element = node as any
-  return getTextContent(element.props?.children)
+  const element = node as React.ReactElement<any>
+  return getTextContent(element.props.children)
 }
 
 describe('menu components', () => {
@@ -558,7 +585,7 @@ describe('menu components', () => {
     const onOpenChange = vi.fn()
     const elements = flattenElements(
       React.createElement(
-        OpenSessionDialog,
+        OpenSessionDialog as any,
         {
           table: { id: 'table-1', number: '12', capacity: 4, status: 'available' },
           open: true,
@@ -588,7 +615,7 @@ describe('menu components', () => {
     const onOpenChange = vi.fn()
     const elements = flattenElements(
       React.createElement(
-        TableFormDialog,
+        TableFormDialog as any,
         {
           open: true,
           editingTable: { id: 'table-1', number: '7', capacity: 4, status: 'available' },
@@ -618,7 +645,7 @@ describe('menu components', () => {
     const onCategoryFilterChange = vi.fn()
     const onStatusFilterChange = vi.fn()
     const elements = flattenElements(
-      React.createElement(MenuDashboardFilters, {
+      React.createElement(MenuDashboardFilters as any, {
         categoryFilter: 'all',
         onCategoryFilterChange,
         categories: [{ id: 'cat-1', name: 'Pizzas' }],
@@ -643,7 +670,7 @@ describe('menu components', () => {
     const onEdit = vi.fn()
     const onToggleAvailable = vi.fn()
     const elements = flattenElements(
-      React.createElement(MenuDashboardTable, {
+      React.createElement(MenuDashboardTable as any, {
         deletingId: null,
         onEdit,
         onToggleAvailable,
@@ -4349,7 +4376,7 @@ describe('menu components', () => {
     )
 
     const filtersMarkup = renderToStaticMarkup(
-      React.createElement(MenuDashboardFilters, {
+      React.createElement(MenuDashboardFilters as any, {
         categoryFilter: 'cat-1',
         onCategoryFilterChange: vi.fn(),
         categories: [
@@ -4404,7 +4431,7 @@ describe('menu components', () => {
     )
 
     const tableMarkup = renderToStaticMarkup(
-      React.createElement(MenuDashboardTable, {
+      React.createElement(MenuDashboardTable as any, {
         items: [
           {
             id: 'menu-1',
@@ -4495,7 +4522,7 @@ describe('menu components', () => {
     const { TablesDashboardHeader } = await import('@/features/tables/TablesDashboardHeader')
 
     const elements = flattenElements(
-      React.createElement(TablesDashboardHeader, {
+      React.createElement(TablesDashboardHeader as any, {
         occupied: 1,
         available: 1,
         tableCount: 4,
@@ -4874,7 +4901,7 @@ describe('menu components', () => {
     const { OrdersEmptyState } = await import('@/features/orders/OrdersEmptyState')
 
     const headerMarkup = renderToStaticMarkup(
-      React.createElement(OrdersDashboardHeader, {
+      React.createElement(OrdersDashboardHeader as any, {
         onCreate: vi.fn(),
       })
     )
@@ -4903,7 +4930,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-1',
           order_number: 42,
@@ -4990,7 +5017,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-2',
           tenant_id: 'tenant-1',
@@ -5051,7 +5078,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3',
           tenant_id: 'tenant-1',
@@ -5128,7 +5155,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3b',
           tenant_id: 'tenant-1',
@@ -5205,7 +5232,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3c',
           tenant_id: 'tenant-1',
@@ -5297,7 +5324,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const tableMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3d',
           tenant_id: 'tenant-1',
@@ -5346,7 +5373,7 @@ describe('menu components', () => {
     )
 
     const tabMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3e',
           tenant_id: 'tenant-1',
@@ -5419,7 +5446,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const counterMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-local-1',
           tenant_id: 'tenant-1',
@@ -5475,7 +5502,7 @@ describe('menu components', () => {
     )
 
     const tableMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-local-2',
           tenant_id: 'tenant-1',
@@ -5599,7 +5626,7 @@ describe('menu components', () => {
     }
 
     const elements = flattenElements(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: order as never,
         config: { label: 'Pronto', color: 'bg-green-100 text-green-800', nextLabel: 'Entregar' },
         deliveryDrivers: [
@@ -5649,7 +5676,7 @@ describe('menu components', () => {
     const onConfirmPayment = vi.fn()
 
     const elements = flattenElements(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-5',
           tenant_id: 'tenant-1',
@@ -5716,7 +5743,7 @@ describe('menu components', () => {
     const onAdvance = vi.fn()
 
     const elements = flattenElements(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-6',
           tenant_id: 'tenant-1',
@@ -5782,7 +5809,7 @@ describe('menu components', () => {
     const { TablesDashboardEmptyState } = await import('@/features/tables/TablesDashboardEmptyState')
 
     const headerMarkup = renderToStaticMarkup(
-      React.createElement(TablesDashboardHeader, {
+      React.createElement(TablesDashboardHeader as any, {
         occupied: 2,
         available: 5,
         tableCount: 7,
@@ -5811,7 +5838,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-1',
@@ -5859,7 +5886,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-6',
@@ -5900,7 +5927,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-3',
@@ -5945,7 +5972,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-5',
@@ -6115,7 +6142,7 @@ describe('menu components', () => {
     }
 
     const markup = renderToStaticMarkup(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table,
         open: true,
         onOpenChange: vi.fn(),
@@ -6130,7 +6157,7 @@ describe('menu components', () => {
     expect(markup).toContain('Fechar comanda')
 
     const elements = flattenElements(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table,
         open: true,
         onOpenChange: vi.fn(),
@@ -6153,7 +6180,7 @@ describe('menu components', () => {
     const { TableFormDialog } = await import('@/features/tables/TableFormDialog')
 
     const detailsMarkup = renderToStaticMarkup(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table: {
           id: 'table-2',
           tenant_id: 'tenant-1',
@@ -6172,7 +6199,7 @@ describe('menu components', () => {
 
     const openMarkup = renderToStaticMarkup(
       React.createElement(
-        OpenSessionDialog,
+        OpenSessionDialog as any,
         {
           table: {
             id: 'table-3',
@@ -6195,7 +6222,7 @@ describe('menu components', () => {
 
     const formMarkup = renderToStaticMarkup(
       React.createElement(
-        TableFormDialog,
+        TableFormDialog as any,
         {
           open: true,
           editingTable: {
@@ -6229,7 +6256,7 @@ describe('menu components', () => {
     const { TableSessionDetailsDialog } = await import('@/features/tables/TableSessionDetailsDialog')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table: null,
         open: true,
         onOpenChange: vi.fn(),
