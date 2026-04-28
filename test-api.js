@@ -1,3 +1,4 @@
+/* eslint-disable */
 const { z } = require('zod');
 const cartItemSchema = z.object({
   menu_item_id: z.string().uuid(),

@@ -1,7 +1,6 @@
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { isWithinOperatingHours } from '@/lib/delivery-operations'
 import { normalizeDeliverySettings } from '@/lib/delivery-settings'
-import { isPizzaCategoryName } from '@/features/menu/menu-category-rules'
 
 export type MenuExtra = {
   id: string

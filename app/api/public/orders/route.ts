@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[public-orders:post]', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : (error as any)?.message || 'Erro ao criar pedido.' },
+      { error: error instanceof Error ? error.message : (error as { message?: string })?.message || 'Erro ao criar pedido.' },
       { status: 500 }
     )
   }

@@ -82,7 +82,7 @@ export function ExtrasPageContent({
   form,
   onSubmit,
 }: Props) {
-  const selectedType = form.watch('category')
+  // selectedType removed as it was unused
 
   return (
     <div>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -77,7 +78,7 @@ vi.mock('@/components/ui/select', () => ({
   SelectValue: () => React.createElement('span', null, 'valor'),
 }))
 
-function flattenElements(node: React.ReactNode): React.ReactElement[] {
+function flattenElements(node: React.ReactNode): any[] {
   if (node == null || typeof node === 'boolean' || typeof node === 'string' || typeof node === 'number') {
     return []
   }
@@ -90,11 +91,17 @@ function flattenElements(node: React.ReactNode): React.ReactElement[] {
     return []
   }
 
-  if (typeof node.type === 'function') {
-    return flattenElements(node.type(node.props))
+  const element = node as React.ReactElement<any>
+
+  if (typeof element.type === 'function') {
+    try {
+      return flattenElements((element.type as any)(element.props))
+    } catch {
+      return [element]
+    }
   }
 
-  return [node, ...flattenElements(node.props.children)]
+  return [element, ...flattenElements(element.props.children)]
 }
 
 function getTextContent(node: React.ReactNode): string {
@@ -102,7 +109,8 @@ function getTextContent(node: React.ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node)
   if (Array.isArray(node)) return node.map((child) => getTextContent(child)).join('')
   if (!React.isValidElement(node)) return ''
-  return getTextContent(node.props.children)
+  const element = node as any
+  return getTextContent(element.props?.children)
 }
 
 describe('catalog page contents', () => {

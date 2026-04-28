@@ -15,7 +15,6 @@ export function MenuAddressStep({
   onBack,
   disabled = false,
   quotedDeliveryFee = null,
-  quotedDistanceKm = null,
   deliveryQuoteMessage = null,
   cartTotal = 0,
   deliveryFee = 0,
