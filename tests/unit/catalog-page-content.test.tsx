@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -77,7 +78,7 @@ vi.mock('@/components/ui/select', () => ({
   SelectValue: () => React.createElement('span', null, 'valor'),
 }))
 
-function flattenElements(node: React.ReactNode): React.ReactElement[] {
+function flattenElements(node: React.ReactNode): any[] {
   if (node == null || typeof node === 'boolean' || typeof node === 'string' || typeof node === 'number') {
     return []
   }
@@ -90,11 +91,17 @@ function flattenElements(node: React.ReactNode): React.ReactElement[] {
     return []
   }
 
-  if (typeof node.type === 'function') {
-    return flattenElements(node.type(node.props))
+  const element = node as React.ReactElement<any>
+
+  if (typeof element.type === 'function') {
+    try {
+      return flattenElements((element.type as any)(element.props))
+    } catch {
+      return [element]
+    }
   }
 
-  return [node, ...flattenElements(node.props.children)]
+  return [element, ...flattenElements(element.props.children)]
 }
 
 function getTextContent(node: React.ReactNode): string {
@@ -102,7 +109,8 @@ function getTextContent(node: React.ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node)
   if (Array.isArray(node)) return node.map((child) => getTextContent(child)).join('')
   if (!React.isValidElement(node)) return ''
-  return getTextContent(node.props.children)
+  const element = node as React.ReactElement<any>
+  return getTextContent(element.props.children)
 }
 
 describe('catalog page contents', () => {
@@ -147,13 +155,13 @@ describe('catalog page contents', () => {
         onSubmit: vi.fn(),
       }
 
-    const markup = renderToStaticMarkup(React.createElement(CategoriesPageContent, props))
+    const markup = renderToStaticMarkup(React.createElement(CategoriesPageContent as any, props))
 
     expect(markup).toContain('Categorias')
     expect(markup).toContain('Pizzas')
     expect(markup).toContain('Nova categoria')
 
-    const elements = flattenElements(React.createElement(CategoriesPageContent, props))
+    const elements = flattenElements(React.createElement(CategoriesPageContent as any, props))
     const nameInput = elements.find((element) => element.type === 'input' && element.props.placeholder === 'Filtrar por nome...')
     const select = elements.find((element) => element.type === 'select')
     const buttons = elements.filter((element) => element.type === 'button')
@@ -179,7 +187,7 @@ describe('catalog page contents', () => {
     const onOpenChange = vi.fn()
     const onSubmit = vi.fn()
 
-    const limitedElement = React.createElement(CategoriesPageContent, {
+    const limitedElement = React.createElement(CategoriesPageContent as any, {
         planUsageText: ' (20/20)',
         categoryLimitReached: true,
         categoryLimit: 20,
@@ -250,7 +258,7 @@ describe('catalog page contents', () => {
       onSubmit,
     }
 
-    const elements = flattenElements(React.createElement(CategoriesPageContent, populatedProps))
+    const elements = flattenElements(React.createElement(CategoriesPageContent as any, populatedProps))
     const buttons = elements.filter((element) => element.type === 'button')
     const form = elements.find((element) => element.type === 'form')
 
@@ -273,7 +281,7 @@ describe('catalog page contents', () => {
     formFieldMockValues.goes_to_kitchen = false
 
     const loadingMarkup = renderToStaticMarkup(
-      React.createElement(CategoriesPageContent, {
+      React.createElement(CategoriesPageContent as any, {
         planUsageText: '',
         categoryLimitReached: false,
         categoryLimit: undefined,
@@ -304,7 +312,7 @@ describe('catalog page contents', () => {
     )
 
     const counterMarkup = renderToStaticMarkup(
-      React.createElement(CategoriesPageContent, {
+      React.createElement(CategoriesPageContent as any, {
         planUsageText: '',
         categoryLimitReached: false,
         categoryLimit: undefined,
@@ -381,13 +389,13 @@ describe('catalog page contents', () => {
       onSubmit: vi.fn(),
     }
 
-    const markup = renderToStaticMarkup(React.createElement(ExtrasPageContent, props))
+    const markup = renderToStaticMarkup(React.createElement(ExtrasPageContent as any, props))
 
     expect(markup).toContain('Adicionais')
     expect(markup).toContain('Borda')
     expect(markup).toContain('Novo adicional')
 
-    const elements = flattenElements(React.createElement(ExtrasPageContent, props))
+    const elements = flattenElements(React.createElement(ExtrasPageContent as any, props))
     const nameInput = elements.find((element) => element.type === 'input' && element.props.placeholder === 'Filtrar por nome...')
     const select = elements.find((element) => element.type === 'select')
     const buttons = elements.filter((element) => element.type === 'button')
@@ -412,7 +420,7 @@ describe('catalog page contents', () => {
     const onOpenChange = vi.fn()
     const onSubmit = vi.fn()
 
-    const emptyElement = React.createElement(ExtrasPageContent, {
+    const emptyElement = React.createElement(ExtrasPageContent as any, {
       planUsageText: ' (20/20)',
       extrasLimitReached: true,
       extrasLimit: 20,
@@ -453,7 +461,7 @@ describe('catalog page contents', () => {
     const emptyButtons = flattenElements(emptyElement).filter((element) => element.type === 'button')
     emptyButtons.find((element) => getTextContent(element.props.children).includes('Criar primeiro adicional'))?.props.onClick()
 
-    const populatedElement = React.createElement(ExtrasPageContent, {
+    const populatedElement = React.createElement(ExtrasPageContent as any, {
       planUsageText: ' (1/20)',
       extrasLimitReached: false,
       extrasLimit: 20,
@@ -508,7 +516,7 @@ describe('catalog page contents', () => {
     const { ExtrasPageContent } = await import('@/features/products/ExtrasPageContent')
 
     const loadingMarkup = renderToStaticMarkup(
-      React.createElement(ExtrasPageContent, {
+      React.createElement(ExtrasPageContent as any, {
         planUsageText: '',
         extrasLimitReached: false,
         extrasLimit: undefined,
@@ -540,7 +548,7 @@ describe('catalog page contents', () => {
     )
 
     const flavorMarkup = renderToStaticMarkup(
-      React.createElement(ExtrasPageContent, {
+      React.createElement(ExtrasPageContent as any, {
         planUsageText: '',
         extrasLimitReached: false,
         extrasLimit: undefined,
@@ -630,13 +638,13 @@ describe('catalog page contents', () => {
         createPending: false,
       }
 
-    const markup = renderToStaticMarkup(React.createElement(UsersPageContent, props))
+    const markup = renderToStaticMarkup(React.createElement(UsersPageContent as any, props))
 
     expect(markup).toContain('Equipe e acessos')
     expect(markup).toContain('Nenhum usuário cadastrado.')
     expect(markup).toContain('Novo usuário')
 
-    const elements = flattenElements(React.createElement(UsersPageContent, props))
+    const elements = flattenElements(React.createElement(UsersPageContent as any, props))
     const filterInput = elements.find(
       (element) => element.type === 'input' && element.props.placeholder === 'Filtrar por nome ou e-mail...'
     )
@@ -673,7 +681,7 @@ describe('catalog page contents', () => {
     const onDeleteUser = vi.fn()
     const onSubmit = vi.fn()
 
-    const loadingMarkup = renderToStaticMarkup(React.createElement(UsersPageContent, {
+    const loadingMarkup = renderToStaticMarkup(React.createElement(UsersPageContent as any, {
       isOwner: false,
       isLoading: true,
       data: null,
@@ -708,7 +716,7 @@ describe('catalog page contents', () => {
     }))
     expect(loadingMarkup).toContain('Carregando equipe...')
 
-    const errorMarkup = renderToStaticMarkup(React.createElement(UsersPageContent, {
+    const errorMarkup = renderToStaticMarkup(React.createElement(UsersPageContent as any, {
       isOwner: false,
       isLoading: false,
       data: null,
@@ -743,7 +751,7 @@ describe('catalog page contents', () => {
     }))
     expect(errorMarkup).toContain('Não foi possível carregar a equipe.')
 
-    const populatedElement = React.createElement(UsersPageContent, {
+    const populatedElement = React.createElement(UsersPageContent as any, {
       isOwner: false,
       isLoading: false,
       data: {

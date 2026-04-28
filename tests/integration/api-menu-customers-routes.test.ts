@@ -157,6 +157,9 @@ describe('api menu and customers routes', () => {
         }
 
         return {
+          select: vi.fn(() => ({
+            eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+          })),
           insert: vi.fn().mockResolvedValue({ error: null }),
         }
       }),
@@ -234,6 +237,9 @@ describe('api menu and customers routes', () => {
         }
 
         return {
+          select: vi.fn(() => ({
+            eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+          })),
           insert: vi.fn().mockResolvedValue({ error: null }),
         }
       }),
@@ -284,6 +290,9 @@ describe('api menu and customers routes', () => {
         }
 
         return {
+          select: vi.fn(() => ({
+            eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+          })),
           insert: vi.fn().mockResolvedValue({ error: null }),
         }
       }),

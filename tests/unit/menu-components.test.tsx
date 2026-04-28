@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -56,7 +57,34 @@ vi.mock('@/features/menu/MenuItemDialog', () => ({
     React.createElement('div', null, open ? (editing ? 'Editar item' : 'Novo item do cardápio') : null),
 }))
 
-function flattenElements(node: React.ReactNode): React.ReactElement[] {
+const createMockTable = (data: any): any => ({
+  id: 'table-1',
+  tenant_id: 'tenant-1',
+  number: '1',
+  capacity: 4,
+  status: 'available',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  ...data,
+})
+
+const createMockOrderItem = (data: any): any => ({
+  id: 'item-1',
+  tenant_id: 'tenant-1',
+  category_id: 'cat-1',
+  name: 'Item',
+  description: null,
+  price: 10,
+  available: true,
+  display_order: 1,
+  category: { id: 'cat-1', name: 'Cat' },
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  extras: [],
+  ...data,
+})
+
+function flattenElements(node: React.ReactNode): any[] {
   if (node == null || typeof node === 'boolean' || typeof node === 'string' || typeof node === 'number') {
     return []
   }
@@ -69,11 +97,17 @@ function flattenElements(node: React.ReactNode): React.ReactElement[] {
     return []
   }
 
-  if (typeof node.type === 'function') {
-    return flattenElements(node.type(node.props))
+  const element = node as React.ReactElement<any>
+
+  if (typeof element.type === 'function') {
+    try {
+      return flattenElements((element.type as any)(element.props))
+    } catch {
+      return [element]
+    }
   }
 
-  return [node, ...flattenElements(node.props.children)]
+  return [element, ...flattenElements(element.props.children)]
 }
 
 function getTextContent(node: React.ReactNode): string {
@@ -81,7 +115,8 @@ function getTextContent(node: React.ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node)
   if (Array.isArray(node)) return node.map((child) => getTextContent(child)).join('')
   if (!React.isValidElement(node)) return ''
-  return getTextContent(node.props.children)
+  const element = node as React.ReactElement<any>
+  return getTextContent(element.props.children)
 }
 
 describe('menu components', () => {
@@ -550,7 +585,7 @@ describe('menu components', () => {
     const onOpenChange = vi.fn()
     const elements = flattenElements(
       React.createElement(
-        OpenSessionDialog,
+        OpenSessionDialog as any,
         {
           table: { id: 'table-1', number: '12', capacity: 4, status: 'available' },
           open: true,
@@ -580,7 +615,7 @@ describe('menu components', () => {
     const onOpenChange = vi.fn()
     const elements = flattenElements(
       React.createElement(
-        TableFormDialog,
+        TableFormDialog as any,
         {
           open: true,
           editingTable: { id: 'table-1', number: '7', capacity: 4, status: 'available' },
@@ -610,7 +645,7 @@ describe('menu components', () => {
     const onCategoryFilterChange = vi.fn()
     const onStatusFilterChange = vi.fn()
     const elements = flattenElements(
-      React.createElement(MenuDashboardFilters, {
+      React.createElement(MenuDashboardFilters as any, {
         categoryFilter: 'all',
         onCategoryFilterChange,
         categories: [{ id: 'cat-1', name: 'Pizzas' }],
@@ -635,7 +670,7 @@ describe('menu components', () => {
     const onEdit = vi.fn()
     const onToggleAvailable = vi.fn()
     const elements = flattenElements(
-      React.createElement(MenuDashboardTable, {
+      React.createElement(MenuDashboardTable as any, {
         deletingId: null,
         onEdit,
         onToggleAvailable,
@@ -825,7 +860,7 @@ describe('menu components', () => {
     expect(getTextContent(elements)).toContain('Estabelecimento fechado para novos pedidos')
   })
 
-  it('renderiza passo de dados para novo cliente sem plano pago e com erro de telefone', async () => {
+  it('renderiza passo de dados com erros após validação de telefone', async () => {
     const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
 
     const markup = renderToStaticMarkup(
@@ -833,7 +868,7 @@ describe('menu components', () => {
         tableInfo: null,
         phone: '11999999999',
         onPhoneChange: vi.fn(),
-        phoneVerified: false,
+        phoneVerified: true,
         onPhoneLookup: vi.fn(),
         verificationCode: '',
         onVerificationCodeChange: vi.fn(),
@@ -1000,6 +1035,86 @@ describe('menu components', () => {
         onVerificationCodeChange,
         onVerifyPhoneCode,
         codeSent: true,
+        lookingUpPhone: false,
+        verifyingPhoneCode: false,
+        errors: {},
+        isPaidPlan: true,
+        existingCustomer: null,
+        isNewCustomer: true,
+        customerName: '',
+        onCustomerNameChange,
+        customerCpf: '123.456.789-00',
+        onCustomerCpfChange,
+        paymentOptions: [
+          { value: 'online', label: 'Online' },
+          { value: 'cash', label: 'Dinheiro' },
+        ],
+        paymentMethod: 'online',
+        onPaymentMethodChange,
+        notes: '',
+        onNotesChange,
+        cartTotal: 20,
+        deliveryFee: 7,
+        orderTotal: 27,
+        isProcessing: false,
+        onContinue,
+        onBack,
+      })
+    )
+
+    const inputs = elements.filter((element) => element.type === 'input')
+    const buttons = elements.filter(
+      (element) => element.type === 'button' && typeof element.props.onClick === 'function'
+    )
+    const backButton = buttons.find((element) => getTextContent(element) === 'Voltar')
+
+    expect(inputs).toHaveLength(2) // Phone and Code
+    expect(getTextContent(elements)).not.toContain('Nome completo')
+    expect(getTextContent(elements)).not.toContain('Observações')
+    expect(getTextContent(elements)).not.toContain('Taxa de entrega')
+    expect(getTextContent(elements)).not.toContain('Primeiro pedido? Preencha seus dados.')
+    expect(getTextContent(elements)).not.toContain('Continuar')
+
+    inputs[0].props.onChange({ target: { value: '(11) 98888-7777' } })
+    inputs[1].props.onChange({ target: { value: '123456' } })
+    buttons[0].props.onClick()
+    buttons[1].props.onClick()
+
+    expect(onPhoneChange).toHaveBeenCalledWith('(11) 98888-7777')
+    expect(onVerificationCodeChange).toHaveBeenCalledWith('123456')
+    expect(onPhoneLookup).toHaveBeenCalledOnce()
+    expect(onVerifyPhoneCode).toHaveBeenCalledOnce()
+    
+    expect(backButton).toBeTruthy()
+    backButton?.props.onClick()
+    expect(onBack).toHaveBeenCalledOnce()
+  })
+
+  it('aciona handlers e estados do passo de dados (telefone verificado)', async () => {
+    const { MenuInfoStep } = await import('@/features/menu/MenuInfoStep')
+
+    const onPhoneChange = vi.fn()
+    const onPhoneLookup = vi.fn()
+    const onVerificationCodeChange = vi.fn()
+    const onVerifyPhoneCode = vi.fn()
+    const onCustomerNameChange = vi.fn()
+    const onCustomerCpfChange = vi.fn()
+    const onPaymentMethodChange = vi.fn()
+    const onNotesChange = vi.fn()
+    const onContinue = vi.fn()
+    const onBack = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuInfoStep, {
+        tableInfo: null,
+        phone: '1199999',
+        onPhoneChange,
+        phoneVerified: true,
+        onPhoneLookup,
+        verificationCode: '123456',
+        onVerificationCodeChange,
+        onVerifyPhoneCode,
+        codeSent: true,
         lookingUpPhone: true,
         verifyingPhoneCode: false,
         errors: {},
@@ -1032,36 +1147,35 @@ describe('menu components', () => {
       (element) => element.type === 'button' && typeof element.props.onClick === 'function'
     )
     const backButton = buttons.find((element) => getTextContent(element) === 'Voltar')
-    const continueButton = buttons.find((element) => getTextContent(element) === 'Continuar')
 
     expect(getTextContent(elements)).toContain('Primeiro pedido? Preencha seus dados.')
     expect(getTextContent(elements)).toContain('Taxa de entrega')
-    expect(buttons[0].props.disabled).toBe(true)
-    expect(getTextContent(buttons[0])).toContain('Enviando')
 
-    inputs[0].props.onChange({ target: { value: 'Cliente Teste' } })
-    inputs[1].props.onChange({ target: { value: '(11) 98888-7777' } })
-    inputs[2].props.onChange({ target: { value: '123456' } })
-    inputs[3].props.onChange({ target: { value: 'Sem gelo' } })
+    // Phone
+    inputs[0].props.onChange({ target: { value: '(11) 98888-7777' } })
+    // Name
+    inputs[1].props.onChange({ target: { value: 'Cliente Teste' } })
+    // Notes
+    inputs[2].props.onChange({ target: { value: 'Sem gelo' } })
+
+    // Payment method 1 (Online)
     buttons[0].props.onClick()
+    // Payment method 2 (Dinheiro)
     buttons[1].props.onClick()
+    // Continue
     buttons[2].props.onClick()
-    buttons[3].props.onClick()
 
     expect(onCustomerNameChange).toHaveBeenCalledWith('Cliente Teste')
     expect(onPhoneChange).toHaveBeenCalledWith('(11) 98888-7777')
-    expect(onVerificationCodeChange).toHaveBeenCalledWith('123456')
-    expect(onVerifyPhoneCode).toHaveBeenCalledOnce()
     expect(onNotesChange).toHaveBeenCalledWith('Sem gelo')
-    expect(onPhoneLookup).toHaveBeenCalledOnce()
+    
     expect(onPaymentMethodChange).toHaveBeenNthCalledWith(1, 'online')
     expect(onPaymentMethodChange).toHaveBeenNthCalledWith(2, 'cash')
-    expect(onContinue).not.toHaveBeenCalled()
+    expect(onContinue).toHaveBeenCalledOnce()
+    
     expect(backButton).toBeTruthy()
     backButton?.props.onClick()
     expect(onBack).toHaveBeenCalledOnce()
-    expect(continueButton?.props.disabled).toBe(true)
-    expect(getTextContent(buttons[1])).toContain('Confirmar código')
   })
 
   it('renderiza passo de endereço com loading de CEP', async () => {
@@ -1263,6 +1377,51 @@ describe('menu components', () => {
 
     expect(inputs.length).toBeGreaterThan(0)
     expect(inputs.every((input) => input.props.disabled === true)).toBe(true)
+  })
+
+  it('renderiza multiplos endereços e permite escolher um ou cadastrar novo', async () => {
+    const { MenuAddressStep } = await import('@/features/menu/MenuAddressStep')
+
+    const onAddressChange = vi.fn()
+    const onCepLookup = vi.fn()
+    const onSubmit = vi.fn()
+    const onBack = vi.fn()
+
+    const elements = flattenElements(
+      React.createElement(MenuAddressStep, {
+        existingAddresses: [
+          { id: 'addr-1', label: 'Casa', street: 'Rua A', number: '10', city: 'São Paulo', state: 'SP', zip_code: '12345678', is_default: true, tenant_id: 'tenant-1', customer_id: 'cust-1' },
+          { id: 'addr-2', label: 'Trabalho', street: 'Av B', number: '200', city: 'São Paulo', state: 'SP', zip_code: '87654321', is_default: false, tenant_id: 'tenant-1', customer_id: 'cust-1' },
+        ],
+        address: { id: 'addr-1', zip_code: '12345678', street: 'Rua A', number: '10' },
+        onAddressChange,
+        onCepLookup,
+        loadingCep: false,
+        errors: {},
+        paymentMethod: 'delivery',
+        isProcessing: false,
+        onSubmit,
+        onBack,
+      })
+    )
+
+    const textContent = getTextContent(elements)
+    expect(textContent).toContain('Casa')
+    expect(textContent).toContain('Rua A, 10')
+    expect(textContent).toContain('Trabalho')
+    expect(textContent).toContain('Av B, 200')
+    expect(textContent).toContain('Cadastrar novo endereço')
+
+    // Form inputs should be hidden because an existing address is selected
+    const inputs = elements.filter((element) => element.type === 'input' && element.props.type !== 'radio')
+    expect(inputs).toHaveLength(0)
+
+    const radioButtons = elements.filter((element) => element.type === 'input' && element.props.type === 'radio')
+    expect(radioButtons).toHaveLength(3) // 2 addresses + 1 new address option
+
+    radioButtons[2].props.onChange() // Select new address
+
+    expect(onAddressChange).toHaveBeenCalledOnce()
   })
 
   it('aciona handlers e normaliza campos do passo de endereço', async () => {
@@ -4217,7 +4376,7 @@ describe('menu components', () => {
     )
 
     const filtersMarkup = renderToStaticMarkup(
-      React.createElement(MenuDashboardFilters, {
+      React.createElement(MenuDashboardFilters as any, {
         categoryFilter: 'cat-1',
         onCategoryFilterChange: vi.fn(),
         categories: [
@@ -4272,7 +4431,7 @@ describe('menu components', () => {
     )
 
     const tableMarkup = renderToStaticMarkup(
-      React.createElement(MenuDashboardTable, {
+      React.createElement(MenuDashboardTable as any, {
         items: [
           {
             id: 'menu-1',
@@ -4363,7 +4522,7 @@ describe('menu components', () => {
     const { TablesDashboardHeader } = await import('@/features/tables/TablesDashboardHeader')
 
     const elements = flattenElements(
-      React.createElement(TablesDashboardHeader, {
+      React.createElement(TablesDashboardHeader as any, {
         occupied: 1,
         available: 1,
         tableCount: 4,
@@ -4742,7 +4901,7 @@ describe('menu components', () => {
     const { OrdersEmptyState } = await import('@/features/orders/OrdersEmptyState')
 
     const headerMarkup = renderToStaticMarkup(
-      React.createElement(OrdersDashboardHeader, {
+      React.createElement(OrdersDashboardHeader as any, {
         onCreate: vi.fn(),
       })
     )
@@ -4771,7 +4930,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-1',
           order_number: 42,
@@ -4858,7 +5017,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-2',
           tenant_id: 'tenant-1',
@@ -4919,7 +5078,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3',
           tenant_id: 'tenant-1',
@@ -4996,7 +5155,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3b',
           tenant_id: 'tenant-1',
@@ -5073,7 +5232,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const markup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3c',
           tenant_id: 'tenant-1',
@@ -5165,7 +5324,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const tableMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3d',
           tenant_id: 'tenant-1',
@@ -5214,7 +5373,7 @@ describe('menu components', () => {
     )
 
     const tabMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-3e',
           tenant_id: 'tenant-1',
@@ -5287,7 +5446,7 @@ describe('menu components', () => {
     const { OrderCard } = await import('@/features/orders/OrderCard')
 
     const counterMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-local-1',
           tenant_id: 'tenant-1',
@@ -5343,7 +5502,7 @@ describe('menu components', () => {
     )
 
     const tableMarkup = renderToStaticMarkup(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-local-2',
           tenant_id: 'tenant-1',
@@ -5467,7 +5626,7 @@ describe('menu components', () => {
     }
 
     const elements = flattenElements(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: order as never,
         config: { label: 'Pronto', color: 'bg-green-100 text-green-800', nextLabel: 'Entregar' },
         deliveryDrivers: [
@@ -5517,7 +5676,7 @@ describe('menu components', () => {
     const onConfirmPayment = vi.fn()
 
     const elements = flattenElements(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-5',
           tenant_id: 'tenant-1',
@@ -5584,7 +5743,7 @@ describe('menu components', () => {
     const onAdvance = vi.fn()
 
     const elements = flattenElements(
-      React.createElement(OrderCard, {
+      React.createElement(OrderCard as any, {
         order: {
           id: 'order-6',
           tenant_id: 'tenant-1',
@@ -5650,7 +5809,7 @@ describe('menu components', () => {
     const { TablesDashboardEmptyState } = await import('@/features/tables/TablesDashboardEmptyState')
 
     const headerMarkup = renderToStaticMarkup(
-      React.createElement(TablesDashboardHeader, {
+      React.createElement(TablesDashboardHeader as any, {
         occupied: 2,
         available: 5,
         tableCount: 7,
@@ -5679,7 +5838,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-1',
@@ -5727,7 +5886,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-6',
@@ -5768,7 +5927,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-3',
@@ -5813,7 +5972,7 @@ describe('menu components', () => {
     const { TablesDashboardGrid } = await import('@/features/tables/TablesDashboardGrid')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TablesDashboardGrid, {
+      React.createElement(TablesDashboardGrid as any, {
         tables: [
           {
             id: 'table-5',
@@ -5983,7 +6142,7 @@ describe('menu components', () => {
     }
 
     const markup = renderToStaticMarkup(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table,
         open: true,
         onOpenChange: vi.fn(),
@@ -5998,7 +6157,7 @@ describe('menu components', () => {
     expect(markup).toContain('Fechar comanda')
 
     const elements = flattenElements(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table,
         open: true,
         onOpenChange: vi.fn(),
@@ -6021,7 +6180,7 @@ describe('menu components', () => {
     const { TableFormDialog } = await import('@/features/tables/TableFormDialog')
 
     const detailsMarkup = renderToStaticMarkup(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table: {
           id: 'table-2',
           tenant_id: 'tenant-1',
@@ -6040,7 +6199,7 @@ describe('menu components', () => {
 
     const openMarkup = renderToStaticMarkup(
       React.createElement(
-        OpenSessionDialog,
+        OpenSessionDialog as any,
         {
           table: {
             id: 'table-3',
@@ -6063,7 +6222,7 @@ describe('menu components', () => {
 
     const formMarkup = renderToStaticMarkup(
       React.createElement(
-        TableFormDialog,
+        TableFormDialog as any,
         {
           open: true,
           editingTable: {
@@ -6097,7 +6256,7 @@ describe('menu components', () => {
     const { TableSessionDetailsDialog } = await import('@/features/tables/TableSessionDetailsDialog')
 
     const markup = renderToStaticMarkup(
-      React.createElement(TableSessionDetailsDialog, {
+      React.createElement(TableSessionDetailsDialog as any, {
         table: null,
         open: true,
         onOpenChange: vi.fn(),

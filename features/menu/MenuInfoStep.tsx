@@ -81,28 +81,16 @@ export function MenuInfoStep({
 }) {
   const customerBannerState = getCustomerBannerState(isPaidPlan, existingCustomer, isNewCustomer)
   const requirePhoneVerification = shouldRequirePhoneVerification(isPaidPlan, tableInfo)
+  const showFullForm = !requirePhoneVerification || phoneVerified
 
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex-1 p-4 space-y-4">
-        {tableInfo && (
+        {tableInfo && showFullForm && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 text-xs text-orange-700">
             Pedido na comanda da <strong>Mesa {tableInfo.number}</strong>
           </div>
         )}
-
-        <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">
-            Nome completo <span className="text-red-500">*</span>
-          </label>
-          <Input
-            placeholder="Ex: João Silva"
-            value={customerName}
-            onChange={(e) => onCustomerNameChange(e.target.value)}
-            disabled={disabled || (isPaidPlan && !!existingCustomer)}
-          />
-          {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
-        </div>
 
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-1">
@@ -114,7 +102,7 @@ export function MenuInfoStep({
               value={phone}
               onChange={(e) => onPhoneChange(e.target.value)}
               className="flex-1"
-              disabled={disabled}
+              disabled={disabled || (requirePhoneVerification && phoneVerified)}
             />
             {requirePhoneVerification && !phoneVerified && (
               <Button
@@ -149,85 +137,106 @@ export function MenuInfoStep({
               </Button>
             </div>
           )}
-          {customerBannerState === 'existing' && (
+          {showFullForm && customerBannerState === 'existing' && (
             <div className="mt-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
               <p className="text-xs text-green-700">
                 Olá, <strong>{existingCustomer?.name}</strong>!
               </p>
             </div>
           )}
-          {customerBannerState === 'new' && (
+          {showFullForm && customerBannerState === 'new' && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
               <p className="text-xs text-blue-700">Primeiro pedido? Preencha seus dados.</p>
             </div>
           )}
         </div>
 
-        {tableInfo && (
-          <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1">
-              CPF <span className="text-red-500">*</span>
-            </label>
-            <Input
-              placeholder="000.000.000-00"
-              value={customerCpf}
-              onChange={(e) => onCustomerCpfChange(e.target.value)}
-              maxLength={14}
-              disabled={disabled}
-            />
-            {errors.cpf && <p className="text-xs text-red-500 mt-1">{errors.cpf}</p>}
-          </div>
+        {showFullForm && (
+          <>
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-1">
+                Nome completo <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="Ex: João Silva"
+                value={customerName}
+                onChange={(e) => onCustomerNameChange(e.target.value)}
+                disabled={disabled || (isPaidPlan && !!existingCustomer)}
+              />
+              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            </div>
+
+            {tableInfo && (
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-1">
+                  CPF <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={customerCpf}
+                  onChange={(e) => onCustomerCpfChange(e.target.value)}
+                  maxLength={14}
+                  disabled={disabled}
+                />
+                {errors.cpf && <p className="text-xs text-red-500 mt-1">{errors.cpf}</p>}
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-2">Forma de pagamento</label>
+              <div className="grid grid-cols-2 gap-2">
+                {paymentOptions.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => onPaymentMethodChange(value)}
+                    disabled={disabled}
+                    className={`text-xs p-2.5 rounded-lg border text-center transition-colors ${paymentMethod === value ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-1">
+                Observações <span className="text-slate-400">(opcional)</span>
+              </label>
+              <Input placeholder="Ex: sem cebola" value={notes} onChange={(e) => onNotesChange(e.target.value)} disabled={disabled} />
+            </div>
+          </>
         )}
-
-        <div>
-          <label className="text-sm font-medium text-slate-700 block mb-2">Forma de pagamento</label>
-          <div className="grid grid-cols-2 gap-2">
-            {paymentOptions.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => onPaymentMethodChange(value)}
-                disabled={disabled}
-                className={`text-xs p-2.5 rounded-lg border text-center transition-colors ${paymentMethod === value ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">
-            Observações <span className="text-slate-400">(opcional)</span>
-          </label>
-          <Input placeholder="Ex: sem cebola" value={notes} onChange={(e) => onNotesChange(e.target.value)} disabled={disabled} />
-        </div>
       </div>
 
       <div className="p-4 border-t border-slate-200 space-y-2">
         {disabled && (
           <p className="text-xs text-amber-700">Estabelecimento fechado para novos pedidos</p>
         )}
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-slate-500">Subtotal</span>
-          <span className="font-semibold">R$ {cartTotal.toFixed(2)}</span>
-        </div>
-        {deliveryFee > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-500">Taxa de entrega</span>
-            <span className="font-semibold">R$ {deliveryFee.toFixed(2)}</span>
-          </div>
+        {showFullForm && (
+          <>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-slate-500">Subtotal</span>
+              <span className="font-semibold">R$ {cartTotal.toFixed(2)}</span>
+            </div>
+            {deliveryFee > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Taxa de entrega</span>
+                <span className="font-semibold">R$ {deliveryFee.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">Total</span>
+              <span className="font-semibold">R$ {orderTotal.toFixed(2)}</span>
+            </div>
+            <Button
+              className="w-full"
+              onClick={onContinue}
+              disabled={disabled || isProcessing}
+            >
+              {getInfoContinueLabel(isProcessing)}
+            </Button>
+          </>
         )}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">Total</span>
-          <span className="font-semibold">R$ {orderTotal.toFixed(2)}</span>
-        </div>
-        <Button
-          className="w-full"
-          onClick={onContinue}
-          disabled={disabled || isProcessing || (requirePhoneVerification && !phoneVerified)}
-        >
-          {getInfoContinueLabel(isProcessing)}
-        </Button>
         <Button variant="outline" className="w-full" onClick={onBack} disabled={disabled}>
           Voltar
         </Button>

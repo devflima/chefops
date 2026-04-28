@@ -13,6 +13,7 @@ const customerSchema = z.object({
 })
 
 const addressSchema = z.object({
+  id: z.string().uuid().optional(),
   zip_code: z.string().min(8, 'CEP inválido'),
   street: z.string().min(1, 'Rua obrigatória'),
   number: z.string().min(1, 'Número obrigatório'),
@@ -109,17 +110,38 @@ export async function POST(request: NextRequest) {
 
     // Salva endereço se fornecido
     if (address) {
-      await admin
-        .from('customer_addresses')
-        .insert({
-          ...address,
-          complement: address.complement ?? undefined,
-          neighborhood: address.neighborhood ?? undefined,
-          label: address.label ?? 'Casa',
-          customer_id: customer.id,
-          tenant_id: customerData.tenant_id,
-          is_default: true,
-        })
+      if (address.id) {
+        await admin
+          .from('customer_addresses')
+          .update({
+            ...address,
+            complement: address.complement ?? undefined,
+            neighborhood: address.neighborhood ?? undefined,
+            label: address.label ?? 'Casa',
+            is_default: true,
+          })
+          .eq('id', address.id)
+          .eq('customer_id', customer.id)
+      } else {
+        const { count } = await admin
+          .from('customer_addresses')
+          .select('*', { count: 'exact', head: true })
+          .eq('customer_id', customer.id)
+
+        if ((count ?? 0) < 3) {
+          await admin
+            .from('customer_addresses')
+            .insert({
+              ...address,
+              complement: address.complement ?? undefined,
+              neighborhood: address.neighborhood ?? undefined,
+              label: address.label ?? 'Casa',
+              customer_id: customer.id,
+              tenant_id: customerData.tenant_id,
+              is_default: true,
+            })
+        }
+      }
     }
 
     const { data: full } = await admin

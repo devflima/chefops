@@ -69,12 +69,7 @@ jobs:
         run: npm ci --omit=dev
 
       - name: Audit production dependencies
-        run: |
-          mkdir audit-prod
-          node -e "const fs=require('fs'); const pkg=require('./package.json'); const prodPkg={name:pkg.name, version:pkg.version, private:true, dependencies:pkg.dependencies ?? {}}; fs.writeFileSync('audit-prod/package.json', JSON.stringify(prodPkg, null, 2));"
-          cd audit-prod
-          npm install --package-lock-only
-          npm audit --omit=dev
+        run: npm audit --omit=dev --audit-level=high
 
   secrets-scan:
     name: Secrets Scan

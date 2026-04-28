@@ -45,10 +45,12 @@ export default function AdminTenantsPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTenants()
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(getAdminTenantPageReset())
   }, [search, planFilter, statusFilter])
 

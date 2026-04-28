@@ -179,6 +179,7 @@ describe('catalog pages edit branches', () => {
       name: 'Borda Cheddar',
       category: 'border',
       price: 12,
+      target_categories: [],
     })
 
     expect(fetchMock).toHaveBeenCalledWith('/api/extras/extra-1', {
@@ -188,7 +189,7 @@ describe('catalog pages edit branches', () => {
         name: 'Borda Cheddar',
         category: 'border',
         price: 12,
-        category_id: null,
+        target_categories: [],
       }),
     })
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['extras'] })
@@ -378,7 +379,7 @@ describe('catalog pages edit branches', () => {
       name: 'Molho especial',
       category: 'other',
       price: 4,
-      category_id: 'none',
+      target_categories: [],
     })
 
     await props.onDelete({ id: 'extra-1', name: 'Molho' })
@@ -391,7 +392,7 @@ describe('catalog pages edit branches', () => {
         name: 'Molho especial',
         category: 'other',
         price: 4,
-        category_id: null,
+        target_categories: [],
       }),
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
@@ -439,21 +440,22 @@ describe('catalog pages edit branches', () => {
       name: 'Catupiry Premium',
       category: 'border',
       price: 10,
+      target_categories: [],
     })
 
     await props.onDelete({ id: 'extra-10', name: 'Catupiry' })
 
     expect(formResetMock).toHaveBeenCalledWith({
       name: '',
-      category: 'other',
       price: 0,
-      category_id: 'none',
+      category: 'other',
+      target_categories: [],
     })
     expect(formResetMock).toHaveBeenCalledWith({
       name: 'Catupiry',
-      category: 'border',
       price: 8,
-      category_id: 'none',
+      category: 'border',
+      target_categories: [],
     })
     expect(stateSetters[1]).toHaveBeenCalledWith(null)
     expect(stateSetters[0]).toHaveBeenCalledWith(true)
@@ -493,7 +495,7 @@ describe('catalog pages edit branches', () => {
       name: 'Molho verde',
       category: 'other',
       price: 5,
-      category_id: 'none',
+      target_categories: [],
     })
 
     expect(fetchMock).toHaveBeenCalledWith('/api/extras/extra-20', {
@@ -503,7 +505,7 @@ describe('catalog pages edit branches', () => {
         name: 'Molho verde',
         category: 'other',
         price: 5,
-        category_id: null,
+        target_categories: [],
       }),
     })
     expect(formSetErrorMock).toHaveBeenCalledWith('root', {

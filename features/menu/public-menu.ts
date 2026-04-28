@@ -1,14 +1,13 @@
 import type { CartItem, CustomerAddress } from '@/features/orders/types'
 import { isWithinOperatingHours } from '@/lib/delivery-operations'
 import { normalizeDeliverySettings } from '@/lib/delivery-settings'
-import { isPizzaCategoryName } from '@/features/menu/menu-category-rules'
 
 export type MenuExtra = {
   id: string
   name: string
   price: number
   category: string
-  category_id?: string | null
+  target_categories?: string[]
 }
 
 export type MenuCategory = {
@@ -60,8 +59,8 @@ export type PublicCheckoutStep = 'cart' | 'info' | 'address' | 'done'
 
 type RawExtra = {
   extra:
-    | { id: string; name: string; price: number; category: string; category_id?: string | null }
-    | { id: string; name: string; price: number; category: string; category_id?: string | null }[]
+    | { id: string; name: string; price: number; category: string; target_categories?: string[] }
+    | { id: string; name: string; price: number; category: string; target_categories?: string[] }[]
     | null
 }
 
@@ -561,7 +560,7 @@ export function shouldRequirePhoneVerification(
   isPaidPlan: boolean,
   tableInfo: { id: string; number: string } | null
 ) {
-  return isPaidPlan && !tableInfo
+  return !tableInfo
 }
 
 export function getInfoContinueLabel(isProcessing: boolean) {
@@ -1048,10 +1047,6 @@ export function applyAutomaticBorderExtras(items: PublicMenuItem[], borderExtras
   }
 
   return items.map((item) => {
-    if (!isPizzaCategoryName(item.category?.name)) {
-      return item
-    }
-
     const existingIds = new Set(
       item.extras
         .map((entry) => entry.extra?.id)
@@ -1059,6 +1054,7 @@ export function applyAutomaticBorderExtras(items: PublicMenuItem[], borderExtras
     )
 
     const automaticBorders = borderExtras
+      .filter((extra) => !extra.target_categories || extra.target_categories.length === 0 || (item.category_id && extra.target_categories.includes(item.category_id)))
       .filter((extra) => !existingIds.has(extra.id))
       .map((extra) => ({ extra }))
 
@@ -1087,7 +1083,7 @@ export function applyAutomaticCategoryExtras(items: PublicMenuItem[], extras: Me
 
     const automaticExtras = extras
       .filter((extra) => extra.category !== 'border')
-      .filter((extra) => extra.category_id && extra.category_id === item.category_id)
+      .filter((extra) => !extra.target_categories || extra.target_categories.length === 0 || (item.category_id && extra.target_categories.includes(item.category_id)))
       .filter((extra) => !existingIds.has(extra.id))
       .map((extra) => ({ extra }))
 

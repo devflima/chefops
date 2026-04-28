@@ -13,7 +13,7 @@ type ExtraForm = {
   name: string
   price: number
   category: 'border' | 'flavor' | 'other'
-  category_id: string
+  target_categories: string[]
 }
 
 type CategoryOption = {
@@ -82,7 +82,7 @@ export function ExtrasPageContent({
   form,
   onSubmit,
 }: Props) {
-  const selectedType = form.watch('category')
+  // selectedType removed as it was unused
 
   return (
     <div>
@@ -158,9 +158,12 @@ export function ExtrasPageContent({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-600">
-                    {extra.category === 'border'
-                      ? 'Pizza (automático)'
-                      : categories.find((category) => category.id === extra.category_id)?.name ?? 'Todas as categorias'}
+                    {extra.target_categories?.length > 0
+                      ? extra.target_categories
+                          .map((id) => categories.find((c) => c.id === id)?.name)
+                          .filter(Boolean)
+                          .join(', ')
+                      : 'Todas as categorias'}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {extra.price > 0 ? `+ R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
@@ -232,36 +235,32 @@ export function ExtrasPageContent({
 
               <FormField
                 control={form.control}
-                name="category_id"
+                name="target_categories"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria vinculada</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={selectedType === 'border' ? 'none' : field.value}
-                      disabled={selectedType === 'border'}
-                    >
-                      <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Todas as categorias</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedType === 'border' ? (
-                      <p className="text-xs text-slate-500">
-                        Bordas são aplicadas automaticamente aos itens das categorias de pizza.
-                      </p>
-                    ) : (
-                      <p className="text-xs text-slate-500">
-                        Escolha uma categoria para aplicar este adicional automaticamente ou deixe em todas.
-                      </p>
-                    )}
+                    <FormLabel>Categorias vinculadas</FormLabel>
+                    <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto rounded-md border border-slate-200 p-3 sm:grid-cols-2">
+                      {categories.map((category) => (
+                        <label key={category.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                            checked={field.value?.includes(category.id) ?? false}
+                            onChange={(e) => {
+                              const checked = e.target.checked
+                              const newValue = checked
+                                ? [...(field.value || []), category.id]
+                                : (field.value || []).filter((val: string) => val !== category.id)
+                              field.onChange(newValue)
+                            }}
+                          />
+                          <span className="text-slate-700">{category.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Marque as categorias onde este adicional deve aparecer. Se não selecionar nenhuma, ele será exibido em todas.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

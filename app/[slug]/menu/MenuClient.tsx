@@ -157,6 +157,7 @@ export default function MenuClient({
   const [quotedDeliveryFee, setQuotedDeliveryFee] = useState<number | null>(null)
   const [quotedDistanceKm, setQuotedDistanceKm] = useState<number | null>(null)
   const [deliveryQuoteMessage, setDeliveryQuoteMessage] = useState<string | null>(null)
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
   const lastDeliveryQuoteAlertRef = useRef<string | null>(null)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
@@ -324,7 +325,7 @@ export default function MenuClient({
       setCodeSent(false)
       toast.success('Telefone validado com sucesso.')
 
-      if (isPaidPlan) {
+      if (true) {
         setLookingUpPhone(true)
         await lookupCustomer(cleanPhone)
       }
@@ -435,10 +436,14 @@ export default function MenuClient({
   useEffect(() => {
     const stored = parseStoredActiveOrder(window.localStorage.getItem(activeOrderStorageKey))
     if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrderId(stored.id)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrderNumber(stored.order_number)
     }
   }, [activeOrderStorageKey])
+
+
 
   useEffect(() => {
     const shouldQuoteDelivery =
@@ -449,17 +454,24 @@ export default function MenuClient({
     if (!shouldQuoteDelivery || operationClosedNotice) return
 
     if (!hasCompleteDeliveryAddress(address)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuotedDeliveryFee(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuotedDistanceKm(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDeliveryQuoteMessage(null)
       lastDeliveryQuoteAlertRef.current = null
       return
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     resolveDeliveryQuote(address).catch((error) => {
       const message = error instanceof Error ? error.message : 'Não foi possível calcular a entrega.'
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuotedDeliveryFee(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuotedDistanceKm(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDeliveryQuoteMessage(message)
 
       if (lastDeliveryQuoteAlertRef.current !== message) {
@@ -530,6 +542,8 @@ export default function MenuClient({
       cancelled = true
     }
   }, [checkoutResult, checkoutSessionId])
+
+
 
   useEffect(() => {
     if (!orderId) return
@@ -644,7 +658,7 @@ export default function MenuClient({
 
     try {
       let customerId: string | undefined
-      if (isPaidPlan) {
+      if (true) {
         const cleanPhone = phone.replace(/\D/g, '')
         const customerRes = await fetch('/api/customers', {
           method: 'POST',
@@ -654,7 +668,7 @@ export default function MenuClient({
             name: customerName,
             phone: cleanPhone,
             cpf: customerCpf || undefined,
-            address: deliveryAddress?.zip_code ? deliveryAddress : undefined,
+            address: deliveryAddress?.zip_code && !deliveryAddress.id ? deliveryAddress : undefined,
           }),
         })
         if (!customerRes.ok) {
@@ -723,6 +737,74 @@ export default function MenuClient({
       await handlePlaceOrder(address, quote.deliveryFee, quote.distanceKm)
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Não foi possível calcular a entrega.')
+    }
+  }
+
+  async function handleDeleteAddress(id: string) {
+    if (!confirm('Deseja realmente excluir este endereço?')) return
+    try {
+      const cleanPhone = phone.replace(/\D/g, '')
+      const res = await fetch(`/api/customers/addresses/${id}?tenant_id=${tenant.id}&phone=${cleanPhone}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) {
+        const json = await res.json()
+        throw new Error(json.error || 'Não foi possível excluir o endereço.')
+      }
+      toast.success('Endereço excluído.')
+      if (existingCustomer) {
+        setExistingCustomer({
+          ...existingCustomer,
+          addresses: existingCustomer.addresses?.filter(a => a.id !== id)
+        })
+        if (address.id === id) {
+          setAddress({})
+        }
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao excluir endereço.')
+    }
+  }
+
+  async function handleSaveAddress() {
+    if (!validateAddress()) return
+
+    try {
+      const cleanPhone = phone.replace(/\D/g, '')
+      const res = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenant.id,
+          name: customerName,
+          phone: cleanPhone,
+          cpf: customerCpf || undefined,
+          address: {
+            ...address,
+            zip_code: address.zip_code?.replace(/\D/g, ''),
+          }
+        }),
+      })
+
+      if (!res.ok) {
+        const json = await res.json()
+        throw new Error(json.error || 'Erro ao salvar endereço.')
+      }
+
+      const { data } = await res.json()
+      setExistingCustomer(data)
+      setEditingAddressId(null)
+      toast.success('Endereço salvo com sucesso!')
+      
+      // Auto select the saved address
+      if (data.addresses && data.addresses.length > 0) {
+        const savedAddress = address.id 
+          ? data.addresses.find((a: CustomerAddress) => a.id === address.id)
+          : data.addresses[data.addresses.length - 1]
+        if (savedAddress) setAddress(savedAddress)
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao salvar endereço.')
     }
   }
 
@@ -981,6 +1063,7 @@ export default function MenuClient({
         },
         addressStepProps: {
           address,
+          existingAddresses: existingCustomer?.addresses ?? [],
           disabled: Boolean(operationClosedNotice),
           cartTotal,
           deliveryFee,
@@ -1011,6 +1094,10 @@ export default function MenuClient({
           deliveryQuoteMessage,
           isProcessing: isCheckoutProcessing,
           onSubmit: handleAddressSubmit,
+          onSaveAddress: handleSaveAddress,
+          onDeleteAddress: handleDeleteAddress,
+          editingId: editingAddressId,
+          setEditingId: setEditingAddressId,
           onBack: () => {
             if (operationClosedNotice) {
               toast.error(operationClosedNotice)

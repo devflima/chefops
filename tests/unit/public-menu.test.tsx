@@ -349,8 +349,8 @@ describe('public menu helpers', () => {
         },
       ],
       [
-        { id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' },
-        { id: 'extra-2', name: 'Cheddar', price: 4, category: 'border' },
+        { id: 'extra-1', name: 'Catupiry', price: 5, category: 'border', target_categories: ['cat-1'] },
+        { id: 'extra-2', name: 'Cheddar', price: 4, category: 'border', target_categories: ['cat-1'] },
       ],
     )).toMatchObject([
       {
@@ -1445,7 +1445,7 @@ describe('public menu helpers', () => {
     expect(getCustomerBannerState(false, null, true)).toBeNull()
     expect(shouldRequirePhoneVerification(true, null)).toBe(true)
     expect(shouldRequirePhoneVerification(true, { id: 'table-1', number: '7' })).toBe(false)
-    expect(shouldRequirePhoneVerification(false, null)).toBe(false)
+    expect(shouldRequirePhoneVerification(false, null)).toBe(true)
     expect(getInfoContinueLabel(true)).toBe('Processando...')
     expect(getInfoContinueLabel(false)).toBe('Continuar')
     expect(getAddressSubmitLabel('online', false)).toBe('Ir para pagamento')

@@ -11,7 +11,7 @@ export type BillingSubscription = {
 export const dashboardPlans: Plan[] = ['free', 'basic', 'pro']
 
 export function isPaidSubscriptionActive(subscription: BillingSubscription) {
-  return !!subscription && ['authorized', 'pending'].includes(subscription.status)
+  return !!subscription && ['authorized'].includes(subscription.status)
 }
 
 export function isPaidSubscriptionConfirmed(subscription: BillingSubscription) {
