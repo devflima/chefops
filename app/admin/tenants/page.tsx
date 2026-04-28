@@ -45,11 +45,15 @@ export default function AdminTenantsPage() {
   }
 
   useEffect(() => {
-    loadTenants()
+    Promise.resolve().then(() => {
+      loadTenants()
+    })
   }, [])
 
   useEffect(() => {
-    setPage(getAdminTenantPageReset())
+    Promise.resolve().then(() => {
+      setPage(getAdminTenantPageReset())
+    })
   }, [search, planFilter, statusFilter])
 
   function openTenant(tenant: AdminTenant) {

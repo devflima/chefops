@@ -436,37 +436,41 @@ export default function MenuClient({
   useEffect(() => {
     const stored = parseStoredActiveOrder(window.localStorage.getItem(activeOrderStorageKey))
     if (stored) {
-      setOrderId(stored.id)
-      setOrderNumber(stored.order_number)
+      Promise.resolve().then(() => {
+        setOrderId(stored.id)
+        setOrderNumber(stored.order_number)
+      })
     }
   }, [activeOrderStorageKey])
 
   useEffect(() => {
-    const shouldQuoteDelivery =
-      checkoutStep === 'address' &&
-      !tableInfo &&
-      (paymentMethod === 'delivery' || paymentMethod === 'online')
+    Promise.resolve().then(() => {
+      const shouldQuoteDelivery =
+        checkoutStep === 'address' &&
+        !tableInfo &&
+        (paymentMethod === 'delivery' || paymentMethod === 'online')
 
-    if (!shouldQuoteDelivery || operationClosedNotice) return
+      if (!shouldQuoteDelivery || operationClosedNotice) return
 
-    if (!hasCompleteDeliveryAddress(address)) {
-      setQuotedDeliveryFee(null)
-      setQuotedDistanceKm(null)
-      setDeliveryQuoteMessage(null)
-      lastDeliveryQuoteAlertRef.current = null
-      return
-    }
-
-    resolveDeliveryQuote(address).catch((error) => {
-      const message = error instanceof Error ? error.message : 'Não foi possível calcular a entrega.'
-      setQuotedDeliveryFee(null)
-      setQuotedDistanceKm(null)
-      setDeliveryQuoteMessage(message)
-
-      if (lastDeliveryQuoteAlertRef.current !== message) {
-        toast.error(message)
-        lastDeliveryQuoteAlertRef.current = message
+      if (!hasCompleteDeliveryAddress(address)) {
+        setQuotedDeliveryFee(null)
+        setQuotedDistanceKm(null)
+        setDeliveryQuoteMessage(null)
+        lastDeliveryQuoteAlertRef.current = null
+        return
       }
+
+      resolveDeliveryQuote(address).catch((error) => {
+        const message = error instanceof Error ? error.message : 'Não foi possível calcular a entrega.'
+        setQuotedDeliveryFee(null)
+        setQuotedDistanceKm(null)
+        setDeliveryQuoteMessage(message)
+
+        if (lastDeliveryQuoteAlertRef.current !== message) {
+          toast.error(message)
+          lastDeliveryQuoteAlertRef.current = message
+        }
+      })
     })
   }, [
     address,
