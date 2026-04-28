@@ -436,41 +436,48 @@ export default function MenuClient({
   useEffect(() => {
     const stored = parseStoredActiveOrder(window.localStorage.getItem(activeOrderStorageKey))
     if (stored) {
-      Promise.resolve().then(() => {
-        setOrderId(stored.id)
-        setOrderNumber(stored.order_number)
-      })
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOrderId(stored.id)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOrderNumber(stored.order_number)
     }
   }, [activeOrderStorageKey])
 
+
+
   useEffect(() => {
-    Promise.resolve().then(() => {
-      const shouldQuoteDelivery =
-        checkoutStep === 'address' &&
-        !tableInfo &&
-        (paymentMethod === 'delivery' || paymentMethod === 'online')
+    const shouldQuoteDelivery =
+      checkoutStep === 'address' &&
+      !tableInfo &&
+      (paymentMethod === 'delivery' || paymentMethod === 'online')
 
-      if (!shouldQuoteDelivery || operationClosedNotice) return
+    if (!shouldQuoteDelivery || operationClosedNotice) return
 
-      if (!hasCompleteDeliveryAddress(address)) {
-        setQuotedDeliveryFee(null)
-        setQuotedDistanceKm(null)
-        setDeliveryQuoteMessage(null)
-        lastDeliveryQuoteAlertRef.current = null
-        return
+    if (!hasCompleteDeliveryAddress(address)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQuotedDeliveryFee(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQuotedDistanceKm(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDeliveryQuoteMessage(null)
+      lastDeliveryQuoteAlertRef.current = null
+      return
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    resolveDeliveryQuote(address).catch((error) => {
+      const message = error instanceof Error ? error.message : 'Não foi possível calcular a entrega.'
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQuotedDeliveryFee(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQuotedDistanceKm(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDeliveryQuoteMessage(message)
+
+      if (lastDeliveryQuoteAlertRef.current !== message) {
+        toast.error(message)
+        lastDeliveryQuoteAlertRef.current = message
       }
-
-      resolveDeliveryQuote(address).catch((error) => {
-        const message = error instanceof Error ? error.message : 'Não foi possível calcular a entrega.'
-        setQuotedDeliveryFee(null)
-        setQuotedDistanceKm(null)
-        setDeliveryQuoteMessage(message)
-
-        if (lastDeliveryQuoteAlertRef.current !== message) {
-          toast.error(message)
-          lastDeliveryQuoteAlertRef.current = message
-        }
-      })
     })
   }, [
     address,
@@ -535,6 +542,8 @@ export default function MenuClient({
       cancelled = true
     }
   }, [checkoutResult, checkoutSessionId])
+
+
 
   useEffect(() => {
     if (!orderId) return

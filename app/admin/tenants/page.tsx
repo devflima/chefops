@@ -45,15 +45,13 @@ export default function AdminTenantsPage() {
   }
 
   useEffect(() => {
-    Promise.resolve().then(() => {
-      loadTenants()
-    })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTenants()
   }, [])
 
   useEffect(() => {
-    Promise.resolve().then(() => {
-      setPage(getAdminTenantPageReset())
-    })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(getAdminTenantPageReset())
   }, [search, planFilter, statusFilter])
 
   function openTenant(tenant: AdminTenant) {
