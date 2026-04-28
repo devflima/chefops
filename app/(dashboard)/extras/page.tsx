@@ -29,7 +29,7 @@ const extraSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
   price: z.coerce.number().min(0),
   category: z.enum(['border', 'flavor', 'other']),
-  category_id: z.string(),
+  target_categories: z.array(z.string()),
 })
 
 type ExtraForm = z.infer<typeof extraSchema>
@@ -85,12 +85,7 @@ export default function ExtrasPage() {
   }
 
   async function onSubmit(values: ExtraForm) {
-    const payload = {
-      ...values,
-      category_id: values.category === 'border' || values.category_id === 'none'
-        ? null
-        : values.category_id,
-    }
+    const payload = values
 
     try {
       if (editing) {

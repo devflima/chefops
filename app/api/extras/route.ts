@@ -7,7 +7,7 @@ const extraSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
   price: z.coerce.number().min(0),
   category: z.enum(['border', 'flavor', 'other']),
-  category_id: z.string().uuid().nullable().optional(),
+  target_categories: z.array(z.string().uuid()).default([]),
   active: z.boolean().default(true),
 })
 
