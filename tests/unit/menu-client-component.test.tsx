@@ -1763,10 +1763,29 @@ describe('MenuClient component', () => {
     expect(stateSetters[13]).not.toHaveBeenCalled()
   })
 
-  it('marca o telefone como verificado no plano free sem buscar cliente', async () => {
+  it('exige verificacao de telefone no plano free e busca cliente', async () => {
     stateValues[5] = '(11) 99999-9999'
+    stateValues[25] = '123456'
 
-    const fetchMock = vi.fn()
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/public/phone-verification/send') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({ data: { sent: true } }),
+        }
+      }
+      if (url === '/api/public/phone-verification/verify') {
+        return {
+          ok: true,
+          json: vi.fn().mockResolvedValue({ data: { verified: true } }),
+        }
+      }
+      return {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: null }),
+      }
+    })
+    
     vi.stubGlobal('fetch', fetchMock)
 
     const { default: MenuClient } = await import('@/app/[slug]/menu/MenuClient')
@@ -1791,13 +1810,19 @@ describe('MenuClient component', () => {
       drawerProps: {
         infoStepProps: {
           onPhoneLookup: () => Promise<void>
+          onVerifyPhoneCode: () => Promise<void>
         }
       }
     }
 
     await props.drawerProps.infoStepProps.onPhoneLookup()
-
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledWith('/api/public/phone-verification/send', expect.anything())
+    
+    await props.drawerProps.infoStepProps.onVerifyPhoneCode()
+    expect(fetchMock).toHaveBeenCalledWith('/api/public/phone-verification/verify', expect.anything())
+    
+    // Deve validar o telefone e buscar o cliente mesmo no plano free
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/customers'))
     expect(stateSetters[10]).toHaveBeenCalledWith(true)
   })
 
@@ -2613,7 +2638,7 @@ describe('MenuClient component', () => {
 
     const fetchMock = vi.fn(async () => ({
       ok: true,
-      json: vi.fn().mockResolvedValue({ data: null }),
+      json: vi.fn().mockResolvedValue({ data: { id: 'customer-created' } }),
     }))
     vi.stubGlobal('fetch', fetchMock)
 
@@ -2645,11 +2670,11 @@ describe('MenuClient component', () => {
 
     await props.drawerProps.addressStepProps.onSubmit()
 
-    expect(fetchMock).not.toHaveBeenCalledWith('/api/customers', expect.anything())
+    expect(fetchMock).toHaveBeenCalledWith('/api/customers', expect.anything())
     expect(createOrderMutateAsyncMock).toHaveBeenCalledWith(
       expect.objectContaining({
         customer_name: 'Maria',
-        customer_id: undefined,
+        customer_id: 'customer-created',
         payment_method: 'delivery',
       }),
     )

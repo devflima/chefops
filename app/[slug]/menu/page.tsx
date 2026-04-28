@@ -130,7 +130,7 @@ export default async function MenuPage({
       price, image_url, available, display_order, created_at, updated_at,
       category:categories(id, name),
       extras:menu_item_extras(
-        extra:extras(id, name, price, category, category_id)
+        extra:extras(id, name, price, category, target_categories)
       )
     `)
     .eq('tenant_id', tenant.id)
@@ -140,7 +140,7 @@ export default async function MenuPage({
 
   const { data: rawActiveExtras } = await publicSupabase
     .from('extras')
-    .select('id, name, price, category, category_id')
+    .select('id, name, price, category, target_categories')
     .eq('tenant_id', tenant.id)
     .eq('active', true)
     .order('name', { ascending: true })
