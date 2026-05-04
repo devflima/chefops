@@ -11,12 +11,14 @@ export function MenuStatusPanel({
   cartOpen,
   onTrackOrder,
   tableInfo,
+  activeOrdersCount = 0,
 }: {
   checkoutNotice: string | null
   publicOrderStatus: PublicOrderStatus | null
   cartOpen: boolean
   onTrackOrder: () => void
   tableInfo: { id: string; number: string } | null
+  activeOrdersCount?: number
 }) {
   const checkoutNoticeTone = getCheckoutNoticeTone(publicOrderStatus)
   const shouldShowNotice = shouldShowCheckoutNoticeBanner({
@@ -24,6 +26,8 @@ export function MenuStatusPanel({
     publicOrderStatus,
     cartOpen,
   })
+
+  const othersCount = activeOrdersCount - (publicOrderStatus && !['delivered', 'cancelled'].includes(publicOrderStatus.status) ? 1 : 0)
 
   return (
     <>
@@ -45,6 +49,7 @@ export function MenuStatusPanel({
         <PublicOrderStatusCard
           publicOrderStatus={publicOrderStatus}
           onTrack={onTrackOrder}
+          othersCount={Math.max(0, othersCount)}
         />
       )}
 

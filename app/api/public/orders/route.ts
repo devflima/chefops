@@ -277,3 +277,50 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export async function GET(request: NextRequest) {
+  try {
+    const admin = createAdminClient()
+    const { searchParams } = new URL(request.url)
+    const phone = searchParams.get('phone')
+    const tenant_id = searchParams.get('tenant_id')
+
+    if (!phone || !tenant_id) {
+      return NextResponse.json(
+        { error: 'Parâmetros phone e tenant_id são obrigatórios.' },
+        { status: 400 }
+      )
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '')
+
+    const { data: orders, error } = await admin
+      .from('orders')
+      .select(`
+        id,
+        order_number,
+        status,
+        payment_status,
+        payment_method,
+        delivery_status,
+        cancelled_reason,
+        total,
+        created_at,
+        updated_at
+      `)
+      .eq('tenant_id', tenant_id)
+      .eq('customer_phone', cleanPhone)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (error) throw error
+
+    return NextResponse.json({ data: orders })
+  } catch (error) {
+    console.error('[public-orders:get]', error)
+    return NextResponse.json(
+      { error: 'Erro ao buscar pedidos.' },
+      { status: 500 }
+    )
+  }
+}

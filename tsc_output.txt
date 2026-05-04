@@ -1,0 +1,603 @@
+tests/integration/api-auth-mercadopago-routes.test.ts(472,54): error TS2345: Argument of type '"state-123"' is not assignable to parameter of type '`${string}-${string}-${string}-${string}-${string}`'.
+tests/integration/api-core-routes.test.ts(481,7): error TS2345: Argument of type 'Request' is not assignable to parameter of type 'NextRequest'.
+  Type 'Request' is missing the following properties from type 'NextRequest': cookies, nextUrl, page, ua
+tests/integration/api-menu-customers-routes.test.ts(346,58): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+tests/integration/api-menu-customers-routes.test.ts(362,58): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+tests/integration/api-operations-routes.test.ts(36,56): error TS2345: Argument of type '(...args: unknown[]) => Promise<unknown>' is not assignable to parameter of type '(feature: PlanFeature, allowedRoles?: EstablishmentRole[] | undefined) => Promise<{ ok: false; response: NextResponse<{ error: string; }>; } | { ...; }>'.
+  Type 'Promise<unknown>' is not assignable to type 'Promise<{ ok: false; response: NextResponse<{ error: string; }>; } | { supabase: SupabaseClient<any, "public", "public", any, any>; user: User; profile: { ...; }; ok: true; response?: undefined; }>'.
+    Type 'unknown' is not assignable to type '{ ok: false; response: NextResponse<{ error: string; }>; } | { supabase: SupabaseClient<any, "public", "public", any, any>; user: User; profile: { ...; }; ok: true; response?: undefined; }'.
+tests/integration/checkout-session.test.ts(279,9): error TS2739: Type '{ zip_code: string; street: string; number: string; neighborhood: string; city: string; state: string; }' is missing the following properties from type 'CustomerAddress': label, is_default
+tests/integration/public-cancel-route.test.ts(45,52): error TS2322: Type 'Promise<{ sent: false; reason: "noop"; }>' is not assignable to type 'Promise<{ sent: boolean; reason: "already-sent"; } | { sent: boolean; reason: "missing-phone"; } | { sent: boolean; reason: "missing-config"; } | { sent: boolean; reason: "feature-not-available"; } | { ...; } | { ...; }>'.
+  Type '{ sent: false; reason: "noop"; }' is not assignable to type '{ sent: boolean; reason: "already-sent"; } | { sent: boolean; reason: "missing-phone"; } | { sent: boolean; reason: "missing-config"; } | { sent: boolean; reason: "feature-not-available"; } | { ...; } | { ...; }'.
+    Type '{ sent: false; reason: "noop"; }' is not assignable to type '{ sent: boolean; reason?: undefined; }'.
+      Types of property 'reason' are incompatible.
+        Type '"noop"' is not assignable to type 'undefined'.
+tests/regression/mercado-pago-webhook.test.ts(48,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(71,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(101,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(129,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(153,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(179,7): error TS2345: Argument of type '{ json: () => Promise<never>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(206,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(252,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(295,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(317,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(370,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(417,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(480,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(548,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/regression/mercado-pago-webhook.test.ts(607,7): error TS2345: Argument of type '{ json: () => Promise<any>; headers: Headers; nextUrl: URL; }' is not assignable to parameter of type 'Pick<NextRequest, "nextUrl" | "json" | "headers">'.
+  Types of property 'nextUrl' are incompatible.
+    Type 'URL' is missing the following properties from type 'NextURL': analyze, formatPathname, formatSearch, buildId, and 6 more.
+tests/unit/admin-helpers.test.ts(196,31): error TS2345: Argument of type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: null; total_users: number; total_orders: number; total_revenue: null; last_order_at: null; }' is not assignable to parameter of type 'AdminTenant'.
+  Types of property 'plan' are incompatible.
+    Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(197,42): error TS2345: Argument of type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: null; total_users: number; total_orders: number; total_revenue: null; last_order_at: null; }' is not assignable to parameter of type 'AdminTenant'.
+  Types of property 'plan' are incompatible.
+    Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(240,40): error TS2345: Argument of type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; }' is not assignable to parameter of type 'AdminTenant'.
+  Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; }' is not assignable to type 'AdminTenant'.
+    Types of property 'plan' are incompatible.
+      Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(245,40): error TS2345: Argument of type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; }' is not assignable to parameter of type 'AdminTenant'.
+  Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; }' is not assignable to type 'AdminTenant'.
+    Types of property 'plan' are incompatible.
+      Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(250,36): error TS2345: Argument of type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; }' is not assignable to parameter of type 'AdminTenant'.
+  Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; }' is not assignable to type 'AdminTenant'.
+    Types of property 'plan' are incompatible.
+      Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(264,42): error TS2345: Argument of type '({ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; })[]' is not assignable to parameter of type 'AdminTenant[]'.
+  Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; }' is not assignable to type 'AdminTenant'.
+    Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; }' is not assignable to type 'AdminTenant'.
+      Types of property 'plan' are incompatible.
+        Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(289,42): error TS2345: Argument of type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; }' is not assignable to parameter of type 'AdminTenant'.
+  Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; }' is not assignable to type 'AdminTenant'.
+    Types of property 'plan' are incompatible.
+      Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(296,33): error TS2345: Argument of type '({ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; })[]' is not assignable to parameter of type 'AdminTenant[]'.
+  Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; }' is not assignable to type 'AdminTenant'.
+    Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; }' is not assignable to type 'AdminTenant'.
+      Types of property 'plan' are incompatible.
+        Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-helpers.test.ts(301,33): error TS2345: Argument of type '({ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; })[]' is not assignable to parameter of type 'AdminTenant[]'.
+  Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; } | { ...; }' is not assignable to type 'AdminTenant'.
+    Type '{ id: string; name: string; slug: string; plan: string; status: string; created_at: string; suspended_at: null; suspension_reason: null; next_billing_at: string; total_users: number; total_orders: number; total_revenue: number; last_order_at: string; }' is not assignable to type 'AdminTenant'.
+      Types of property 'plan' are incompatible.
+        Type 'string' is not assignable to type '"free" | "basic" | "pro"'.
+tests/unit/admin-pages.test.tsx(100,33): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/admin-pages.test.tsx(103,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(111,25): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1415,13): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type 'null' is not assignable to type 'number'.
+      Type 'null' is not assignable to type 'number'.
+tests/unit/admin-pages.test.tsx(1432,13): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type 'null' is not assignable to type 'number'.
+      Type 'null' is not assignable to type 'number'.
+tests/unit/admin-pages.test.tsx(1619,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1620,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1621,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1652,69): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1654,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1654,34): error TS18046: 'input.props' is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1655,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1655,34): error TS18046: 'input.props' is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1658,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1659,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1660,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1692,61): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1694,5): error TS18046: 'searchInput.props' is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1695,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-pages.test.tsx(1696,5): error TS2571: Object is of type 'unknown'.
+tests/unit/admin-tenants-page-component.test.tsx(260,25): error TS2352: Conversion of type 'null' to type '{ onOpenChange: (open: boolean) => void; onSave: () => Promise<void>; onSuspend: () => Promise<void>; onReactivate: () => Promise<void>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+tests/unit/auth-guards.test.ts(141,12): error TS18048: 'unauthorized.response' is possibly 'undefined'.
+tests/unit/auth-guards.test.ts(154,12): error TS18048: 'missingProfile.response' is possibly 'undefined'.
+tests/unit/auth-guards.test.ts(175,12): error TS18048: 'forbidden.response' is possibly 'undefined'.
+tests/unit/auth-guards.test.ts(220,12): error TS18048: 'forbidden.response' is possibly 'undefined'.
+tests/unit/auth-guards.test.ts(266,12): error TS18048: 'forbidden.response' is possibly 'undefined'.
+tests/unit/auth-guards.test.ts(300,12): error TS18048: 'unauthorized.response' is possibly 'undefined'.
+tests/unit/auth-guards.test.ts(315,12): error TS18048: 'missingProfile.response' is possibly 'undefined'.
+tests/unit/auth-page-content.test.tsx(40,55): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type '{ value: string; onChange: Mock<Procedure | Constructable>; }'.
+tests/unit/auth-page-content.test.tsx(63,35): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/auth-page-content.test.tsx(66,38): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/auth-page-content.test.tsx(75,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<LoginFormValues, any, LoginFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: false; }' is missing the following properties from type 'FormState<LoginFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(77,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<LoginFormValues, any, LoginFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: false; }' is missing the following properties from type 'FormState<LoginFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(96,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<LoginFormValues, any, LoginFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: true; }' is missing the following properties from type 'FormState<LoginFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(98,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<LoginFormValues, any, LoginFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: true; }' is missing the following properties from type 'FormState<LoginFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(112,50): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/auth-page-content.test.tsx(115,12): error TS18046: 'submitButton.props' is of type 'unknown'.
+tests/unit/auth-page-content.test.tsx(117,5): error TS18046: 'form.props' is of type 'unknown'.
+tests/unit/auth-page-content.test.tsx(128,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<RegisterFormValues, any, RegisterFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: true; }' is missing the following properties from type 'FormState<RegisterFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(130,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<RegisterFormValues, any, RegisterFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: true; }' is missing the following properties from type 'FormState<RegisterFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(153,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<RegisterFormValues, any, RegisterFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: false; }' is missing the following properties from type 'FormState<RegisterFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(155,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<RegisterFormValues, any, RegisterFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: false; }' is missing the following properties from type 'FormState<RegisterFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(163,5): error TS2571: Object is of type 'unknown'.
+tests/unit/auth-page-content.test.tsx(176,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<ForgotPasswordFormValues, any, ForgotPasswordFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: false; }' is missing the following properties from type 'FormState<ForgotPasswordFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(178,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<ForgotPasswordFormValues, any, ForgotPasswordFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: false; }' is missing the following properties from type 'FormState<ForgotPasswordFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(198,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<ResetPasswordFormValues, any, ResetPasswordFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: true; }' is missing the following properties from type 'FormState<ResetPasswordFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/auth-page-content.test.tsx(200,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{}' is missing the following properties from type 'Control<ResetPasswordFormValues, any, ResetPasswordFormValues>': _subjects, _removeUnmounted, _names, _state, and 25 more.
+      Type '{ isSubmitting: true; }' is missing the following properties from type 'FormState<ResetPasswordFormValues>': isDirty, isLoading, isSubmitted, isSubmitSuccessful, and 9 more.
+tests/unit/catalog-edit-page-component.test.tsx(231,25): error TS2352: Conversion of type 'null' to type '{ onNameFilterChange: (value: string) => void; onCategoryFilterChange: (value: "border" | "flavor" | "other" | "all") => void; onOpenChange: (open: boolean) => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+tests/unit/catalog-pages-component.test.tsx(465,18): error TS2349: This expression is not callable.
+  Type 'never' has no call signatures.
+tests/unit/extras-page.test.ts(47,31): error TS2345: Argument of type '{ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; }' is not assignable to parameter of type 'Extra | null'.
+  Property 'target_categories' is missing in type '{ id: string; name: string; price: number; category: "border"; active: boolean; }' but required in type 'Extra'.
+tests/unit/extras-page.test.ts(56,25): error TS2345: Argument of type '({ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; })[]' is not assignable to parameter of type 'Extra[]'.
+  Type '{ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; }' is not assignable to type 'Extra'.
+    Property 'target_categories' is missing in type '{ id: string; name: string; price: number; category: "border"; active: boolean; }' but required in type 'Extra'.
+tests/unit/extras-page.test.ts(57,25): error TS2345: Argument of type '({ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; })[]' is not assignable to parameter of type 'Extra[]'.
+  Type '{ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; }' is not assignable to type 'Extra'.
+    Property 'target_categories' is missing in type '{ id: string; name: string; price: number; category: "border"; active: boolean; }' but required in type 'Extra'.
+tests/unit/extras-page.test.ts(58,25): error TS2345: Argument of type '({ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; })[]' is not assignable to parameter of type 'Extra[]'.
+  Type '{ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; }' is not assignable to type 'Extra'.
+    Property 'target_categories' is missing in type '{ id: string; name: string; price: number; category: "border"; active: boolean; }' but required in type 'Extra'.
+tests/unit/extras-page.test.ts(59,25): error TS2345: Argument of type '({ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; })[]' is not assignable to parameter of type 'Extra[]'.
+  Type '{ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; }' is not assignable to type 'Extra'.
+    Property 'target_categories' is missing in type '{ id: string; name: string; price: number; category: "border"; active: boolean; }' but required in type 'Extra'.
+tests/unit/extras-page.test.ts(63,27): error TS2345: Argument of type '({ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; })[]' is not assignable to parameter of type 'Extra[]'.
+  Type '{ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; }' is not assignable to type 'Extra'.
+    Property 'target_categories' is missing in type '{ id: string; name: string; price: number; category: "border"; active: boolean; }' but required in type 'Extra'.
+tests/unit/extras-page.test.ts(64,27): error TS2345: Argument of type '({ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; })[]' is not assignable to parameter of type 'Extra[]'.
+  Type '{ id: string; name: string; price: number; category: "border"; active: boolean; } | { id: string; name: string; price: number; category: "other"; active: boolean; } | { id: string; name: string; price: number; category: "flavor"; active: boolean; }' is not assignable to type 'Extra'.
+    Property 'target_categories' is missing in type '{ id: string; name: string; price: number; category: "border"; active: boolean; }' but required in type 'Extra'.
+tests/unit/heavy-components-smoke.test.tsx(131,33): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/heavy-components-smoke.test.tsx(134,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(142,25): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(622,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(622,39): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(623,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(624,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(625,5): error TS18046: 'customerTextarea.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(627,5): error TS18046: 'pickerButton.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(653,5): error TS18046: 'tabInput.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(654,5): error TS18046: 'tabButton.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(674,56): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(677,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(678,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(679,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(680,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(681,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(763,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; }' is missing the following properties from type 'MenuItem': tenant_id, product_id, category_id, name, and 6 more.
+      Type 'UseFormReturn<{ name: string; description: string; price: number; category_id: string; display_order: number; }, any, { name: string; description: string; price: number; category_id: string; display_order: number; }>' is not assignable to type 'UseFormReturn<MenuItemFormValues>'.
+        Types of property 'watch' are incompatible.
+          Type 'UseFormWatch<{ name: string; description: string; price: number; category_id: string; display_order: number; }>' is not assignable to type 'UseFormWatch<MenuItemFormValues>'.
+            Type 'string | undefined' is not assignable to type 'string'.
+              Type 'undefined' is not assignable to type 'string'.
+tests/unit/heavy-components-smoke.test.tsx(764,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; }' is missing the following properties from type 'MenuItem': tenant_id, product_id, category_id, name, and 6 more.
+      Type 'UseFormReturn<{ name: string; description: string; price: number; category_id: string; display_order: number; }, any, { name: string; description: string; price: number; category_id: string; display_order: number; }>' is not assignable to type 'UseFormReturn<MenuItemFormValues>'.
+        Types of property 'watch' are incompatible.
+          Type 'UseFormWatch<{ name: string; description: string; price: number; category_id: string; display_order: number; }>' is not assignable to type 'UseFormWatch<MenuItemFormValues>'.
+            Type 'string | undefined' is not assignable to type 'string'.
+              Type 'undefined' is not assignable to type 'string'.
+tests/unit/heavy-components-smoke.test.tsx(811,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type 'UseFormReturn<{ name: string; description: string; price: number; category_id: string; display_order: number; }, any, { name: string; description: string; price: number; category_id: string; display_order: number; }>' is not assignable to type 'UseFormReturn<MenuItemFormValues>'.
+      Types of property 'watch' are incompatible.
+        Type 'UseFormWatch<{ name: string; description: string; price: number; category_id: string; display_order: number; }>' is not assignable to type 'UseFormWatch<MenuItemFormValues>'.
+          Type 'string | undefined' is not assignable to type 'string'.
+            Type 'undefined' is not assignable to type 'string'.
+tests/unit/heavy-components-smoke.test.tsx(837,56): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(841,9): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(842,9): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(843,16): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(845,82): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(847,48): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(847,83): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(853,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(854,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(855,5): error TS2571: Object is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(855,31): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(856,5): error TS18046: 'ingredientSelect.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(857,5): error TS18046: 'ingredientQuantityInput.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(858,5): error TS18046: 'ingredientQuantityInput.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(859,5): error TS18046: 'extraCheckbox.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(860,11): error TS18046: 'formElement.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(901,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; }' is missing the following properties from type 'MenuItem': tenant_id, product_id, category_id, name, and 6 more.
+      Type '{ control: {}; formState: { isSubmitting: boolean; errors: { root: { message: string; }; }; }; handleSubmit: (callback: (values: Record<string, unknown>) => unknown) => () => unknown; }' is missing the following properties from type 'UseFormReturn<MenuItemFormValues>': watch, getValues, getFieldState, setError, and 9 more.
+tests/unit/heavy-components-smoke.test.tsx(902,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; }' is missing the following properties from type 'MenuItem': tenant_id, product_id, category_id, name, and 6 more.
+      Type '{ control: {}; formState: { isSubmitting: boolean; errors: { root: { message: string; }; }; }; handleSubmit: (callback: (values: Record<string, unknown>) => unknown) => () => unknown; }' is missing the following properties from type 'UseFormReturn<MenuItemFormValues>': watch, getValues, getFieldState, setError, and 9 more.
+tests/unit/heavy-components-smoke.test.tsx(925,82): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(926,5): error TS18046: 'extraCheckbox.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(933,48): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(933,83): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(935,5): error TS18046: 'quantityInput.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(940,5): error TS18046: 'cancelButton.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(1035,11): error TS18046: 'formElement.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(1062,11): error TS18046: 'formElement.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(1089,11): error TS18046: 'formElement.props' is of type 'unknown'.
+tests/unit/heavy-components-smoke.test.tsx(1116,11): error TS18046: 'formElement.props' is of type 'unknown'.
+tests/unit/install-banner-component.test.tsx(32,33): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/install-banner-component.test.tsx(35,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/install-banner-component.test.tsx(43,25): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/install-banner-component.test.tsx(185,11): error TS18046: 'installButton.props' is of type 'unknown'.
+tests/unit/install-banner-component.test.tsx(231,5): error TS18046: 'dismissButton.props' is of type 'unknown'.
+tests/unit/install-banner-component.test.tsx(272,11): error TS18046: 'installButton.props' is of type 'unknown'.
+tests/unit/install-banner-component.test.tsx(427,18): error TS18046: 'installButton.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(52,33): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/integrations-page.test.tsx(55,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(63,25): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(84,34): error TS2345: Argument of type '{ tenant_id: string; delivery_enabled: true; flat_fee: number; }' is not assignable to parameter of type 'DeliverySettingsShape'.
+  Type '{ tenant_id: string; delivery_enabled: true; flat_fee: number; }' is missing the following properties from type 'DeliverySettingsShape': accepting_orders, schedule_enabled, opens_at, closes_at
+tests/unit/integrations-page.test.tsx(109,39): error TS2345: Argument of type '{ tenant_id: string; delivery_enabled: true; flat_fee: number; }' is not assignable to parameter of type 'DeliverySettingsShape'.
+  Type '{ tenant_id: string; delivery_enabled: true; flat_fee: number; }' is missing the following properties from type 'DeliverySettingsShape': accepting_orders, schedule_enabled, opens_at, closes_at
+tests/unit/integrations-page.test.tsx(376,56): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(379,48): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(383,5): error TS18046: 'deliveryInput.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(385,5): error TS2571: Object is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(385,52): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(386,5): error TS2571: Object is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(386,52): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(391,16): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(392,24): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(396,5): error TS2571: Object is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(397,5): error TS2571: Object is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(398,5): error TS2571: Object is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(399,5): error TS2571: Object is of type 'unknown'.
+tests/unit/integrations-page.test.tsx(646,52): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '{ connected: true; accountLoading: false; accountData: { mercado_pago_user_id: string; live_mode: true; token_expires_at: string; }; disconnectPending: false; onDisconnect: Mock<Procedure>; ... 13 more ...; onToggleWhatsappOption: Mock<...>; }' is not assignable to parameter of type 'Attributes & Props'.
+      Type '{ connected: true; accountLoading: false; accountData: { mercado_pago_user_id: string; live_mode: true; token_expires_at: string; }; disconnectPending: false; onDisconnect: Mock<Procedure>; ... 13 more ...; onToggleWhatsappOption: Mock<...>; }' is missing the following properties from type 'Props': openingHourValue, closingHourValue, onDeliveryScheduleChange, onDeliveryHoursChange, onDeliveryHoursSave
+tests/unit/integrations-page.test.tsx(700,52): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '{ connected: true; accountLoading: false; accountData: { mercado_pago_user_id: string; live_mode: true; token_expires_at: string; }; disconnectPending: false; onDisconnect: Mock<Procedure>; ... 13 more ...; onToggleWhatsappOption: Mock<...>; }' is not assignable to parameter of type 'Attributes & Props'.
+      Type '{ connected: true; accountLoading: false; accountData: { mercado_pago_user_id: string; live_mode: true; token_expires_at: string; }; disconnectPending: false; onDisconnect: Mock<Procedure>; ... 13 more ...; onToggleWhatsappOption: Mock<...>; }' is missing the following properties from type 'Props': openingHourValue, closingHourValue, onDeliveryScheduleChange, onDeliveryHoursChange, onDeliveryHoursSave
+tests/unit/kds-page.test.tsx(24,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/kds-page.test.tsx(32,25): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/kds-page.test.tsx(99,18): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; order_number: number; status: string; created_at: string; table_number: number; notes: string; items: { id: string; name: string; quantity: number; notes: string; extras: { id: string; name: string; }[]; }[]; }' is missing the following properties from type 'Order': tenant_id, customer_name, customer_phone, customer_cpf, and 8 more.
+tests/unit/kds-page.test.tsx(112,18): error TS2740: Type '{ id: string; order_number: number; status: string; created_at: string; table_number: number; notes: string; items: { id: string; name: string; quantity: number; notes: string; extras: { id: string; name: string; }[]; }[]; }' is missing the following properties from type 'Order': tenant_id, customer_name, customer_phone, customer_cpf, and 8 more.
+tests/unit/kds-page.test.tsx(121,24): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/kds-page.test.tsx(125,5): error TS18046: 'advanceButton.props' is of type 'unknown'.
+tests/unit/kds-page.test.tsx(187,16): error TS2740: Type '{ id: string; order_number: number; status: string; created_at: string; table_number: null; notes: null; items: { id: string; name: string; quantity: number; notes: null; extras: never[]; }[]; }' is missing the following properties from type 'Order': tenant_id, customer_name, customer_phone, customer_cpf, and 8 more.
+tests/unit/kds-page.test.tsx(195,24): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/kds-page.test.tsx(198,27): error TS18046: 'advanceButton.props' is of type 'unknown'.
+tests/unit/kds-page.test.tsx(199,12): error TS18046: 'advanceButton.props' is of type 'unknown'.
+tests/unit/kds-page.test.tsx(217,18): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; order_number: number; status: "delivered"; created_at: string; table_number: null; notes: null; items: never[]; }' is missing the following properties from type 'Order': tenant_id, customer_name, customer_phone, customer_cpf, and 8 more.
+tests/unit/menu-client-component.test.tsx(1532,5): error TS2349: This expression is not callable.
+  Type 'never' has no call signatures.
+tests/unit/mesas-page-component.test.tsx(146,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/mesas-page-component.test.tsx(151,10): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(57,33): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/plans-delivery-page-content.test.tsx(60,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(68,25): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(89,80): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '{ currentPlan: string; currentSubscription: { status: string; plan: string; next_payment_date: string; cancel_at_period_end: boolean; }; loadingPlan: null; onSelectPlan: Mock<Procedure>; onCancelSubscription: Mock<...>; }' is not assignable to parameter of type 'Attributes & Props'.
+      Type '{ currentPlan: string; currentSubscription: { status: string; plan: string; next_payment_date: string; cancel_at_period_end: boolean; }; loadingPlan: null; onSelectPlan: Mock<Procedure>; onCancelSubscription: Mock<...>; }' is not assignable to type 'Props'.
+        Types of property 'currentPlan' are incompatible.
+          Type 'string' is not assignable to type 'Plan | undefined'.
+tests/unit/plans-delivery-page-content.test.tsx(96,77): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '{ currentPlan: string; currentSubscription: { status: string; plan: string; next_payment_date: string; cancel_at_period_end: boolean; }; loadingPlan: null; onSelectPlan: Mock<Procedure>; onCancelSubscription: Mock<...>; }' is not assignable to parameter of type 'Attributes & Props'.
+      Type '{ currentPlan: string; currentSubscription: { status: string; plan: string; next_payment_date: string; cancel_at_period_end: boolean; }; loadingPlan: null; onSelectPlan: Mock<Procedure>; onCancelSubscription: Mock<...>; }' is not assignable to type 'Props'.
+        Types of property 'currentPlan' are incompatible.
+          Type 'string' is not assignable to type 'Plan | undefined'.
+tests/unit/plans-delivery-page-content.test.tsx(97,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(97,76): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(148,89): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '{ canManage: boolean; activeDrivers: number; isLoading: boolean; drivers: { id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }[]; openCreate: Mock<Procedure>; ... 16 more ...; submitDisabled: boolean; }' is not assignable to parameter of type 'Attributes & Props'.
+      Type '{ canManage: boolean; activeDrivers: number; isLoading: boolean; drivers: { id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }[]; openCreate: Mock<Procedure>; ... 16 more ...; submitDisabled: boolean; }' is not assignable to type 'Props'.
+        Types of property 'drivers' are incompatible.
+          Type '{ id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }[]' is not assignable to type 'DeliveryDriver[]'.
+            Type '{ id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }' is missing the following properties from type 'DeliveryDriver': tenant_id, created_at, updated_at
+tests/unit/plans-delivery-page-content.test.tsx(155,86): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '{ canManage: boolean; activeDrivers: number; isLoading: boolean; drivers: { id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }[]; openCreate: Mock<Procedure>; ... 16 more ...; submitDisabled: boolean; }' is not assignable to parameter of type 'Attributes & Props'.
+      Type '{ canManage: boolean; activeDrivers: number; isLoading: boolean; drivers: { id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }[]; openCreate: Mock<Procedure>; ... 16 more ...; submitDisabled: boolean; }' is not assignable to type 'Props'.
+        Types of property 'drivers' are incompatible.
+          Type '{ id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }[]' is not assignable to type 'DeliveryDriver[]'.
+            Type '{ id: string; name: string; phone: string; vehicle_type: string; notes: string; active: boolean; }' is missing the following properties from type 'DeliveryDriver': tenant_id, created_at, updated_at
+tests/unit/plans-delivery-page-content.test.tsx(161,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(161,46): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(162,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(162,46): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(163,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(163,46): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(164,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(164,30): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(165,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(165,30): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(166,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(166,30): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(167,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(168,5): error TS18046: 'textarea.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(227,7): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; name: string; phone: string; vehicle_type: "moto"; notes: string; active: true; }' is missing the following properties from type 'DeliveryDriver': tenant_id, created_at, updated_at
+tests/unit/plans-delivery-page-content.test.tsx(254,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(254,51): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(262,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '{ id: string; name: string; phone: string; vehicle_type: "carro"; notes: string; active: false; }' is missing the following properties from type 'DeliveryDriver': tenant_id, created_at, updated_at
+tests/unit/plans-delivery-page-content.test.tsx(299,44): error TS18046: 'element.props' is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(302,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(303,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-delivery-page-content.test.tsx(304,5): error TS18046: 'form.props' is of type 'unknown'.
+tests/unit/plans-page.test.tsx(275,63): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/plans-page.test.tsx(276,30): error TS18046: 'input.props' is of type 'unknown'.
+tests/unit/plans-page.test.tsx(279,5): error TS2571: Object is of type 'unknown'.
+tests/unit/plans-page.test.tsx(473,20): error TS2339: Property 'onSelectPlan' does not exist on type 'never'.
+tests/unit/plans-page.test.tsx(554,26): error TS2339: Property 'onSelectPlan' does not exist on type 'never'.
+tests/unit/plans-page.test.tsx(612,20): error TS2339: Property 'onSelectPlan' does not exist on type 'never'.
+tests/unit/plans-page.test.tsx(699,26): error TS2339: Property 'onCancelSubscription' does not exist on type 'never'.
+tests/unit/plans-page.test.tsx(700,20): error TS2339: Property 'onSelectPlan' does not exist on type 'never'.
+tests/unit/produtos-page-component.test.tsx(155,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/produtos-page-component.test.tsx(159,10): error TS2571: Object is of type 'unknown'.
+tests/unit/produtos-page-component.test.tsx(348,7): error TS18046: 'categorySelect.props' is of type 'unknown'.
+tests/unit/produtos-page-component.test.tsx(351,7): error TS18046: 'statusSelect.props' is of type 'unknown'.
+tests/unit/public-menu.test.tsx(382,27): error TS2345: Argument of type '{ readonly id: "item-1"; readonly tenant_id: "tenant-1"; readonly category_id: null; readonly name: "Suco"; readonly description: null; readonly price: 8; readonly available: true; readonly display_order: 1; readonly category: null; readonly extras: readonly []; }' is not assignable to parameter of type 'PublicMenuItem'.
+  Types of property 'extras' are incompatible.
+    The type 'readonly []' is 'readonly' and cannot be assigned to the mutable type '{ extra: MenuExtra | null; }[]'.
+tests/unit/public-menu.test.tsx(1513,58): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+tests/unit/public-menu.test.tsx(1699,58): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+tests/unit/public-menu.test.tsx(1756,58): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+tests/unit/public-menu.test.tsx(1813,58): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+tests/unit/public-menu.test.tsx(1880,58): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+tests/unit/react-query-hooks.test.ts(42,18): error TS2352: Conversion of type 'UseQueryResult<DeliveryDriver[], Error>' to type '{ queryKey: unknown; queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<DeliveryDriver[], Error>' is missing the following properties from type '{ queryKey: unknown; queryFn: () => Promise<unknown>; }': queryKey, queryFn
+tests/unit/react-query-hooks.test.ts(51,20): error TS2352: Conversion of type 'UseMutationResult<DeliveryDriver, Error, DriverPayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<DeliveryDriver, Error, DriverPayload, unknown>, { mutate: UseMutateFunction<DeliveryDriver, Error, DriverPayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(60,20): error TS2352: Conversion of type 'UseMutationResult<DeliveryDriver, Error, DriverPayload & { id: string; }, unknown>' to type '{ mutationFn: (payload: { id: string; name: string; vehicle_type: string; }) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<DeliveryDriver, Error, DriverPayload & { id: string; }, unknown>, { mutate: UseMutateFunction<...>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: { id: string; name: string; vehicle_type: string; }) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(69,20): error TS2352: Conversion of type 'UseMutationResult<{ id: string; }, Error, string, unknown>' to type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<{ id: string; }, Error, string, unknown>, { mutate: UseMutateFunction<{ id: string; }, Error, string, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(104,27): error TS2352: Conversion of type 'UseQueryResult<DeliverySettings, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<DeliverySettings, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(108,30): error TS2352: Conversion of type 'UseMutationResult<DeliverySettings, Error, Omit<DeliverySettings, "tenant_id">, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<DeliverySettings, Error, Omit<DeliverySettings, "tenant_id">, unknown>, { ...; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(116,24): error TS2352: Conversion of type 'UseQueryResult<NotificationSettings, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<NotificationSettings, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(120,27): error TS2352: Conversion of type 'UseMutationResult<NotificationSettings, Error, Omit<NotificationSettings, "tenant_id">, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<NotificationSettings, Error, Omit<NotificationSettings, "tenant_id">, unknown>, { ...; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(152,32): error TS2352: Conversion of type 'UseQueryResult<NotificationSettings, Error>' to type '{ enabled: boolean; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'enabled' is missing in type 'QueryObserverPlaceholderResult<NotificationSettings, Error>' but required in type '{ enabled: boolean; }'.
+tests/unit/react-query-hooks.test.ts(159,29): error TS2352: Conversion of type 'UseQueryResult<OnboardingSteps, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<OnboardingSteps, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(163,26): error TS2352: Conversion of type 'UseMutationResult<OnboardingSteps, Error, Partial<Omit<OnboardingSteps, "id" | "tenant_id" | "completed_at">>, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: (data: unknown) => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<OnboardingSteps, Error, Partial<Omit<OnboardingSteps, "id" | "tenant_id" | "completed_at">>, unknown>, { ...; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: (data: unknown) => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(171,21): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(175,24): error TS2352: Conversion of type 'UseMutationResult<any, Error, void, unknown>' to type '{ mutationFn: () => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, void, unknown>, { mutate: UseMutateFunction<any, Error, void, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: () => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(207,20): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryKey: unknown; queryFn: () => Promise<unknown>; refetchInterval: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<any, Error>' is missing the following properties from type '{ queryKey: unknown; queryFn: () => Promise<unknown>; refetchInterval: number; }': queryKey, queryFn, refetchInterval
+tests/unit/react-query-hooks.test.ts(223,33): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(227,37): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(233,26): error TS2352: Conversion of type 'UseMutationResult<any, Error, { id: string; status: OrderStatus; delivery_driver_id?: string | null | undefined; delivery_status?: DeliveryStatus | null | undefined; cancelled_reason?: string | undefined; }, unknown>' to type '{ mutationFn: (payload: { id: string; status: string; }) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, { id: string; status: OrderStatus; delivery_driver_id?: string | null | undefined; delivery_status?: DeliveryStatus | null | undefined; cancelled_reason?: string | undefined; }, unknown>, { ...; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: { id: string; status: string; }) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(241,25): error TS2352: Conversion of type 'UseMutationResult<any, Error, CreateOrderPayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, CreateOrderPayload, unknown>, { mutate: UseMutateFunction<any, Error, CreateOrderPayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(249,31): error TS2352: Conversion of type 'UseMutationResult<any, Error, CreateOrderPayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, CreateOrderPayload, unknown>, { mutate: UseMutateFunction<any, Error, CreateOrderPayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(260,23): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(264,28): error TS2352: Conversion of type 'UseMutationResult<any, Error, { name: string; description?: string | undefined; price: number; category_id?: string | undefined; available?: boolean | undefined; display_order?: number | undefined; }, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, { name: string; description?: string | undefined; price: number; category_id?: string | undefined; available?: boolean | undefined; display_order?: number | undefined; }, unknown>, { ...; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(272,21): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<any, Error>' is missing the following properties from type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }': queryFn, refetchInterval
+tests/unit/react-query-hooks.test.ts(280,17): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<any, Error>' is missing the following properties from type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }': queryFn, refetchInterval
+tests/unit/react-query-hooks.test.ts(331,23): error TS2352: Conversion of type 'UseQueryResult<TenantPlan, Error>' to type '{ queryKey: unknown; queryFn: () => Promise<unknown>; staleTime: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<TenantPlan, Error>' is missing the following properties from type '{ queryKey: unknown; queryFn: () => Promise<unknown>; staleTime: number; }': queryKey, queryFn, staleTime
+tests/unit/react-query-hooks.test.ts(444,23): error TS2352: Conversion of type 'UseQueryResult<TenantPlan, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<TenantPlan, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(459,22): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(465,35): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(469,39): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(475,27): error TS2352: Conversion of type 'UseMutationResult<any, Error, CreateProductPayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, CreateProductPayload, unknown>, { mutate: UseMutateFunction<any, Error, CreateProductPayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(480,27): error TS2352: Conversion of type 'UseMutationResult<any, Error, Partial<CreateProductPayload> & { active?: boolean | undefined; } & { id: string; }, unknown>' to type '{ mutationFn: (payload: { id: string; }) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, Partial<CreateProductPayload> & { active?: boolean | undefined; } & { id: string; }, unknown>, { ...; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: { id: string; }) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(485,24): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(489,21): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(493,34): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(497,38): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(501,20): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(505,23): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(509,36): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<any, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(513,28): error TS2352: Conversion of type 'UseMutationResult<any, Error, CreateMovementPayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, CreateMovementPayload, unknown>, { mutate: UseMutateFunction<any, Error, CreateMovementPayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(518,22): error TS2352: Conversion of type 'UseMutationResult<any, Error, void, unknown>' to type '{ mutationFn: () => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, void, unknown>, { mutate: UseMutateFunction<any, Error, void, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: () => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(572,20): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<any, Error>' is missing the following properties from type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }': queryFn, refetchInterval
+tests/unit/react-query-hooks.test.ts(577,25): error TS2352: Conversion of type 'UseMutationResult<any, Error, { id: string; number?: string | undefined; capacity?: number | undefined; }, unknown>' to type '{ mutationFn: (payload: { id: string; }) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, { id: string; number?: string | undefined; capacity?: number | undefined; }, unknown>, { mutate: UseMutateFunction<...>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: { id: string; }) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(582,25): error TS2352: Conversion of type 'UseMutationResult<any, Error, string, unknown>' to type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, string, unknown>, { mutate: UseMutateFunction<any, Error, string, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(587,25): error TS2352: Conversion of type 'UseMutationResult<any, Error, CreateTablePayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, CreateTablePayload, unknown>, { mutate: UseMutateFunction<any, Error, CreateTablePayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(592,25): error TS2352: Conversion of type 'UseMutationResult<any, Error, OpenSessionPayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, OpenSessionPayload, unknown>, { mutate: UseMutateFunction<any, Error, OpenSessionPayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(597,26): error TS2352: Conversion of type 'UseMutationResult<any, Error, string, unknown>' to type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, string, unknown>, { mutate: UseMutateFunction<any, Error, string, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(602,21): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; enabled: boolean; refetchInterval: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<any, Error>' is missing the following properties from type '{ queryFn: () => Promise<unknown>; enabled: boolean; refetchInterval: number; }': queryFn, enabled, refetchInterval
+tests/unit/react-query-hooks.test.ts(608,18): error TS2352: Conversion of type 'UseQueryResult<any, Error>' to type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<any, Error>' is missing the following properties from type '{ queryFn: () => Promise<unknown>; refetchInterval: number; }': queryFn, refetchInterval
+tests/unit/react-query-hooks.test.ts(613,23): error TS2352: Conversion of type 'UseMutationResult<any, Error, CreateTabPayload, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, CreateTabPayload, unknown>, { mutate: UseMutateFunction<any, Error, CreateTabPayload, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(618,22): error TS2352: Conversion of type 'UseMutationResult<any, Error, string, unknown>' to type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, string, unknown>, { mutate: UseMutateFunction<any, Error, string, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(623,19): error TS2352: Conversion of type 'UseQueryResult<UsersResponse, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<UsersResponse, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(627,23): error TS2352: Conversion of type 'UseQueryResult<Customer[], Error>' to type '{ queryKey: unknown; queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'QueryObserverPlaceholderResult<Customer[], Error>' is missing the following properties from type '{ queryKey: unknown; queryFn: () => Promise<unknown>; }': queryKey, queryFn
+tests/unit/react-query-hooks.test.ts(632,24): error TS2352: Conversion of type 'UseMutationResult<any, Error, { full_name: string; email: string; password: string; role: EstablishmentRole; }, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, { full_name: string; email: string; password: string; role: EstablishmentRole; }, unknown>, { ...; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: unknown) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(637,24): error TS2352: Conversion of type 'UseMutationResult<any, Error, { id: string; role: EstablishmentRole; }, unknown>' to type '{ mutationFn: (payload: { id: string; role: string; }) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, { id: string; role: EstablishmentRole; }, unknown>, { mutate: UseMutateFunction<any, Error, { ...; }, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (payload: { id: string; role: string; }) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(642,24): error TS2352: Conversion of type 'UseMutationResult<any, Error, string, unknown>' to type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Override<MutationObserverSuccessResult<any, Error, string, unknown>, { mutate: UseMutateFunction<any, Error, string, unknown>; }> & { ...; }' is missing the following properties from type '{ mutationFn: (id: string) => Promise<unknown>; onSuccess: () => void; }': mutationFn, onSuccess
+tests/unit/react-query-hooks.test.ts(703,19): error TS2352: Conversion of type 'UseQueryResult<DeliveryDriver[], Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<DeliveryDriver[], Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(709,19): error TS2352: Conversion of type 'UseQueryResult<UsersResponse, Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<UsersResponse, Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(710,23): error TS2352: Conversion of type 'UseQueryResult<Customer[], Error>' to type '{ queryFn: () => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'queryFn' is missing in type 'QueryObserverPlaceholderResult<Customer[], Error>' but required in type '{ queryFn: () => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(711,24): error TS2352: Conversion of type 'UseMutationResult<any, Error, { full_name: string; email: string; password: string; role: EstablishmentRole; }, unknown>' to type '{ mutationFn: (payload: unknown) => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'mutationFn' is missing in type 'Override<MutationObserverSuccessResult<any, Error, { full_name: string; email: string; password: string; role: EstablishmentRole; }, unknown>, { ...; }> & { ...; }' but required in type '{ mutationFn: (payload: unknown) => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(714,24): error TS2352: Conversion of type 'UseMutationResult<any, Error, { id: string; role: EstablishmentRole; }, unknown>' to type '{ mutationFn: (payload: { id: string; role: string; }) => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'mutationFn' is missing in type 'Override<MutationObserverSuccessResult<any, Error, { id: string; role: EstablishmentRole; }, unknown>, { mutate: UseMutateFunction<any, Error, { ...; }, unknown>; }> & { ...; }' but required in type '{ mutationFn: (payload: { id: string; role: string; }) => Promise<unknown>; }'.
+tests/unit/react-query-hooks.test.ts(717,24): error TS2352: Conversion of type 'UseMutationResult<any, Error, string, unknown>' to type '{ mutationFn: (id: string) => Promise<unknown>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'mutationFn' is missing in type 'Override<MutationObserverSuccessResult<any, Error, string, unknown>, { mutate: UseMutateFunction<any, Error, string, unknown>; }> & { ...; }' but required in type '{ mutationFn: (id: string) => Promise<unknown>; }'.
+tests/unit/sidebar-component.test.tsx(51,68): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/sidebar-component.test.tsx(53,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/sidebar-component.test.tsx(61,25): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/sidebar-component.test.tsx(100,11): error TS18046: 'logoutButton.props' is of type 'unknown'.
+tests/unit/sidebar-component.test.tsx(135,11): error TS18046: 'logoutButton.props' is of type 'unknown'.
+tests/unit/sidebar-component.test.tsx(192,11): error TS18046: 'logoutButton.props' is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(82,33): error TS2349: This expression is not callable.
+  Not all constituents of type 'JSXElementConstructor<any>' are callable.
+    Type 'new (props: any, context: any) => Component<any, any, any>' has no call signatures.
+tests/unit/stock-page-content.test.tsx(85,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(389,16): error TS18046: 'entry.props' is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(390,58): error TS18046: 'entry.props' is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(393,5): error TS2571: Object is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(394,5): error TS2571: Object is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(395,5): error TS2571: Object is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(396,5): error TS2571: Object is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(397,5): error TS2571: Object is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(398,5): error TS18046: 'form.props' is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(454,5): error TS18046: 'movementSelect.props' is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(458,52): error TS18046: 'entry.props' is of type 'unknown'.
+tests/unit/stock-page-content.test.tsx(460,5): error TS18046: 'cancelButton.props' is of type 'unknown'.
+tests/unit/supabase-clients.test.ts(67,60): error TS2493: Tuple type '[]' of length '0' has no element at index '2'.
+tests/unit/supabase-clients.test.ts(68,12): error TS18048: 'options' is possibly 'undefined'.
+tests/unit/supabase-clients.test.ts(69,5): error TS18048: 'options' is possibly 'undefined'.
+tests/unit/ui-primitives.test.tsx(9,82): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'ReactNode'.
+tests/unit/ui-primitives.test.tsx(17,37): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'ReactNode'.
+tests/unit/ui-primitives.test.tsx(25,45): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'ref' does not exist in type 'Partial<unknown> & Attributes'.
+tests/unit/ui-primitives.test.tsx(27,59): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'ReactNode'.
+tests/unit/ui-primitives.test.tsx(33,84): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'ReactNode'.
+tests/unit/ui-primitives.test.tsx(40,45): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'ref' does not exist in type 'Partial<unknown> & Attributes'.
+tests/unit/ui-primitives.test.tsx(42,59): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'ReactNode'.
+tests/unit/ui-primitives.test.tsx(125,69): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'ReactNode'.
+tests/unit/ui-primitives.test.tsx(262,17): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and ''data-state'' does not exist in type 'Attributes & ClassAttributes<HTMLTableRowElement> & HTMLAttributes<HTMLTableRowElement>'.
+tests/unit/vendas-page-component.test.tsx(59,36): error TS18046: 'node.props' is of type 'unknown'.
+tests/unit/vendas-page-component.test.tsx(102,50): error TS18046: 'button.props' is of type 'unknown'.
+tests/unit/vendas-page-component.test.tsx(116,7): error TS18046: 'monthButton.props' is of type 'unknown'.

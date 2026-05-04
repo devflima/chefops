@@ -108,9 +108,6 @@ describe('CardapioPage stateful branches', () => {
     useCreateMenuItemMock.mockReturnValue({
       mutateAsync: vi.fn().mockResolvedValue({ id: 'item-created' }),
     })
-    useQueryMock.mockReturnValue({
-      data: [{ id: 'extra-1', name: 'Borda recheada', price: 5, category: 'Bordas' }],
-    })
     useHasFeatureMock.mockReturnValue(false)
     usePlanMock.mockReturnValue({
       data: {
@@ -134,18 +131,9 @@ describe('CardapioPage stateful branches', () => {
       display_order: 1,
       product_id: 'prod-1',
     }
-    stateValues[6] = ['extra-1']
+    stateValues[6] = 'prod-1'
 
     const fetchMock = vi.fn(async (url: string) => {
-      if (url === '/api/menu-items/item-1/extras') {
-        return {
-          ok: true,
-          json: vi.fn().mockResolvedValue({
-            data: [{ id: 'extra-1' }],
-          }),
-        }
-      }
-
       if (url === '/api/menu-items/item-1') {
         return {
           ok: true,
@@ -197,9 +185,8 @@ describe('CardapioPage stateful branches', () => {
       display_order: 3,
     })
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/extras')
     expect(fetchMock).not.toHaveBeenCalledWith('/api/menu-items/item-1/ingredients')
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/menu-items/item-1', {
+    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -211,12 +198,6 @@ describe('CardapioPage stateful branches', () => {
         product_id: null,
       }),
     })
-    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/extras', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ extra_ids: ['extra-1'] }),
-    })
-    expect(fetchMock).not.toHaveBeenCalledWith('/api/menu-items/item-1/ingredients', expect.anything())
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['menu-items'] })
   })
 
@@ -224,7 +205,7 @@ describe('CardapioPage stateful branches', () => {
     stateValues[0] = true
     stateValues[1] = null
     stateValues[2] = 'item-1'
-    stateValues[6] = ['extra-1']
+    stateValues[6] = 'none'
 
     const createMenuItemMutateAsync = vi.fn().mockResolvedValue({ id: 'item-created' })
     useCreateMenuItemMock.mockReturnValue({
@@ -232,13 +213,6 @@ describe('CardapioPage stateful branches', () => {
     })
 
     const fetchMock = vi.fn(async (url: string) => {
-      if (url === '/api/menu-items/item-created/extras') {
-        return {
-          ok: true,
-          json: vi.fn().mockResolvedValue({ data: null }),
-        }
-      }
-
       if (url === '/api/menu-items/item-1') {
         return {
           ok: false,
@@ -294,15 +268,9 @@ describe('CardapioPage stateful branches', () => {
       category_id: 'cat-1',
       display_order: 2,
     })
-    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-created/extras', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ extra_ids: ['extra-1'] }),
-    })
     expect(stateSetters[0]).toHaveBeenCalledWith(false)
-    expect(stateSetters[6]).toHaveBeenCalledWith([])
-    expect(stateSetters[7]).toHaveBeenCalledWith('none')
-    expect(stateSetters[8]).toHaveBeenCalledWith([])
+    expect(stateSetters[6]).toHaveBeenCalledWith('none')
+    expect(stateSetters[7]).toHaveBeenCalledWith([])
     expect(alert).toHaveBeenCalledWith('Erro ao desativar item.')
     expect(stateSetters[2]).toHaveBeenCalledWith('item-1')
     expect(stateSetters[2]).toHaveBeenCalledWith(null)
@@ -312,15 +280,6 @@ describe('CardapioPage stateful branches', () => {
     useHasFeatureMock.mockReturnValue(true)
 
     const fetchMock = vi.fn(async (url: string) => {
-      if (url === '/api/menu-items/item-1/extras') {
-        return {
-          ok: true,
-          json: vi.fn().mockResolvedValue({
-            data: [{ id: 'extra-1' }],
-          }),
-        }
-      }
-
       if (url === '/api/menu-items/item-1/ingredients') {
         return {
           ok: true,
@@ -356,7 +315,6 @@ describe('CardapioPage stateful branches', () => {
       product_id: 'prod-1',
     })
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/extras')
     expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/ingredients')
     expect(stateSetters[1]).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -364,9 +322,8 @@ describe('CardapioPage stateful branches', () => {
         product_id: 'prod-1',
       }),
     )
-    expect(stateSetters[6]).toHaveBeenCalledWith(['extra-1'])
-    expect(stateSetters[8]).toHaveBeenCalledWith([{ product_id: 'prod-1', quantity: 2 }])
-    expect(stateSetters[7]).toHaveBeenCalledWith('prod-1')
+    expect(stateSetters[7]).toHaveBeenCalledWith([{ product_id: 'prod-1', quantity: 2 }])
+    expect(stateSetters[6]).toHaveBeenCalledWith('prod-1')
     expect(stateSetters[0]).toHaveBeenCalledWith(true)
   })
 
@@ -383,15 +340,6 @@ describe('CardapioPage stateful branches', () => {
     }
 
     const fetchMock = vi.fn(async (url: string) => {
-      if (url === '/api/menu-items/item-1/extras') {
-        return {
-          ok: true,
-          json: vi.fn().mockResolvedValue({
-            data: [{ id: 'extra-1' }],
-          }),
-        }
-      }
-
       if (url === '/api/menu-items/item-1/ingredients') {
         return {
           ok: true,
@@ -453,10 +401,9 @@ describe('CardapioPage stateful branches', () => {
       display_order: 1,
     })
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/extras')
     expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1/ingredients')
-    expect(stateSetters[8]).toHaveBeenCalledWith([])
-    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/menu-items/item-1', {
+    expect(stateSetters[7]).toHaveBeenCalledWith([])
+    expect(fetchMock).toHaveBeenCalledWith('/api/menu-items/item-1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -502,49 +449,23 @@ describe('CardapioPage stateful branches', () => {
 
     expect(formResetMock).toHaveBeenCalled()
     expect(stateSetters[1]).toHaveBeenCalledWith(null)
-    expect(stateSetters[7]).toHaveBeenCalledWith('none')
-    expect(stateSetters[8]).toHaveBeenCalledWith([])
-    expect(stateSetters[6]).toHaveBeenCalledWith([])
+    expect(stateSetters[6]).toHaveBeenCalledWith('none')
+    expect(stateSetters[7]).toHaveBeenCalledWith([])
     expect(stateSetters[0]).toHaveBeenCalledWith(true)
     expect(stateSetters[0]).toHaveBeenCalledWith(false)
     expect(stateSetters[5]).toHaveBeenCalledWith('cat-1')
     expect(stateSetters[4]).toHaveBeenCalledWith('inactive')
     expect(stateSetters[3]).toHaveBeenCalledWith(1)
-    expect(stateSetters[7]).toHaveBeenCalledWith('prod-1')
+    expect(stateSetters[6]).toHaveBeenCalledWith('prod-1')
 
-    const addIngredientUpdater = stateSetters[8].mock.calls[1]?.[0] as (value: Array<{ product_id: string; quantity: number }>) => Array<{ product_id: string; quantity: number }>
-    const updateIngredientUpdater = stateSetters[8].mock.calls[2]?.[0] as (value: Array<{ product_id: string; quantity: number }>) => Array<{ product_id: string; quantity: number }>
-    const removeIngredientUpdater = stateSetters[8].mock.calls[3]?.[0] as (value: Array<{ product_id: string; quantity: number }>) => Array<{ product_id: string; quantity: number }>
+    const addIngredientUpdater = stateSetters[7].mock.calls[1]?.[0] as (value: Array<{ product_id: string; quantity: number }>) => Array<{ product_id: string; quantity: number }>
+    const updateIngredientUpdater = stateSetters[7].mock.calls[2]?.[0] as (value: Array<{ product_id: string; quantity: number }>) => Array<{ product_id: string; quantity: number }>
+    const removeIngredientUpdater = stateSetters[7].mock.calls[3]?.[0] as (value: Array<{ product_id: string; quantity: number }>) => Array<{ product_id: string; quantity: number }>
 
     expect(addIngredientUpdater([])).toEqual([{ product_id: 'none', quantity: 1 }])
     expect(updateIngredientUpdater([{ product_id: 'none', quantity: 1 }])).toEqual([
       { product_id: 'prod-1', quantity: 2 },
     ])
     expect(removeIngredientUpdater([{ product_id: 'prod-1', quantity: 2 }])).toEqual([])
-  })
-
-  it('executa a queryFn real dos extras do cardápio', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        data: [{ id: 'extra-1', name: 'Borda recheada', price: 5, category: 'Bordas' }],
-      }),
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    const { default: CardapioPage } = await import('@/app/(dashboard)/cardapio/page')
-
-    renderToStaticMarkup(React.createElement(CardapioPage))
-
-    const queryOptions = useQueryMock.mock.calls[0]?.[0] as
-      | { queryKey: string[]; queryFn: () => Promise<unknown> }
-      | undefined
-
-    expect(queryOptions?.queryKey).toEqual(['extras'])
-    await expect(queryOptions?.queryFn()).resolves.toEqual([
-      { id: 'extra-1', name: 'Borda recheada', price: 5, category: 'Bordas' },
-    ])
-    expect(fetchMock).toHaveBeenCalledWith('/api/extras')
   })
 })

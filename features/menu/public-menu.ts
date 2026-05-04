@@ -38,6 +38,7 @@ export type PublicOrderStatus = {
   delivery_driver?: { name: string } | null
   cancelled_reason?: string | null
   refunded_at?: string | null
+  total?: number
   created_at: string
   updated_at: string
 }
@@ -55,7 +56,7 @@ export type PublicCustomerLookupState = {
   customerName: string
 }
 
-export type PublicCheckoutStep = 'cart' | 'info' | 'address' | 'done'
+export type PublicCheckoutStep = 'cart' | 'info' | 'address' | 'done' | 'history'
 
 type RawExtra = {
   extra:
@@ -128,6 +129,24 @@ export function createCartItem(
       .map((extra) => ({ id: extra!.id, name: extra!.name, price: extra!.price })),
     half_flavor: halfFlavor ? { menu_item_id: halfFlavor.id, name: halfFlavor.name } : undefined,
   } satisfies CartItem
+}
+
+export function isSameCartItem(a: CartItem, b: CartItem) {
+  if (a.menu_item_id !== b.menu_item_id) return false
+  if (a.notes !== b.notes) return false
+  if (a.half_flavor?.menu_item_id !== b.half_flavor?.menu_item_id) return false
+
+  const aExtras = [...(a.extras ?? [])].sort((x, y) => (x.id ?? x.name).localeCompare(y.id ?? y.name))
+  const bExtras = [...(b.extras ?? [])].sort((x, y) => (x.id ?? x.name).localeCompare(y.id ?? y.name))
+
+  if (aExtras.length !== bExtras.length) return false
+
+  for (let i = 0; i < aExtras.length; i++) {
+    if (aExtras[i].id !== bExtras[i].id) return false
+    if (aExtras[i].name !== bExtras[i].name) return false
+  }
+
+  return true
 }
 
 export function incrementCartItem(cart: CartItem[], index: number) {
@@ -391,10 +410,11 @@ export function getOrderSteps(
   }>
 }
 
-export function getCheckoutStepTitle(step: 'cart' | 'info' | 'address' | 'done') {
+export function getCheckoutStepTitle(step: PublicCheckoutStep) {
   if (step === 'cart') return 'Seu pedido'
   if (step === 'info') return 'Seus dados'
   if (step === 'address') return 'Endereço de entrega'
+  if (step === 'history') return 'Meus últimos pedidos'
   return 'Pedido realizado!'
 }
 

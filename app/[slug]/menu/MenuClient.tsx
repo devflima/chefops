@@ -34,6 +34,7 @@ import {
   getSuccessfulPublicOrderState,
   groupMenuItems,
   incrementCartItem,
+  isSameCartItem,
   getLookupCustomerFoundState,
   getLookupCustomerMissingState,
   getOnlineCheckoutErrorMessage,
@@ -43,6 +44,7 @@ import {
   buildPublicOrderPayload,
   parseStoredActiveOrder,
   type MenuExtra,
+  type PublicCheckoutStep,
   type PublicMenuItem as MenuItem,
   type PublicOrderStatus,
   removeCartItem,
@@ -124,7 +126,7 @@ export default function MenuClient({
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
-  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'info' | 'address' | 'done'>('cart')
+  const [checkoutStep, setCheckoutStep] = useState<PublicCheckoutStep>('cart')
   const [halfFlavorModal, setHalfFlavorModal] = useState<{ item: MenuItem } | null>(null)
   const [selectedBorders, setSelectedBorders] = useState<Record<string, MenuExtra | null>>({})
   const [phone, setPhone] = useState('')
@@ -158,6 +160,10 @@ export default function MenuClient({
   const [quotedDistanceKm, setQuotedDistanceKm] = useState<number | null>(null)
   const [deliveryQuoteMessage, setDeliveryQuoteMessage] = useState<string | null>(null)
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [previousOrders, setPreviousOrders] = useState<PublicOrderStatus[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [pendingHistoryOpen, setPendingHistoryOpen] = useState(false)
   const lastDeliveryQuoteAlertRef = useRef<string | null>(null)
   const activeOrderStorageKey = getActiveOrderStorageKey(tenant.slug, tableInfo?.id)
 
@@ -173,6 +179,8 @@ export default function MenuClient({
     quotedDeliveryFee,
   )
 
+  const activeOrdersCount = previousOrders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length
+
   function addToCart(item: MenuItem, halfFlavor?: MenuItem) {
     if (operationClosedNotice) {
       toast.error(operationClosedNotice)
@@ -183,7 +191,14 @@ export default function MenuClient({
     const selectedExtras = selectedExtraOptions[item.id] ?? []
     const cartItem = createCartItem(item, border, selectedExtras, halfFlavor)
 
-    setCart((prev) => [...prev, cartItem])
+    const existingIndex = cart.findIndex((i) => isSameCartItem(i, cartItem))
+
+    if (existingIndex !== -1) {
+      incrementCart(existingIndex)
+    } else {
+      setCart((prev) => [...prev, cartItem])
+    }
+
     setSelectedBorders((prev) => ({ ...prev, [item.id]: null }))
     setSelectedExtraOptions((prev) => ({ ...prev, [item.id]: [] }))
     setHalfFlavorModal(null)
@@ -240,12 +255,37 @@ export default function MenuClient({
       if (def) setAddress(def)
       return
     }
-
     const nextState = getLookupCustomerMissingState()
     setExistingCustomer(nextState.existingCustomer)
     setIsNewCustomer(nextState.isNewCustomer)
     setCustomerName(nextState.customerName)
     setPhoneVerified(nextState.phoneVerified)
+  }
+
+  async function handleOpenHistory() {
+    if (!phoneVerified) {
+      setPendingHistoryOpen(true)
+      const nextState = getOpenCartState()
+      setCartOpen(nextState.cartOpen)
+      setCheckoutStep('info')
+      return
+    }
+
+    setCartOpen(true)
+    setCheckoutStep('history')
+    setLoadingHistory(true)
+    try {
+      const cleanPhone = phone.replace(/\D/g, '')
+      const res = await fetch(`/api/public/orders?phone=${cleanPhone}&tenant_id=${tenant.id}`)
+      const json = await res.json()
+      if (json.data) {
+        setPreviousOrders(json.data)
+      }
+    } catch (error) {
+      toast.error('Não foi possível carregar seu histórico de pedidos.')
+    } finally {
+      setLoadingHistory(false)
+    }
   }
 
   async function handlePhoneLookup() {
@@ -328,6 +368,22 @@ export default function MenuClient({
       if (true) {
         setLookingUpPhone(true)
         await lookupCustomer(cleanPhone)
+      }
+
+      if (pendingHistoryOpen) {
+        setPendingHistoryOpen(false)
+        setCartOpen(true)
+        setCheckoutStep('history')
+        setLoadingHistory(true)
+        try {
+          const res = await fetch(`/api/public/orders?phone=${cleanPhone}&tenant_id=${tenant.id}`)
+          const json = await res.json()
+          if (json.data) {
+            setPreviousOrders(json.data)
+          }
+        } finally {
+          setLoadingHistory(false)
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível validar o código.'
@@ -896,6 +952,7 @@ export default function MenuClient({
         setCartOpen(nextState.cartOpen)
         setCheckoutStep(nextState.checkoutStep)
       }}
+      activeOrdersCount={activeOrdersCount}
       groups={groupedValues}
       activeCategory={activeCategory}
       onCategoryChange={setActiveCategory}
@@ -935,15 +992,18 @@ export default function MenuClient({
       halfFlavorModal={halfFlavorModal}
       halfFlavorOptions={halfFlavorModal ? getHalfFlavorOptions(items, halfFlavorModal.item) : []}
       onCloseHalfFlavor={() => setHalfFlavorModal(null)}
-      onSelectHalfFlavor={(flavor) => {
-        if (!halfFlavorModal) return
-        addToCart(halfFlavorModal.item, flavor)
-      }}
+      onSelectHalfFlavor={(halfFlavor) =>
+        halfFlavorModal && addToCart(halfFlavorModal.item, halfFlavor)
+      }
+      onOrdersHistoryOpen={handleOpenHistory}
       drawerProps={{
         open: cartOpen,
         title: getCheckoutStepTitle(checkoutStep),
         checkoutStep,
-        onClose: () => setCartOpen(false),
+        onClose: () => {
+          setCartOpen(false)
+          setPendingHistoryOpen(false)
+        },
         onStepChange: (step) => {
           if (operationClosedNotice) {
             toast.error(operationClosedNotice)
@@ -962,15 +1022,15 @@ export default function MenuClient({
           onDecrement: decrementCart,
           onRemove: removeFromCart,
           onRemoveExtra: removeExtraFromCart,
+          onClear: clearCart,
           onContinue: () => {
             if (operationClosedNotice) {
               toast.error(operationClosedNotice)
               return
             }
 
-            setCheckoutStep(getCartDrawerState('info').checkoutStep)
+            setCheckoutStep('info')
           },
-          onClear: clearCart,
         },
         infoStepProps: {
           tableInfo,
@@ -1050,7 +1110,7 @@ export default function MenuClient({
           cartTotal,
           deliveryFee,
           orderTotal,
-          isProcessing: isCheckoutProcessing,
+          isProcessing: onlineCheckoutLoading || createOrder.isPending,
           onContinue: handleContinueToAddress,
           onBack: () => {
             if (operationClosedNotice) {
@@ -1092,7 +1152,7 @@ export default function MenuClient({
           quotedDeliveryFee,
           quotedDistanceKm,
           deliveryQuoteMessage,
-          isProcessing: isCheckoutProcessing,
+          isProcessing: onlineCheckoutLoading || createOrder.isPending,
           onSubmit: handleAddressSubmit,
           onSaveAddress: handleSaveAddress,
           onDeleteAddress: handleDeleteAddress,
@@ -1111,14 +1171,32 @@ export default function MenuClient({
           orderNumber,
           tableInfo,
           publicOrderStatus,
-          orderSteps,
-          getStepState,
+          orderSteps: getOrderSteps(tableInfo, publicOrderStatus?.payment_method),
+          getStepState: (key) => getOrderStepState(
+            publicOrderStatus?.status ?? null,
+            getOrderSteps(tableInfo, publicOrderStatus?.payment_method).map(s => s.key),
+            key
+          ),
           cancelOrderLoading,
           confirmDeliveryLoading,
           onCancelOrder: handleCancelOrder,
           onConfirmDelivery: handleConfirmDelivery,
           onClose: () => setCartOpen(false),
         },
+        historyStepProps: {
+          orders: previousOrders,
+          loading: loadingHistory,
+          onSelectOrder: (id) => {
+            setOrderId(id)
+            const order = previousOrders.find(o => o.id === id)
+            if (order) {
+              setOrderNumber(order.order_number)
+              setPublicOrderStatus(order)
+              setCheckoutStep('done')
+              setCartOpen(true)
+            }
+          }
+        }
       }}
     />
   )
