@@ -10,9 +10,11 @@ import {
 export function PublicOrderStatusCard({
   publicOrderStatus,
   onTrack,
+  othersCount = 0,
 }: {
   publicOrderStatus: PublicOrderStatus
   onTrack: () => void
+  othersCount?: number
 }) {
   const tone = getPublicOrderStatusCardTone(publicOrderStatus)
   const toneClasses = {
@@ -52,6 +54,11 @@ export function PublicOrderStatusCard({
           <p className={`mt-1 text-sm ${toneClasses.message}`}>
             {getPublicOrderStatusCardMessage(publicOrderStatus)}
           </p>
+          {othersCount > 0 && (
+            <p className={`mt-2 text-xs font-bold uppercase tracking-wider ${toneClasses.title} bg-white/40 inline-block px-2 py-0.5 rounded-full`}>
+              + {othersCount} {othersCount === 1 ? 'pedido ativo' : 'pedidos ativos'}
+            </p>
+          )}
         </div>
         <Button
           size="sm"

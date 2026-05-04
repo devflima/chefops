@@ -140,6 +140,13 @@ export function OrderCard({
             <p className="mt-2 rounded bg-slate-50 px-2 py-1 text-xs text-slate-400">Obs: {order.notes}</p>
           )}
 
+          {order.status === 'cancelled' && order.cancelled_reason && (
+            <div className="mt-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-800">
+              <p className="font-medium">Motivo do cancelamento:</p>
+              <p>{order.cancelled_reason}</p>
+            </div>
+          )}
+
           {shouldShowWhatsappCard(order, hasWhatsappNotifications) && latestWhatsapp && (
             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -200,6 +207,7 @@ export function OrderCard({
             <p className="font-semibold text-slate-900">R$ {Number(order.total).toFixed(2)}</p>
           </div>
           <p className="mt-0.5 text-xs text-slate-400">
+            {new Date(order.created_at).toLocaleDateString('pt-BR')} às{' '}
             {new Date(order.created_at).toLocaleTimeString('pt-BR', {
               hour: '2-digit',
               minute: '2-digit',

@@ -117,7 +117,9 @@ export function buildOrderWhatsappMessage(params: {
       const reasonNote = params.order.cancelled_reason
         ? ` Motivo: ${params.order.cancelled_reason}.`
         : ''
-      return `${greeting} Seu pedido ${orderRef} foi cancelado pela ${params.tenantName}.${reasonNote}${refundNote}`
+      const isByCustomer = params.order.cancelled_reason?.toLowerCase().includes('cliente')
+      const cancellationSource = isByCustomer ? '' : ` pela ${params.tenantName}`
+      return `${greeting} Seu pedido ${orderRef} foi cancelado${cancellationSource}.${reasonNote}${refundNote}`
     }
   }
 }

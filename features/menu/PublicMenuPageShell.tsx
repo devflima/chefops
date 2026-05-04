@@ -36,6 +36,8 @@ type Props = {
   halfFlavorOptions: PublicMenuItem[]
   onCloseHalfFlavor: () => void
   onSelectHalfFlavor: (item: PublicMenuItem) => void
+  onOrdersHistoryOpen: () => void
+  activeOrdersCount: number
   drawerProps: React.ComponentProps<typeof MenuCheckoutDrawer>
 }
 
@@ -64,6 +66,8 @@ export function PublicMenuPageShell({
   halfFlavorOptions,
   onCloseHalfFlavor,
   onSelectHalfFlavor,
+  onOrdersHistoryOpen,
+  activeOrdersCount,
   drawerProps,
 }: Props) {
   return (
@@ -73,6 +77,7 @@ export function PublicMenuPageShell({
         tableInfo={tableInfo}
         cartCount={cartCount}
         onCartOpen={onCartOpen}
+        onOrdersHistoryOpen={onOrdersHistoryOpen}
       />
 
       <main className="max-w-2xl mx-auto px-4 py-6">
@@ -82,6 +87,7 @@ export function PublicMenuPageShell({
           cartOpen={cartOpen}
           onTrackOrder={onTrackOrder}
           tableInfo={tableInfo}
+          activeOrdersCount={activeOrdersCount}
         />
 
         <MenuCategoryFilter

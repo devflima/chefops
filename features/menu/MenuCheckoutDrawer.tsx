@@ -4,11 +4,13 @@ import { MenuAddressStep } from '@/features/menu/MenuAddressStep'
 import { MenuCartStep } from '@/features/menu/MenuCartStep'
 import { MenuDoneStep } from '@/features/menu/MenuDoneStep'
 import { MenuInfoStep } from '@/features/menu/MenuInfoStep'
+import { MenuHistoryStep } from '@/features/menu/MenuHistoryStep'
 
 type MenuCartStepProps = ComponentProps<typeof MenuCartStep>
 type MenuInfoStepProps = ComponentProps<typeof MenuInfoStep>
 type MenuAddressStepProps = ComponentProps<typeof MenuAddressStep>
 type MenuDoneStepProps = ComponentProps<typeof MenuDoneStep>
+type MenuHistoryStepProps = ComponentProps<typeof MenuHistoryStep>
 
 export function MenuCheckoutDrawer({
   open,
@@ -20,16 +22,18 @@ export function MenuCheckoutDrawer({
   infoStepProps,
   addressStepProps,
   doneStepProps,
+  historyStepProps,
 }: {
   open: boolean
   title: string
-  checkoutStep: 'cart' | 'info' | 'address' | 'done'
+  checkoutStep: 'cart' | 'info' | 'address' | 'done' | 'history'
   onClose: () => void
-  onStepChange: (step: 'cart' | 'info' | 'address' | 'done') => void
+  onStepChange: (step: 'cart' | 'info' | 'address' | 'done' | 'history') => void
   cartStepProps: MenuCartStepProps
   infoStepProps: MenuInfoStepProps
   addressStepProps: MenuAddressStepProps
   doneStepProps: MenuDoneStepProps
+  historyStepProps: MenuHistoryStepProps
 }) {
   if (!open) return null
 
@@ -66,6 +70,8 @@ export function MenuCheckoutDrawer({
         )}
 
         {checkoutStep === 'done' && <MenuDoneStep {...doneStepProps} onClose={onClose} />}
+
+        {checkoutStep === 'history' && <MenuHistoryStep {...historyStepProps} />}
       </div>
     </div>
   )
