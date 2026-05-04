@@ -72,7 +72,7 @@ export function OrderCard({
 
           {address && (
             <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-              <p className="mb-0.5 font-medium">📍 Endereço de entrega</p>
+              <p className="mb-0.5 font-medium">📍 {address.label || 'Endereço de entrega'}</p>
               {(address.street || address.number || address.complement) && (
                 <p>
                   {[address.street, address.number].filter(Boolean).join(', ')}

@@ -1,5 +1,5 @@
 import React from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 const createClientMock = vi.fn()
@@ -128,6 +128,8 @@ function queryBuilder(data: unknown) {
 
 describe('admin pages smoke', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-23T12:00:00Z'))
     vi.clearAllMocks()
 
     notFoundMock.mockImplementation(() => {
@@ -239,6 +241,10 @@ describe('admin pages smoke', () => {
         return queryBuilder(null)
       }),
     })
+  })
+  
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('renderiza dashboard admin, listagem de tenants e detalhe do tenant', async () => {

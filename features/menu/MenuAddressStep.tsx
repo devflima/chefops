@@ -136,6 +136,17 @@ export function MenuAddressStep({
           <>
             <div>
               <label className="text-sm font-medium text-slate-700 block mb-1">
+                Identificação do endereço <span className="text-slate-400 font-normal">(ex: Casa, Trabalho)</span>
+              </label>
+              <Input
+                placeholder="Ex: Casa, Trabalho"
+                value={address.label ?? ''}
+                onChange={(e) => onAddressChange((prev) => ({ ...prev, label: e.target.value }))}
+                disabled={disabled}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-1">
                 CEP <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
