@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
             ...address,
             complement: address.complement ?? undefined,
             neighborhood: address.neighborhood ?? undefined,
-            label: address.label ?? 'Casa',
+            label: address.label || 'Casa',
             is_default: true,
           })
           .eq('id', address.id)
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
               ...address,
               complement: address.complement ?? undefined,
               neighborhood: address.neighborhood ?? undefined,
-              label: address.label ?? 'Casa',
+              label: address.label || 'Casa',
               customer_id: customer.id,
               tenant_id: customerData.tenant_id,
               is_default: true,

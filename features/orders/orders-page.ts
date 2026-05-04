@@ -5,6 +5,7 @@ import type {
 } from '@/features/orders/types'
 
 export type DeliveryAddress = {
+  label?: string | null
   street?: string | null
   number?: string | null
   complement?: string | null
