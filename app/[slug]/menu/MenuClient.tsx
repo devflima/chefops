@@ -44,6 +44,7 @@ import {
   buildPublicOrderPayload,
   parseStoredActiveOrder,
   type MenuExtra,
+  type PublicCheckoutStep,
   type PublicMenuItem as MenuItem,
   type PublicOrderStatus,
   removeCartItem,
@@ -125,7 +126,7 @@ export default function MenuClient({
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
-  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'info' | 'address' | 'done'>('cart')
+  const [checkoutStep, setCheckoutStep] = useState<PublicCheckoutStep>('cart')
   const [halfFlavorModal, setHalfFlavorModal] = useState<{ item: MenuItem } | null>(null)
   const [selectedBorders, setSelectedBorders] = useState<Record<string, MenuExtra | null>>({})
   const [phone, setPhone] = useState('')

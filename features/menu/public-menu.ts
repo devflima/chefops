@@ -38,6 +38,7 @@ export type PublicOrderStatus = {
   delivery_driver?: { name: string } | null
   cancelled_reason?: string | null
   refunded_at?: string | null
+  total?: number
   created_at: string
   updated_at: string
 }

@@ -65,7 +65,7 @@ export function MenuHistoryStep({ orders, loading, onSelectOrder }: Props) {
                       {new Date(order.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                     <p className="text-sm font-bold text-slate-800">
-                      Total: R$ {Number(order.total).toFixed(2)}
+                      Total: R$ {Number(order.total ?? 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
