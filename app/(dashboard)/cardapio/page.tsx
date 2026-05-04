@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useMenuItems, useCreateMenuItem } from '@/features/orders/hooks/useOrders'
 import { useCategories, useProducts } from '@/features/products/hooks/useProducts'
-import { useQueryClient, useQuery } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -18,7 +18,6 @@ import {
   buildMenuPageSummary,
   buildUpdateMenuItemPayload,
   filterMenuItems,
-  getPersistedMenuExtraIds,
   getCreateMenuEditorState,
   getMenuEditState,
   getMenuFilterChangeState,
@@ -79,16 +78,6 @@ export default function CardapioPage() {
     defaultValues: getInitialMenuItemFormValues(),
   })
 
-  const { data: allExtras } = useQuery({
-    queryKey: ['extras'],
-    queryFn: async () => {
-      const res = await fetch('/api/extras')
-      const json = await res.json()
-      return json.data as { id: string; name: string; price: number; category: string }[]
-    },
-  })
-
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([])
   const [linkedProductId, setLinkedProductId] = useState<string>('none')
   const [ingredients, setIngredients] = useState<MenuItemIngredient[]>([])
 
@@ -98,14 +87,10 @@ export default function CardapioPage() {
     form.reset(state.formValues)
     setLinkedProductId(state.linkedProductId)
     setIngredients(state.ingredients)
-    setSelectedExtras(state.selectedExtras)
     setOpen(true)
   }
 
   async function openEdit(item: MenuItem) {
-    const res = await fetch(`/api/menu-items/${item.id}/extras`)
-    const json = await res.json()
-
     let ingredientsState: Array<{ product_id: string; quantity: number }> = []
 
     if (hasStockAutomation) {
@@ -116,14 +101,12 @@ export default function CardapioPage() {
 
     const state = getMenuEditState({
       item,
-      selectedExtras: json.data,
       ingredients: ingredientsState,
       hasStockAutomation,
     })
 
     setEditing(state.editing as MenuItem)
     form.reset(state.formValues)
-    setSelectedExtras(state.selectedExtras)
     setIngredients(state.ingredients)
     setLinkedProductId(state.linkedProductId)
     setOpen(true)
@@ -157,34 +140,18 @@ export default function CardapioPage() {
         menuItemId = createdItem.id
       }
 
-      if (menuItemId) {
-        const extraIds = getPersistedMenuExtraIds(
-          selectedExtras,
-          allExtras ?? [],
-          values.category_id,
-          categories,
-        )
-
-        await fetch(`/api/menu-items/${menuItemId}/extras`, {
+      if (menuItemId && hasStockAutomation) {
+        await fetch(`/api/menu-items/${menuItemId}/ingredients`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ extra_ids: extraIds }),
+          body: JSON.stringify({
+            ingredients: getNormalizedIngredients(ingredients),
+          }),
         })
-
-        if (hasStockAutomation) {
-          await fetch(`/api/menu-items/${menuItemId}/ingredients`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ingredients: getNormalizedIngredients(ingredients),
-            }),
-          })
-        }
       }
       const successState = getMenuSubmitSuccessState()
       setOpen(successState.open)
       form.reset(successState.formValues)
-      setSelectedExtras(successState.selectedExtras)
       setIngredients(successState.ingredients)
       setLinkedProductId(successState.linkedProductId)
     } catch (e: unknown) {
@@ -267,9 +234,6 @@ export default function CardapioPage() {
         onAddIngredient: addIngredient,
         onUpdateIngredient: updateIngredient,
         onRemoveIngredient: removeIngredient,
-        allExtras,
-        selectedExtras,
-        onSelectedExtrasChange: setSelectedExtras,
         onSubmit,
       }}
     />

@@ -8,14 +8,9 @@ import { Plus, Trash2 } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import {
-  getSelectableMenuExtras,
   getMenuDialogTitle,
-  groupMenuExtrasByCategory,
-  type MenuExtraOption,
   type MenuItemIngredient,
-  toggleMenuExtraSelection,
 } from '@/features/menu/dashboard-menu-page'
-import { isPizzaCategoryId } from '@/features/menu/menu-category-rules'
 import type { MenuItem } from '@/features/orders/types'
 
 type MenuItemFormValues = {
@@ -46,9 +41,6 @@ type Props = {
   onAddIngredient: () => void
   onUpdateIngredient: (index: number, patch: Partial<MenuItemIngredient>) => void
   onRemoveIngredient: (index: number) => void
-  allExtras?: MenuExtraOption[]
-  selectedExtras: string[]
-  onSelectedExtrasChange: (updater: (prev: string[]) => string[]) => void
   onSubmit: (values: MenuItemFormValues) => void | Promise<void>
 }
 
@@ -66,9 +58,6 @@ export function MenuItemDialog({
   onAddIngredient,
   onUpdateIngredient,
   onRemoveIngredient,
-  allExtras,
-  selectedExtras,
-  onSelectedExtrasChange,
   onSubmit,
 }: Props) {
   const watchedCategoryId =
@@ -78,9 +67,6 @@ export function MenuItemDialog({
     (typeof form.getValues === 'function' ? form.getValues('category_id') : undefined) ??
     editing?.category_id ??
     (categories?.length === 1 ? categories[0]?.id : undefined)
-  const isPizzaCategory = isPizzaCategoryId(selectedCategoryId, categories)
-  const visibleExtras = allExtras ? getSelectableMenuExtras(allExtras, selectedCategoryId, categories) : []
-  const hasAutomaticBorderExtras = isPizzaCategory && (allExtras?.some((extra) => extra.category === 'border') ?? false)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -237,41 +223,6 @@ export function MenuItemDialog({
                 <p className="mt-1 text-sm text-slate-500">
                   Vincular produto base e ficha técnica é um recurso disponível apenas nos planos pagos.
                 </p>
-              </div>
-            )}
-
-            {allExtras && allExtras.length > 0 && (
-              <div>
-                <label className="text-sm font-medium text-slate-700 block mb-2">
-                  Itens adicionais
-                </label>
-                {hasAutomaticBorderExtras && (
-                  <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    As bordas são aplicadas automaticamente para itens da categoria Pizza.
-                  </div>
-                )}
-                <div className="max-h-56 space-y-4 overflow-y-auto rounded-lg border border-slate-200 p-3">
-                  {groupMenuExtrasByCategory(visibleExtras)
-                    .flatMap((group) => group.extras)
-                    .map((extra) => (
-                      <label key={extra.id} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedExtras.includes(extra.id)}
-                          onChange={(event) => {
-                            onSelectedExtrasChange((prev) =>
-                              toggleMenuExtraSelection(prev, extra.id, event.target.checked)
-                            )
-                          }}
-                          className="rounded"
-                        />
-                        <span className="text-sm text-slate-700">{extra.name}</span>
-                        <span className="text-xs text-slate-400 ml-auto">
-                          {extra.price > 0 ? `+R$ ${Number(extra.price).toFixed(2)}` : 'Grátis'}
-                        </span>
-                      </label>
-                    ))}
-                </div>
               </div>
             )}
 

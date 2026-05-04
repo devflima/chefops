@@ -771,13 +771,6 @@ describe('heavy components smoke', () => {
         onAddIngredient: vi.fn(),
         onUpdateIngredient: vi.fn(),
         onRemoveIngredient: vi.fn(),
-        allExtras: [
-          { id: 'extra-1', name: 'Catupiry', price: 5, category: 'border' },
-          { id: 'extra-2', name: 'Calabresa', price: 7, category: 'flavor' },
-          { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
-        ],
-        selectedExtras: ['extra-1'],
-        onSelectedExtrasChange: vi.fn(),
         onSubmit: vi.fn(),
       })
     )
@@ -786,10 +779,7 @@ describe('heavy components smoke', () => {
     expect(markup).toContain('Produto base para baixa simples')
     expect(markup).toContain('Ficha técnica')
     expect(markup).toContain('grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_120px_auto]')
-    expect(markup).toContain('bordas são aplicadas automaticamente')
-    expect(markup).toContain('Itens adicionais')
-    expect(markup).toContain('Calabresa')
-    expect(markup).toContain('Molho da casa')
+    expect(markup).toContain('grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_120px_auto]')
   })
 
   it('aciona handlers básicos do MenuItemDialog', async () => {
@@ -800,7 +790,6 @@ describe('heavy components smoke', () => {
     const onAddIngredient = vi.fn()
     const onUpdateIngredient = vi.fn()
     const onRemoveIngredient = vi.fn()
-    const onSelectedExtrasChange = vi.fn()
     const onSubmit = vi.fn()
 
     const elements = flattenElements(
@@ -826,9 +815,6 @@ describe('heavy components smoke', () => {
         onAddIngredient,
         onUpdateIngredient,
         onRemoveIngredient,
-        allExtras: [{ id: 'extra-1', name: 'Molho', price: 0, category: 'Extras' }],
-        selectedExtras: [],
-        onSelectedExtrasChange,
         onSubmit,
       })
     )
@@ -842,7 +828,6 @@ describe('heavy components smoke', () => {
         element.props.value === 'prod-1' &&
         typeof element.props.onValueChange === 'function',
     )
-    const extraCheckbox = elements.find((element) => element.type === 'input' && element.props.type === 'checkbox')
     const ingredientQuantityInput = elements.find(
       (element) => element.type === 'input' && element.props.type === 'number' && element.props.step === '0.001',
     )
@@ -856,7 +841,6 @@ describe('heavy components smoke', () => {
     ingredientSelect?.props.onValueChange('prod-2')
     ingredientQuantityInput?.props.onChange({ target: { value: '3.5' } })
     ingredientQuantityInput?.props.onChange({ target: { value: '' } })
-    extraCheckbox?.props.onChange({ target: { checked: true } })
     await formElement?.props.onSubmit({ preventDefault: vi.fn() })
 
     expect(onAddIngredient).toHaveBeenCalledOnce()
@@ -865,7 +849,6 @@ describe('heavy components smoke', () => {
     expect(onUpdateIngredient).toHaveBeenCalledWith(0, { product_id: 'prod-2' })
     expect(onUpdateIngredient).toHaveBeenCalledWith(0, { quantity: 3.5 })
     expect(onUpdateIngredient).toHaveBeenCalledWith(0, { quantity: 0 })
-    expect(onSelectedExtrasChange).toHaveBeenCalledOnce()
     expect(onSubmit).toHaveBeenCalledOnce()
   })
 
@@ -874,7 +857,6 @@ describe('heavy components smoke', () => {
 
     const onOpenChange = vi.fn()
     const onUpdateIngredient = vi.fn()
-    const onSelectedExtrasChange = vi.fn()
 
     const form = {
       control: {},
@@ -909,9 +891,6 @@ describe('heavy components smoke', () => {
         onAddIngredient: vi.fn(),
         onUpdateIngredient,
         onRemoveIngredient: vi.fn(),
-        allExtras: [{ id: 'extra-1', name: 'Molho', price: 0, category: 'Extras' }],
-        selectedExtras: ['extra-1'],
-        onSelectedExtrasChange,
         onSubmit: vi.fn(),
       }),
     )
@@ -921,13 +900,6 @@ describe('heavy components smoke', () => {
     expect(getTextContent(elements)).toContain('disponível apenas nos planos pagos')
     expect(getTextContent(elements)).toContain('Erro ao salvar item.')
     expect(getTextContent(elements)).toContain('Salvando...')
-
-    const extraCheckbox = elements.find((element) => element.type === 'input' && element.props.type === 'checkbox')
-    extraCheckbox?.props.onChange({ target: { checked: false } })
-
-    expect(onSelectedExtrasChange).toHaveBeenCalledOnce()
-    const toggleUpdater = onSelectedExtrasChange.mock.calls[0]?.[0] as (prev: string[]) => string[]
-    expect(toggleUpdater(['extra-1'])).toEqual([])
 
     const quantityInput = elements.find(
       (element) => element.type === 'input' && element.props.type === 'number' && element.props.step === '0.01',

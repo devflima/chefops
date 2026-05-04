@@ -60,13 +60,11 @@ export function getCreateMenuEditorState() {
     formValues: getInitialMenuItemFormValues(),
     linkedProductId: 'none',
     ingredients: [] as MenuItemIngredient[],
-    selectedExtras: [] as string[],
   }
 }
 
 export function getMenuEditState(params: {
   item: Pick<MenuItem, 'id' | 'name' | 'description' | 'price' | 'category_id' | 'display_order' | 'product_id'>
-  selectedExtras?: Array<{ id: string }> | null
   ingredients?: Array<{ product_id: string; quantity: number }> | null
   hasStockAutomation: boolean
 }) {
@@ -79,7 +77,6 @@ export function getMenuEditState(params: {
       category_id: params.item.category_id ?? 'none',
       display_order: params.item.display_order,
     },
-    selectedExtras: (params.selectedExtras ?? []).map((extra) => extra.id),
     ingredients: params.hasStockAutomation
       ? (params.ingredients ?? []).map((ingredient) => ({
           product_id: ingredient.product_id,
@@ -94,7 +91,6 @@ export function getMenuSubmitSuccessState() {
   return {
     open: false,
     formValues: getInitialMenuItemFormValues(),
-    selectedExtras: [] as string[],
     ingredients: [] as MenuItemIngredient[],
     linkedProductId: 'none',
   }
@@ -177,78 +173,6 @@ export function removeMenuIngredient(
   index: number
 ) {
   return ingredients.filter((_, ingredientIndex) => ingredientIndex !== index)
-}
-
-export function toggleMenuExtraSelection(selectedExtras: string[], extraId: string, checked: boolean) {
-  return checked ? [...selectedExtras, extraId] : selectedExtras.filter((id) => id !== extraId)
-}
-
-export type MenuExtraOption = {
-  id: string
-  name: string
-  price: number
-  category: string
-  category_id?: string | null
-}
-
-const MENU_EXTRA_CATEGORY_ORDER = ['border', 'flavor', 'other'] as const
-
-export function getMenuExtraCategoryLabel(category: string) {
-  if (category === 'border') return 'Borda'
-  if (category === 'flavor') return 'Extras'
-  if (category === 'other') return 'Outros'
-
-  return category
-}
-
-export function getSelectableMenuExtras(
-  allExtras: MenuExtraOption[],
-  categoryId?: string,
-  categories?: MenuCategoryOption[]
-) {
-  return allExtras.filter((extra) => {
-    if (extra.category_id) {
-      return false
-    }
-
-    if (isPizzaCategoryId(categoryId, categories) && extra.category === 'border') {
-      return false
-    }
-
-    return true
-  })
-}
-
-export function getPersistedMenuExtraIds(
-  selectedExtraIds: string[],
-  allExtras: MenuExtraOption[],
-  categoryId?: string,
-  categories?: MenuCategoryOption[]
-) {
-  const nonPersistedExtraIds = new Set(
-    allExtras
-      .filter((extra) => extra.category_id || (isPizzaCategoryId(categoryId, categories) && extra.category === 'border'))
-      .map((extra) => extra.id)
-  )
-
-  return selectedExtraIds.filter((extraId) => !nonPersistedExtraIds.has(extraId))
-}
-
-export function groupMenuExtrasByCategory(allExtras: MenuExtraOption[]) {
-  const grouped = new Map<string, MenuExtraOption[]>()
-
-  for (const extra of allExtras) {
-    grouped.set(extra.category, [...(grouped.get(extra.category) ?? []), extra])
-  }
-
-  const knownCategories = MENU_EXTRA_CATEGORY_ORDER.filter((category) => grouped.has(category))
-  const unknownCategories = [...grouped.keys()].filter((category) => !MENU_EXTRA_CATEGORY_ORDER.includes(category as (typeof MENU_EXTRA_CATEGORY_ORDER)[number]))
-
-  return [...knownCategories, ...unknownCategories].map((category) => ({
-    category,
-    label: getMenuExtraCategoryLabel(category),
-    extras: grouped.get(category) ?? [],
-  }))
 }
 
 export function buildMenuAvailabilityState(item: Pick<MenuItem, 'available' | 'name'>) {
