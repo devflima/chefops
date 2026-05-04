@@ -8,22 +8,17 @@ import {
   buildMenuPageSummary,
   buildUpdateMenuItemPayload,
   filterMenuItems,
-  getPersistedMenuExtraIds,
   getCreateMenuEditorState,
   getMenuDialogTitle,
   getMenuEditState,
   getMenuFilterChangeState,
-  getMenuExtraCategoryLabel,
   getMenuSubmitErrorMessage,
   getInitialMenuItemFormValues,
-  getSelectableMenuExtras,
-  groupMenuExtrasByCategory,
   getMenuSubmitSuccessState,
   getMenuTotalPages,
   getNormalizedIngredients,
   paginateMenuItems,
   removeMenuIngredient,
-  toggleMenuExtraSelection,
   updateMenuIngredient,
 } from '@/features/menu/dashboard-menu-page'
 
@@ -138,7 +133,6 @@ describe('dashboard menu page helpers', () => {
       },
       linkedProductId: 'none',
       ingredients: [],
-      selectedExtras: [],
     })
 
     expect(getMenuEditState({
@@ -151,7 +145,6 @@ describe('dashboard menu page helpers', () => {
         display_order: 3,
         product_id: 'prod-1',
       } as never,
-      selectedExtras: [{ id: 'extra-1' }, { id: 'extra-2' }],
       ingredients: [{ product_id: 'prod-2', quantity: '1.5' as never }],
       hasStockAutomation: true,
     })).toEqual({
@@ -171,7 +164,6 @@ describe('dashboard menu page helpers', () => {
         category_id: 'cat-1',
         display_order: 3,
       },
-      selectedExtras: ['extra-1', 'extra-2'],
       ingredients: [{ product_id: 'prod-2', quantity: 1.5 }],
       linkedProductId: 'prod-1',
     })
@@ -186,7 +178,6 @@ describe('dashboard menu page helpers', () => {
         display_order: 1,
         product_id: 'prod-3',
       } as never,
-      selectedExtras: null,
       ingredients: [{ product_id: 'prod-4', quantity: 2 }],
       hasStockAutomation: false,
     })).toEqual({
@@ -206,7 +197,6 @@ describe('dashboard menu page helpers', () => {
         category_id: 'none',
         display_order: 1,
       },
-      selectedExtras: [],
       ingredients: [],
       linkedProductId: 'none',
     })
@@ -221,7 +211,6 @@ describe('dashboard menu page helpers', () => {
         display_order: 4,
         product_id: null,
       } as never,
-      selectedExtras: undefined,
       ingredients: null,
       hasStockAutomation: true,
     })).toEqual({
@@ -241,7 +230,6 @@ describe('dashboard menu page helpers', () => {
         category_id: 'none',
         display_order: 4,
       },
-      selectedExtras: [],
       ingredients: [],
       linkedProductId: 'none',
     })
@@ -255,7 +243,6 @@ describe('dashboard menu page helpers', () => {
         price: 0,
         display_order: 0,
       },
-      selectedExtras: [],
       ingredients: [],
       linkedProductId: 'none',
     })
@@ -267,7 +254,7 @@ describe('dashboard menu page helpers', () => {
     expect(getMenuSubmitErrorMessage(null)).toBe('Erro ao salvar item.')
   })
 
-  it('manipula ingredientes, extras e toggle de disponibilidade', () => {
+  it('manipula ingredientes e toggle de disponibilidade', () => {
     expect(addMenuIngredient([])).toEqual([{ product_id: 'none', quantity: 1 }])
     expect(updateMenuIngredient(
       [{ product_id: 'prod-1', quantity: 1 }, { product_id: 'prod-2', quantity: 2 }],
@@ -281,63 +268,6 @@ describe('dashboard menu page helpers', () => {
       [{ product_id: 'prod-1', quantity: 1 }, { product_id: 'prod-2', quantity: 2 }],
       0
     )).toEqual([{ product_id: 'prod-2', quantity: 2 }])
-
-    expect(toggleMenuExtraSelection(['extra-1'], 'extra-2', true)).toEqual(['extra-1', 'extra-2'])
-    expect(toggleMenuExtraSelection(['extra-1', 'extra-2'], 'extra-1', false)).toEqual(['extra-2'])
-    expect(getMenuExtraCategoryLabel('border')).toBe('Borda')
-    expect(getMenuExtraCategoryLabel('flavor')).toBe('Extras')
-    expect(getMenuExtraCategoryLabel('other')).toBe('Outros')
-    expect(getMenuExtraCategoryLabel('massas')).toBe('massas')
-    expect(
-      groupMenuExtrasByCategory([
-        { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
-        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border' },
-        { id: 'extra-3', name: 'Calabresa', price: 6, category: 'flavor' },
-        { id: 'extra-4', name: 'Molho da casa', price: 2, category: 'other' },
-      ])
-    ).toEqual([
-      {
-        category: 'border',
-        label: 'Borda',
-        extras: [
-          { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
-          { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border' },
-        ],
-      },
-      {
-        category: 'flavor',
-        label: 'Extras',
-        extras: [{ id: 'extra-3', name: 'Calabresa', price: 6, category: 'flavor' }],
-      },
-      {
-        category: 'other',
-        label: 'Outros',
-        extras: [{ id: 'extra-4', name: 'Molho da casa', price: 2, category: 'other' }],
-      },
-    ])
-
-    expect(getSelectableMenuExtras(
-      [
-        { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
-        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border', category_id: 'cat-1' },
-        { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
-      ],
-      'cat-1',
-      [{ id: 'cat-1', name: 'Pizzas' }],
-    )).toEqual([
-      { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
-    ])
-
-    expect(getPersistedMenuExtraIds(
-      ['extra-1', 'extra-3'],
-      [
-        { id: 'extra-1', name: 'Catupiry', price: 4, category: 'border' },
-        { id: 'extra-2', name: 'Cheddar', price: 3, category: 'border', category_id: 'cat-1' },
-        { id: 'extra-3', name: 'Molho da casa', price: 2, category: 'other' },
-      ],
-      'cat-1',
-      [{ id: 'cat-1', name: 'Pizzas' }],
-    )).toEqual(['extra-3'])
 
     expect(buildMenuAvailabilityState({ name: 'Pizza', available: true } as never)).toEqual({
       action: 'desativar',

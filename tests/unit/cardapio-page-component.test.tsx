@@ -86,9 +86,6 @@ describe('CardapioPage component', () => {
     useCreateMenuItemMock.mockReturnValue({
       mutateAsync: vi.fn().mockResolvedValue({ id: 'item-created' }),
     })
-    useQueryMock.mockReturnValue({
-      data: [{ id: 'extra-1', name: 'Borda recheada', price: 5, category: 'Bordas' }],
-    })
     useHasFeatureMock.mockReturnValue(true)
     usePlanMock.mockReturnValue({
       data: {
@@ -102,14 +99,6 @@ describe('CardapioPage component', () => {
     invalidateQueriesMock.mockResolvedValue(undefined)
 
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      if (url === '/api/menu-items/item-1/extras') {
-        return {
-          ok: true,
-          json: vi.fn().mockResolvedValue({
-            data: [{ id: 'extra-1' }],
-          }),
-        }
-      }
 
       if (url === '/api/menu-items/item-1/ingredients') {
         return {
@@ -208,7 +197,6 @@ describe('CardapioPage component', () => {
     const createMenuItemMutateAsync = useCreateMenuItemMock.mock.results[0]?.value.mutateAsync as ReturnType<typeof vi.fn>
 
     expect(formResetMock).toHaveBeenCalled()
-    expect(fetch).toHaveBeenCalledWith('/api/menu-items/item-1/extras')
     expect(fetch).toHaveBeenCalledWith('/api/menu-items/item-1/ingredients')
     expect(confirm).toHaveBeenCalledWith('Deseja desativar "Pizza Margherita"?')
     expect(fetch).toHaveBeenCalledWith('/api/menu-items/item-1', {
@@ -224,11 +212,6 @@ describe('CardapioPage component', () => {
       category_id: 'cat-1',
       display_order: 2,
       product_id: undefined,
-    })
-    expect(fetch).toHaveBeenCalledWith('/api/menu-items/item-created/extras', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ extra_ids: [] }),
     })
     expect(fetch).toHaveBeenCalledWith('/api/menu-items/item-created/ingredients', {
       method: 'PUT',
@@ -247,12 +230,6 @@ describe('CardapioPage component', () => {
     })
 
     const fetchMock = vi.fn(async (url: string) => {
-      if (url === '/api/menu-items/item-1/extras') {
-        return {
-          ok: true,
-          json: vi.fn().mockResolvedValue({ data: [] }),
-        }
-      }
 
       if (url === '/api/menu-items/item-1') {
         return {
@@ -368,7 +345,6 @@ describe('CardapioPage component', () => {
       totalPages: number
       dialogProps: {
         products?: Array<{ id: string; name: string }>
-        allExtras?: Array<{ id: string; name: string }>
         onSubmit: (values: {
           name: string
           description?: string
@@ -390,7 +366,6 @@ describe('CardapioPage component', () => {
     expect(props.menuItemLimit).toBeUndefined()
     expect(props.totalPages).toBe(1)
     expect(props.dialogProps.products).toBeUndefined()
-    expect(props.dialogProps.allExtras).toBeUndefined()
 
     await props.dialogProps.onSubmit({
       name: 'Pizza sem id',
@@ -409,7 +384,6 @@ describe('CardapioPage component', () => {
       display_order: 1,
       product_id: undefined,
     })
-    expect(fetchMock).not.toHaveBeenCalledWith('/api/menu-items/undefined/extras', expect.anything())
     expect(formResetMock).toHaveBeenCalled()
   })
 })
